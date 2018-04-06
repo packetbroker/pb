@@ -1,0 +1,15 @@
+[[constraint]]
+  branch = "master"
+  name = "cloud.google.com/go"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/spf13/cobra"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/spf13/viper"
+
+[prune]
+  go-tests = true
+  unused-packages = true
