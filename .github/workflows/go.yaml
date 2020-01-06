@@ -1,0 +1,56 @@
+name: Go Code
+
+on:
+  push:
+    paths:
+    - '**.go'
+  pull_request:
+    paths:
+    - '**.go'
+
+jobs:
+  quality:
+    name: Quality
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install Go
+      uses: actions/setup-go@v1
+      with:
+        go-version: '1.13'
+    - name: Check out code
+      uses: actions/checkout@v1
+    - name: Check code quality
+      run: make quality
+    - name: Format code
+      run: make fmt
+    - name: Tidy modules
+      run: make deps.tidy
+    - name: Check no diff
+      run: make git.nodiff
+
+  test:
+    name: Test
+    if: github.event_name == 'pull_request'
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        go-arch: [amd64, '386']
+        go-version: ['1.13']
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Install Go
+      uses: actions/setup-go@v1
+      with:
+        go-version: ${{ matrix.go-version }}
+    - name: Checkout code
+      uses: actions/checkout@v1
+    - name: Test coverage and races
+      run: make test.race
+      if: matrix.go-arch != '386'
+      env:
+        GOARCH: ${{ matrix.go-arch }}
+    - name: Test coverage only
+      run: make test.cover
+      if: matrix.go-arch == '386'
+      env:
+        GOARCH: ${{ matrix.go-arch }}
