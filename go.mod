@@ -4,7 +4,6 @@ go 1.13
 
 require (
 	github.com/gogo/protobuf v1.3.1
-	github.com/golang/protobuf v1.3.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0
 	go.packetbroker.org/api/v1alpha1 v0.0.0-20200107133406-21089bd8fadc
 	go.uber.org/atomic v1.5.1 // indirect
