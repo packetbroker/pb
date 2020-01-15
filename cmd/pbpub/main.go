@@ -5,10 +5,10 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"os"
 
+	flag "github.com/spf13/pflag"
 	"go.packetbroker.org/pb/cmd/internal/logging"
 	"go.packetbroker.org/pb/internal/client"
 	"go.uber.org/zap"
@@ -17,11 +17,11 @@ import (
 
 const usage = `Usage:
 
-  Publish as Forwarder:
-  $ cat message.json | pbpub -forwarder-net-id NETID [-forwarder-id ID]
+      Publish as Forwarder:
+      $ cat message.json | pbpub --forwarder-net-id NETID [--forwarder-id ID]
 
-  Publish as Home Network:
-  $ cat message.json | pbpub -home-network-net-id NETID -forwarder-net-id NETID [-forwarder-id ID]
+      Publish as Home Network:
+      $ cat message.json | pbpub --home-network-net-id NETID --forwarder-net-id NETID [--forwarder-id ID]
 
 Flags:`
 
@@ -33,11 +33,14 @@ var (
 )
 
 func main() {
-	parseInput()
-	if input.help {
+	if invalid := !parseInput(); invalid || input.help {
 		fmt.Fprintln(os.Stderr, usage)
 		flag.PrintDefaults()
-		return
+		if invalid {
+			os.Exit(1)
+		} else {
+			os.Exit(0)
+		}
 	}
 
 	logger = logging.GetLogger(input.debug)

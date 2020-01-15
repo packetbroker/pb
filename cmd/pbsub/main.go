@@ -4,10 +4,10 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"os"
 
+	flag "github.com/spf13/pflag"
 	"go.packetbroker.org/pb/cmd/internal/logging"
 	"go.packetbroker.org/pb/internal/client"
 	"go.uber.org/zap"
@@ -16,11 +16,11 @@ import (
 
 const usage = `Usage:
 
-  Subscribe as Forwarder:
-  $ pbsub -forwarder-net-id NETID [-forwarder-id ID]
+      Subscribe as Forwarder:
+      $ pbsub --forwarder-net-id NETID [--forwarder-id ID]
 
-  Subscribe as Home Network:
-  $ pbsub -home-network-net-id NETID [-filter-forwarder-net-id NETID [-filter-forwarder-id ID]]
+      Subscribe as Home Network:
+      $ pbsub --home-network-net-id NETID [--filter-forwarder-net-id NETID [--filter-forwarder-id ID]]
 
 Flags:`
 
@@ -31,11 +31,14 @@ var (
 )
 
 func main() {
-	parseInput()
-	if input.help {
+	if invalid := !parseInput(); invalid || input.help {
 		fmt.Fprintln(os.Stderr, usage)
 		flag.PrintDefaults()
-		return
+		if invalid {
+			os.Exit(1)
+		} else {
+			os.Exit(0)
+		}
 	}
 
 	logger = logging.GetLogger(input.debug)

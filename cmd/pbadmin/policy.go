@@ -3,30 +3,34 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 
+	flag "github.com/spf13/pflag"
 	packetbroker "go.packetbroker.org/api/v1alpha1"
 	"go.packetbroker.org/pb/cmd/internal/console"
 	"go.uber.org/zap"
 )
 
-func parsePolicyFlags() {
+func parsePolicyFlags() bool {
 	flag.BoolVar(&input.policy.defaults, "defaults", false, "default policy")
 	flag.StringVar(&input.policy.setUplink, "set-uplink", "", "concatenated J (join-request), M (MAC data), A (application data), S (signal quality), L (localization), D (allow downlink)")
 	flag.BoolVar(&input.policy.unsetUplink, "unset-uplink", false, "unset uplink policy")
 	flag.StringVar(&input.policy.setDownlink, "set-downlink", "", "concatenated J (join-accept), M (MAC data), A (application data)")
 	flag.BoolVar(&input.policy.unsetDownlink, "unset-downlink", false, "unset downlink policy")
+
 	flag.CommandLine.Parse(os.Args[2:])
+
 	if input.policy.defaults == (input.homeNetworkNetIDHex != "") {
 		fmt.Fprintln(os.Stderr, "Must set either home-network-net-id or defaults")
-		input.help = true
+		return false
 	}
 	if input.policy.setUplink != "" && input.policy.unsetUplink || input.policy.setDownlink != "" && input.policy.unsetDownlink {
 		fmt.Fprintln(os.Stderr, "Cannot set and unset policies")
-		input.help = true
+		return false
 	}
+
+	return true
 }
 
 func parseUplinkPolicy() *packetbroker.RoutingPolicy_Uplink {

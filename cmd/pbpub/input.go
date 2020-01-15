@@ -3,12 +3,12 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 
+	flag "github.com/spf13/pflag"
 	packetbroker "go.packetbroker.org/api/v1alpha1"
-	"go.packetbroker.org/pb/cmd/internal/flags"
+	"go.packetbroker.org/pb/cmd/internal/config"
 	"go.packetbroker.org/pb/internal/client"
 )
 
@@ -24,9 +24,9 @@ type inputData struct {
 
 var input = new(inputData)
 
-func parseInput() {
-	flags.Common(&input.help, &input.debug)
-	flags.Client(&input.client)
+func parseInput() bool {
+	config.CommonFlags(&input.help, &input.debug)
+	config.ClientFlags(&input.client)
 
 	flag.StringVar(&input.forwarderNetIDHex, "forwarder-net-id", "", "NetID of the Forwarder (hex)")
 	flag.StringVar(&input.forwarderID, "forwarder-id", "", "ID of the Forwarder")
@@ -34,21 +34,25 @@ func parseInput() {
 
 	flag.Parse()
 
-	if input.forwarderNetIDHex == "" {
-		fmt.Fprintln(os.Stderr, "Must set forwarder-net-id")
-		input.help = true
-	} else {
+	if !input.help {
+		if input.forwarderNetIDHex == "" {
+			fmt.Fprintln(os.Stderr, "Must set forwarder-net-id")
+			return false
+		}
 		input.forwarderNetID = new(packetbroker.NetID)
 		if err := input.forwarderNetID.UnmarshalText([]byte(input.forwarderNetIDHex)); err != nil {
 			fmt.Fprintln(os.Stderr, "Invalid forwarder-net-id")
-			input.help = true
+			return false
+		}
+
+		if input.homeNetworkNetIDHex != "" {
+			input.homeNetworkNetID = new(packetbroker.NetID)
+			if err := input.homeNetworkNetID.UnmarshalText([]byte(input.homeNetworkNetIDHex)); err != nil {
+				fmt.Fprintln(os.Stderr, "Invalid home-network-net-id")
+				return false
+			}
 		}
 	}
-	if input.homeNetworkNetIDHex != "" {
-		input.homeNetworkNetID = new(packetbroker.NetID)
-		if err := input.homeNetworkNetID.UnmarshalText([]byte(input.homeNetworkNetIDHex)); err != nil {
-			fmt.Fprintln(os.Stderr, "Invalid home-network-net-id")
-			input.help = true
-		}
-	}
+
+	return true
 }

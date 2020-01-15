@@ -4,10 +4,10 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"os"
 
+	flag "github.com/spf13/pflag"
 	"go.packetbroker.org/pb/cmd/internal/logging"
 	"go.packetbroker.org/pb/internal/client"
 	"go.uber.org/zap"
@@ -15,10 +15,10 @@ import (
 )
 
 const usage = `Usage:
-  $ pbadmin [command]
+      $ pbadmin [command]
 
 Commands:
-  policy
+      policy
 
 Flags:`
 
@@ -29,11 +29,14 @@ var (
 )
 
 func main() {
-	parseInput()
-	if input.help {
+	if invalid := !parseInput(); invalid || input.help {
 		fmt.Fprintln(os.Stderr, usage)
 		flag.PrintDefaults()
-		return
+		if invalid {
+			os.Exit(1)
+		} else {
+			os.Exit(0)
+		}
 	}
 
 	logger = logging.GetLogger(input.debug)

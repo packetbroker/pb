@@ -3,12 +3,12 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 
+	flag "github.com/spf13/pflag"
 	packetbroker "go.packetbroker.org/api/v1alpha1"
-	"go.packetbroker.org/pb/cmd/internal/flags"
+	"go.packetbroker.org/pb/cmd/internal/config"
 	"go.packetbroker.org/pb/internal/client"
 )
 
@@ -30,9 +30,9 @@ type inputData struct {
 
 var input = new(inputData)
 
-func parseInput() {
-	flags.Common(&input.help, &input.debug)
-	flags.Client(&input.client)
+func parseInput() bool {
+	config.CommonFlags(&input.help, &input.debug)
+	config.ClientFlags(&input.client)
 
 	flag.StringVar(&input.forwarderNetIDHex, "forwarder-net-id", "", "NetID of the Forwarder (hex)")
 	flag.StringVar(&input.forwarderID, "forwarder-id", "", "ID of the Forwarder")
@@ -43,30 +43,34 @@ func parseInput() {
 
 	flag.Parse()
 
-	if (input.forwarderNetIDHex != "") == (input.homeNetworkNetIDHex != "") {
-		fmt.Fprintln(os.Stderr, "Must set either forwarder-net-id or home-network-net-id")
-		input.help = true
-	}
+	if !input.help {
+		if (input.forwarderNetIDHex != "") == (input.homeNetworkNetIDHex != "") {
+			fmt.Fprintln(os.Stderr, "Must set either forwarder-net-id or home-network-net-id")
+			return false
+		}
 
-	if input.forwarderNetIDHex != "" {
-		input.forwarderNetID = new(packetbroker.NetID)
-		if err := input.forwarderNetID.UnmarshalText([]byte(input.forwarderNetIDHex)); err != nil {
-			fmt.Fprintln(os.Stderr, "Invalid forwarder-net-id")
-			input.help = true
+		if input.forwarderNetIDHex != "" {
+			input.forwarderNetID = new(packetbroker.NetID)
+			if err := input.forwarderNetID.UnmarshalText([]byte(input.forwarderNetIDHex)); err != nil {
+				fmt.Fprintln(os.Stderr, "Invalid forwarder-net-id")
+				return false
+			}
 		}
-	}
-	if input.homeNetworkNetIDHex != "" {
-		input.homeNetworkNetID = new(packetbroker.NetID)
-		if err := input.homeNetworkNetID.UnmarshalText([]byte(input.homeNetworkNetIDHex)); err != nil {
-			fmt.Fprintln(os.Stderr, "Invalid home-network-net-id")
-			input.help = true
-		}
-		if input.homeNetworkFilters.forwarderNetIDHex != "" {
-			input.homeNetworkFilters.forwarderNetID = new(packetbroker.NetID)
-			if err := input.homeNetworkFilters.forwarderNetID.UnmarshalText([]byte(input.homeNetworkFilters.forwarderNetIDHex)); err != nil {
-				fmt.Fprintln(os.Stderr, "Invalid filter-forwarder-net-id")
-				input.help = true
+		if input.homeNetworkNetIDHex != "" {
+			input.homeNetworkNetID = new(packetbroker.NetID)
+			if err := input.homeNetworkNetID.UnmarshalText([]byte(input.homeNetworkNetIDHex)); err != nil {
+				fmt.Fprintln(os.Stderr, "Invalid home-network-net-id")
+				return false
+			}
+			if input.homeNetworkFilters.forwarderNetIDHex != "" {
+				input.homeNetworkFilters.forwarderNetID = new(packetbroker.NetID)
+				if err := input.homeNetworkFilters.forwarderNetID.UnmarshalText([]byte(input.homeNetworkFilters.forwarderNetIDHex)); err != nil {
+					fmt.Fprintln(os.Stderr, "Invalid filter-forwarder-net-id")
+					return false
+				}
 			}
 		}
 	}
+
+	return true
 }
