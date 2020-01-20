@@ -48,7 +48,9 @@ func parseInput() bool {
 
 	switch input.mode = strings.ToLower(os.Args[1]); input.mode {
 	case "policy":
-		parsePolicyFlags()
+		if !parsePolicyFlags() {
+			return false
+		}
 	default:
 		fmt.Fprintln(os.Stderr, "Invalid command")
 		return false
