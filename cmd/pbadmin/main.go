@@ -15,7 +15,13 @@ import (
 )
 
 const usage = `Usage:
-      $ pbadmin [command]
+
+      Get policy:
+      $ pbadmin policy get --forwarder-net-id NETID [--forwarder-id ID] [--defaults|--home-network-net-id NETID]
+
+      Set policy:
+      $ pbadmin policy set --forwarder-net-id NETID [--forwarder-id ID] [--defaults|--home-network-net-id NETID] \
+            [--set-uplink JMASLD|--unset-uplink] [--set-downlink JMA|--unset-downlink]
 
 Commands:
       policy
