@@ -13,7 +13,7 @@ func GetLogger(debug bool) *zap.Logger {
 		logger, _ = zap.Config{
 			Level:            zap.NewAtomicLevelAt(zap.InfoLevel),
 			Encoding:         "console",
-			EncoderConfig:    zap.NewProductionEncoderConfig(),
+			EncoderConfig:    zap.NewDevelopmentEncoderConfig(),
 			OutputPaths:      []string{"stderr"},
 			ErrorOutputPaths: []string{"stderr"},
 		}.Build()
