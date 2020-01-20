@@ -21,6 +21,10 @@ func parsePolicyFlags() bool {
 
 	flag.CommandLine.Parse(os.Args[2:])
 
+	if input.forwarderNetIDHex == "" {
+		fmt.Fprintln(os.Stderr, "Must set forwarder-net-id")
+		return false
+	}
 	if input.policy.defaults == (input.homeNetworkNetIDHex != "") {
 		fmt.Fprintln(os.Stderr, "Must set either home-network-net-id or defaults")
 		return false
