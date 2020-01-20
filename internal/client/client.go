@@ -53,7 +53,7 @@ func appendDefaultPort(target string, port int) (string, error) {
 }
 
 // DialContext dials a Packet Broker service using the given configuration.
-func DialContext(ctx context.Context, logger *zap.Logger, config Config, defaultPort int) (*grpc.ClientConn, error) {
+func DialContext(ctx context.Context, logger *zap.Logger, config *Config, defaultPort int) (*grpc.ClientConn, error) {
 	cert, err := tls.LoadX509KeyPair(config.CertFile, config.KeyFile)
 	if err != nil {
 		return nil, fmt.Errorf("client: failed to load X.509 certificate file %q and key file %q: %w",

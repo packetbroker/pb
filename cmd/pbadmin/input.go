@@ -15,7 +15,7 @@ import (
 
 type inputData struct {
 	help, debug         bool
-	client              client.Config
+	client              *client.Config
 	forwarderNetIDHex   string
 	forwarderNetID      *packetbroker.NetID
 	forwarderID         string
@@ -35,7 +35,7 @@ var input = new(inputData)
 
 func parseInput() bool {
 	config.CommonFlags(&input.help, &input.debug)
-	config.ClientFlags(&input.client)
+	config.ClientFlags()
 
 	flag.StringVar(&input.forwarderNetIDHex, "forwarder-net-id", "", "NetID of the Forwarder (hex)")
 	flag.StringVar(&input.forwarderID, "forwarder-id", "", "ID of the Forwarder")
@@ -53,6 +53,13 @@ func parseInput() bool {
 		}
 	default:
 		fmt.Fprintln(os.Stderr, "Invalid command")
+		return false
+	}
+
+	var err error
+	input.client, err = config.Client()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Invalid client settings:", err)
 		return false
 	}
 

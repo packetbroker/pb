@@ -22,6 +22,12 @@ In order to use the Packet Broker Clients, you need a client certificate signed 
 
 Make sure you have `cert.pem`, `key.pem` and [`ca.pem`](./configs/ca.pem) in your working directory.
 
+Instead of passing the Packet Broker address via the `--address` flag on each command, you can set `PB_ADDRESS` in your environment like so:
+
+```bash
+export PB_ADDRESS=staging.packetbroker.io
+```
+
 ### Configure Policies
 
 As a Forwarder, you can configure a default routing policy for all Home Networks, and routing policies per Home Network with `pbadmin`. 
@@ -105,8 +111,8 @@ To publish a downlink message for testing, you can pipe a JSON file to `pbpub`, 
 $ cat downlink.json | pbpub --home-network-net-id
 ```
 
-See the [Examples](./examples) for example JSON files.
+See [Examples](./examples) for example JSON files.
 
 ## Legal
 
-Packet Broker Clients are Apache 2.0 licensed.
+Packet Broker Clients are Apache 2.0 licensed. See [LICENSE](./LICENSE) for more information.
