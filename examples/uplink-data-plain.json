@@ -1,0 +1,34 @@
+{
+  "phyPayload": {
+    "teaser": {
+      "hash": "SFDudlmz+5nnIEppPoocAYQtauhCubioxqpl9sIHoG4=",
+      "mac": {
+        "confirmed": false,
+        "devAddr": 805424386,
+        "fOpts": false,
+        "fCnt": 35449,
+        "fPort": 5,
+        "frmPayloadLength": 16
+      }
+    },
+    "value": {
+      "value": "QALNATCAeYoF9HfprTT/AMmv8KC2cn0GqGgQIDg="
+    }
+  },
+  "gatewayMetadata": {
+    "teaser": {
+      "terrestrial": {
+        "fineTimestamp": false
+      }
+    },
+    "signalQuality": {
+      "value": "Cg4KDBIKDQAA/cIlAAAoQQ=="
+    },
+    "localization": {
+      "value": "CiwKKhIcCbivA+eMaBNAEWdEaW/wRUpAHZqZeUElAABAQCIKDQAA/cIlAAAoQQ=="
+    }
+  },
+  "forwarderUplinkToken": "AQID",
+  "gatewayUplinkToken": "AQID",
+  "gatewayRegion": "EU_863_870"
+}

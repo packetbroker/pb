@@ -19,7 +19,7 @@ You may use a different algorithm and key length.
 ### Configure OpenSSL
 
 1. Open [`openssl.cnf`](./openssl.cnf)
-2. In the `alt_names` section, enter your URI according the specified format
+2. Replace `subjectAltName` with the Packet Broker URI according the specified format
 
 ### Create Certificate Signing Request
 
