@@ -5,7 +5,7 @@ package main
 import (
 	"io"
 
-	packetbroker "go.packetbroker.org/api/v1alpha1"
+	packetbroker "go.packetbroker.org/api/v1beta1"
 	"go.packetbroker.org/pb/cmd/internal/console"
 	"go.uber.org/zap"
 )
