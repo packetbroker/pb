@@ -30,5 +30,7 @@
   },
   "forwarderUplinkToken": "AQID",
   "gatewayUplinkToken": "AQID",
-  "gatewayRegion": "EU_863_870"
+  "gatewayRegion": "EU_863_870",
+  "data_rate_index": 5,
+  "frequency": 868100000
 }
