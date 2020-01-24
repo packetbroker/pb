@@ -2,7 +2,7 @@
 
 package band
 
-import packetbroker "go.packetbroker.org/api/v1beta1"
+import packetbroker "go.packetbroker.org/api/v1beta2"
 
 // DataRate is a data rate.
 type DataRate interface{}
