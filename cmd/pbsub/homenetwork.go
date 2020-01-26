@@ -11,7 +11,20 @@ import (
 )
 
 func runHomeNetwork() {
-	var forwardersFilter *packetbroker.RoutingFilter_ForwarderWhitelist
+	// Subscribe to all MAC payload and join-requests.
+	filters := []*packetbroker.RoutingFilter{
+		{
+			Message: &packetbroker.RoutingFilter_Mac{
+				Mac: &packetbroker.RoutingFilter_MACPayload{},
+			},
+		},
+		{
+			Message: &packetbroker.RoutingFilter_JoinRequest_{
+				JoinRequest: &packetbroker.RoutingFilter_JoinRequest{},
+			},
+		},
+	}
+
 	if input.homeNetworkFilters.forwarderNetID != nil {
 		forwarder := &packetbroker.ForwarderIdentifier{
 			NetId: uint32(*input.homeNetworkFilters.forwarderNetID),
@@ -21,28 +34,14 @@ func runHomeNetwork() {
 			forwarder.ForwarderId = id
 			logger = logger.With(zap.Any("id", id))
 		}
-		forwardersFilter = &packetbroker.RoutingFilter_ForwarderWhitelist{
-			ForwarderWhitelist: &packetbroker.ForwarderIdentifiers{
-				List: []*packetbroker.ForwarderIdentifier{forwarder},
-			},
-		}
 		logger.Debug("Filter Forwarder", zap.Any("net_id", forwarder.NetId))
-	}
-
-	// Subscribe to all MAC payload and join-requests.
-	filters := []*packetbroker.RoutingFilter{
-		{
-			Forwarders: forwardersFilter,
-			Message: &packetbroker.RoutingFilter_Mac{
-				Mac: &packetbroker.RoutingFilter_MACPayload{},
-			},
-		},
-		{
-			Forwarders: forwardersFilter,
-			Message: &packetbroker.RoutingFilter_JoinRequest_{
-				JoinRequest: &packetbroker.RoutingFilter_JoinRequest{},
-			},
-		},
+		for _, f := range filters {
+			f.Forwarders = &packetbroker.RoutingFilter_ForwarderWhitelist{
+				ForwarderWhitelist: &packetbroker.ForwarderIdentifiers{
+					List: []*packetbroker.ForwarderIdentifier{forwarder},
+				},
+			}
+		}
 	}
 
 	client := packetbroker.NewRouterHomeNetworkDataClient(conn)
