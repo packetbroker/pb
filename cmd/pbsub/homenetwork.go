@@ -5,30 +5,51 @@ package main
 import (
 	"io"
 
-	packetbroker "go.packetbroker.org/api/v1beta2"
+	packetbroker "go.packetbroker.org/api/v1beta3"
 	"go.packetbroker.org/pb/cmd/internal/console"
 	"go.uber.org/zap"
 )
 
 func runHomeNetwork() {
-	filter := new(packetbroker.RoutingFilter)
+	var forwardersFilter *packetbroker.RoutingFilter_ForwarderWhitelist
 	if input.homeNetworkFilters.forwarderNetID != nil {
-		forwarder := &packetbroker.RoutingFilter_Forwarder{
+		forwarder := &packetbroker.ForwarderIdentifier{
 			NetId: uint32(*input.homeNetworkFilters.forwarderNetID),
 		}
-		logger.Debug("Filter Forwarder by NetID", zap.Any("net_id", forwarder.NetId))
+		logger := logger
 		if id := input.homeNetworkFilters.forwarderID; id != "" {
-			forwarder.ForwarderIds = append(forwarder.ForwarderIds, id)
-			logger.Debug("Filter Forwarder by ID", zap.Any("id", id))
+			forwarder.ForwarderId = id
+			logger = logger.With(zap.Any("id", id))
 		}
-		filter.Forwarders = append(filter.Forwarders)
+		forwardersFilter = &packetbroker.RoutingFilter_ForwarderWhitelist{
+			ForwarderWhitelist: &packetbroker.ForwarderIdentifiers{
+				List: []*packetbroker.ForwarderIdentifier{forwarder},
+			},
+		}
+		logger.Debug("Filter Forwarder", zap.Any("net_id", forwarder.NetId))
+	}
+
+	// Subscribe to all MAC payload and join-requests.
+	filters := []*packetbroker.RoutingFilter{
+		{
+			Forwarders: forwardersFilter,
+			Message: &packetbroker.RoutingFilter_Mac{
+				Mac: &packetbroker.RoutingFilter_MACPayload{},
+			},
+		},
+		{
+			Forwarders: forwardersFilter,
+			Message: &packetbroker.RoutingFilter_JoinRequest_{
+				JoinRequest: &packetbroker.RoutingFilter_JoinRequest{},
+			},
+		},
 	}
 
 	client := packetbroker.NewRouterHomeNetworkDataClient(conn)
 	stream, err := client.Subscribe(ctx, &packetbroker.SubscribeHomeNetworkRequest{
 		HomeNetworkNetId: uint32(*input.homeNetworkNetID),
 		Group:            input.group,
-		Filters:          []*packetbroker.RoutingFilter{filter},
+		Filters:          filters,
 	})
 	if err != nil {
 		logger.Fatal("Failed to subscribe", zap.Error(err))

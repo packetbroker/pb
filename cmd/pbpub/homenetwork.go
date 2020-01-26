@@ -6,7 +6,7 @@ import (
 	"io"
 
 	"github.com/gogo/protobuf/jsonpb"
-	packetbroker "go.packetbroker.org/api/v1beta2"
+	packetbroker "go.packetbroker.org/api/v1beta3"
 	"go.uber.org/zap"
 )
 
