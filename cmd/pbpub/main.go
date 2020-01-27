@@ -27,24 +27,21 @@ const usage = `Usage:
 Flags:`
 
 var (
-	ctx      = context.Background()
-	logger   *zap.Logger
-	conn     *grpc.ClientConn
-	decoder  *json.Decoder
-	exitCode int
+	ctx     = context.Background()
+	logger  *zap.Logger
+	conn    *grpc.ClientConn
+	decoder *json.Decoder
 )
 
 func main() {
-	ctx := clicontext.WithInterrupt(clicontext.WithExitCode(ctx, &exitCode))
-	defer func() {
-		os.Exit(exitCode)
-	}()
+	ctx, exit := clicontext.WithInterruptAndExit(ctx)
+	defer exit()
 
 	if invalid := !parseInput(); invalid || input.help {
 		fmt.Fprintln(os.Stderr, usage)
 		flag.PrintDefaults()
 		if invalid {
-			exitCode = 1
+			clicontext.SetExitCode(ctx, 1)
 		}
 		return
 	}
@@ -56,7 +53,7 @@ func main() {
 	conn, err = client.DialContext(ctx, logger, input.client, 1913)
 	if err != nil {
 		logger.Error("Failed to connect", zap.String("address", input.client.Address), zap.Error(err))
-		exitCode = 1
+		clicontext.SetExitCode(ctx, 1)
 		return
 	}
 	defer conn.Close()

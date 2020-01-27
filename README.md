@@ -28,6 +28,13 @@ Instead of passing the Packet Broker address via the `--address` flag on each co
 export PB_ADDRESS=staging.packetbroker.io
 ```
 
+If you don't specify a port, `pbadmin`, `pbpub` and `pbsub` use the default ports:
+
+| Service | Port | Used By |
+| --- | ---: | --- |
+| Control Plane | `1912` | `pbadmin` |
+| Data Plane | `1913` | `pbpub`, `pbsub` |
+
 ### Configure Policies
 
 As a Forwarder, you can configure a default routing policy for all Home Networks, and routing policies per Home Network with `pbadmin`. 
