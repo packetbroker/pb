@@ -67,14 +67,14 @@ func parseInput() bool {
 		if input.forwarderNetIDHex != "" {
 			input.forwarderNetID = new(packetbroker.NetID)
 			if err := input.forwarderNetID.UnmarshalText([]byte(input.forwarderNetIDHex)); err != nil {
-				fmt.Fprintln(os.Stderr, "Invalid forwarder-net-id")
+				fmt.Fprintln(os.Stderr, "Invalid forwarder-net-id:", err)
 				return false
 			}
 		}
 		if input.homeNetworkNetIDHex != "" {
 			input.homeNetworkNetID = new(packetbroker.NetID)
 			if err := input.homeNetworkNetID.UnmarshalText([]byte(input.homeNetworkNetIDHex)); err != nil {
-				fmt.Fprintln(os.Stderr, "Invalid home-network-net-id")
+				fmt.Fprintln(os.Stderr, "Invalid home-network-net-id:", err)
 				return false
 			}
 		}
