@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -10,6 +11,7 @@ import (
 	packetbroker "go.packetbroker.org/api/v1"
 	"go.packetbroker.org/pb/cmd/internal/console"
 	"go.uber.org/zap"
+	"htdvisser.dev/exp/clicontext"
 )
 
 func parsePolicyFlags() bool {
@@ -57,7 +59,7 @@ func parseUplinkPolicy() *packetbroker.RoutingPolicy_Uplink {
 		case 'D':
 			res.AllowDownlink = true
 		default:
-			logger.Fatal("Invalid uplink policy", zap.String("designator", string(l)))
+			logger.Warn("Invalid uplink policy", zap.String("designator", string(l)))
 		}
 	}
 	return &res
@@ -77,13 +79,13 @@ func parseDownlinkPolicy() *packetbroker.RoutingPolicy_Downlink {
 		case 'A':
 			res.ApplicationData = true
 		default:
-			logger.Fatal("Invalid downlink policy", zap.String("designator", string(l)))
+			logger.Warn("Invalid downlink policy", zap.String("designator", string(l)))
 		}
 	}
 	return &res
 }
 
-func runPolicy() {
+func runPolicy(ctx context.Context) {
 	client := packetbroker.NewRoutingPolicyManagerClient(conn)
 	if input.policy.setUplink != "" || input.policy.unsetUplink ||
 		input.policy.setDownlink != "" || input.policy.unsetDownlink {
@@ -109,7 +111,9 @@ func runPolicy() {
 			})
 		}
 		if err != nil {
-			logger.Fatal("Failed to set routing policy", zap.Error(err))
+			logger.Error("Failed to set routing policy", zap.Error(err))
+			clicontext.SetExitCode(ctx, 1)
+			return
 		}
 		console.WriteProto(policy)
 	} else {
@@ -130,7 +134,9 @@ func runPolicy() {
 			})
 		}
 		if err != nil {
-			logger.Fatal("Failed to get routing policy", zap.Error(err))
+			logger.Error("Failed to get routing policy", zap.Error(err))
+			clicontext.SetExitCode(ctx, 1)
+			return
 		}
 		console.WriteProto(res.Policy)
 	}

@@ -13,6 +13,7 @@ import (
 	"go.packetbroker.org/pb/internal/client"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"htdvisser.dev/exp/clicontext"
 )
 
 const usage = `Usage:
@@ -26,21 +27,26 @@ const usage = `Usage:
 Flags:`
 
 var (
-	ctx     = context.Background()
-	logger  *zap.Logger
-	conn    *grpc.ClientConn
-	decoder *json.Decoder
+	ctx      = context.Background()
+	logger   *zap.Logger
+	conn     *grpc.ClientConn
+	decoder  *json.Decoder
+	exitCode int
 )
 
 func main() {
+	ctx := clicontext.WithInterrupt(clicontext.WithExitCode(ctx, &exitCode))
+	defer func() {
+		os.Exit(exitCode)
+	}()
+
 	if invalid := !parseInput(); invalid || input.help {
 		fmt.Fprintln(os.Stderr, usage)
 		flag.PrintDefaults()
 		if invalid {
-			os.Exit(1)
-		} else {
-			os.Exit(0)
+			exitCode = 1
 		}
+		return
 	}
 
 	logger = logging.GetLogger(input.debug)
@@ -49,7 +55,9 @@ func main() {
 	var err error
 	conn, err = client.DialContext(ctx, logger, input.client, 1913)
 	if err != nil {
-		logger.Fatal("Failed to connect", zap.String("address", input.client.Address), zap.Error(err))
+		logger.Error("Failed to connect", zap.String("address", input.client.Address), zap.Error(err))
+		exitCode = 1
+		return
 	}
 	defer conn.Close()
 
@@ -57,8 +65,8 @@ func main() {
 
 	switch {
 	case input.forwarderNetID != nil && input.homeNetworkNetID == nil:
-		runForwarder()
+		runForwarder(ctx)
 	case input.homeNetworkNetID != nil:
-		runHomeNetwork()
+		runHomeNetwork(ctx)
 	}
 }

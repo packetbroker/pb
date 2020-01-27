@@ -3,14 +3,19 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"io"
 
 	packetbroker "go.packetbroker.org/api/v1"
 	"go.packetbroker.org/pb/cmd/internal/console"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"htdvisser.dev/exp/clicontext"
 )
 
-func runHomeNetwork() {
+func runHomeNetwork(ctx context.Context) error {
 	// Subscribe to all MAC payload and join-requests.
 	filters := []*packetbroker.RoutingFilter{
 		{
@@ -51,15 +56,18 @@ func runHomeNetwork() {
 		Filters:          filters,
 	})
 	if err != nil {
-		logger.Fatal("Failed to subscribe", zap.Error(err))
+		logger.Error("Failed to subscribe", zap.Error(err))
+		clicontext.SetExitCode(ctx, 1)
+		return err
 	}
 	for {
 		msg, err := stream.Recv()
-		if err == io.EOF {
-			return
-		}
 		if err != nil {
-			logger.Fatal("Stream failed", zap.Error(err))
+			if !errors.Is(err, io.EOF) && status.Code(err) != codes.Canceled {
+				logger.Error("Stream failed", zap.Error(err))
+				clicontext.SetExitCode(ctx, 1)
+			}
+			return err
 		}
 		console.WriteProto(msg)
 	}

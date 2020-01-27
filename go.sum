@@ -142,5 +142,7 @@ honnef.co/go/tools v0.0.0-20190102054323-c2f93a96b099/go.mod h1:rf3lG4BRIbNafJWh
 honnef.co/go/tools v0.0.0-20190523083050-ea95bdfd59fc/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
 honnef.co/go/tools v0.0.1-2019.2.3 h1:3JgtbtFHMiCmsznwGVTUWbgGov+pVqnlf1dEJTNAXeM=
 honnef.co/go/tools v0.0.1-2019.2.3/go.mod h1:a3bituU0lyd329TUQxRnasdCoJDkEUEAqEt0JzvZhAg=
+htdvisser.dev/exp/clicontext v0.0.0-20200118131415-2ff239b506a0 h1:2I5JPuYLHjCu2Rx7uhISbmqqQRi2im3pN87dlih13Iw=
+htdvisser.dev/exp/clicontext v0.0.0-20200118131415-2ff239b506a0/go.mod h1:ENk5Zc9tuQJ2QBPCdMg4XSHFuUwnDV1cEdOnva8z5MM=
 mvdan.cc/gofumpt v0.0.0-20191220113447-b896b372089f h1:Z+ouMJWoMHfQH5DtA3YaqivBTI+dKf5u/COCdUGp/+M=
 mvdan.cc/gofumpt v0.0.0-20191220113447-b896b372089f/go.mod h1:9pF2bM7/3uEfOO27Zz792EwaU4mAqG2HJJls/0GRK9c=

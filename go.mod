@@ -13,5 +13,6 @@ require (
 	golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f
 	golang.org/x/tools v0.0.0-20200103221440-774c71fcf114 // indirect
 	google.golang.org/grpc v1.26.0
+	htdvisser.dev/exp/clicontext v0.0.0-20200118131415-2ff239b506a0
 	mvdan.cc/gofumpt v0.0.0-20191220113447-b896b372089f
 )
