@@ -1,0 +1,16 @@
+{
+  "phyPayload": "YJNnjgCAJwAinVl6k6U=",
+  "rx1": {
+    "frequency": "868100000",
+    "dataRateIndex": 5
+  },
+  "rx2": {
+    "frequency": "869525000",
+    "dataRateIndex": 0
+  },
+  "rx1Delay": "5s",
+  "class": "CLASS_A",
+  "forwarderUplinkToken": "AQID",
+  "gatewayUplinkToken": "AQID",
+  "priority": "NORMAL"
+}
