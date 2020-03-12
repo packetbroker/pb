@@ -8,7 +8,7 @@ import (
 	"io"
 
 	"github.com/gogo/protobuf/jsonpb"
-	packetbroker "go.packetbroker.org/api/v1"
+	packetbroker "go.packetbroker.org/api/v2beta1"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

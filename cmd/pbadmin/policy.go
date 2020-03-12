@@ -8,7 +8,7 @@ import (
 	"os"
 
 	flag "github.com/spf13/pflag"
-	packetbroker "go.packetbroker.org/api/v1"
+	packetbroker "go.packetbroker.org/api/v2beta1"
 	"go.packetbroker.org/pb/cmd/internal/console"
 	"go.uber.org/zap"
 	"htdvisser.dev/exp/clicontext"
@@ -91,23 +91,21 @@ func runPolicy(ctx context.Context) {
 		input.policy.setDownlink != "" || input.policy.unsetDownlink {
 		var (
 			policy = &packetbroker.RoutingPolicy{
-				Uplink:   parseUplinkPolicy(),
-				Downlink: parseDownlinkPolicy(),
+				ForwarderNetId:    uint32(*input.forwarderNetID),
+				ForwarderTenantId: input.forwarderTenantID,
+				Uplink:            parseUplinkPolicy(),
+				Downlink:          parseDownlinkPolicy(),
 			}
 			err error
 		)
 		if input.policy.defaults {
-			_, err = client.SetDefaultPolicy(ctx, &packetbroker.SetDefaultRoutingPolicyRequest{
-				ForwarderNetId: uint32(*input.forwarderNetID),
-				ForwarderId:    input.forwarderID,
-				Policy:         policy,
+			_, err = client.SetDefaultPolicy(ctx, &packetbroker.SetRoutingPolicyRequest{
+				Policy: policy,
 			})
 		} else {
-			_, err = client.SetHomeNetworkPolicy(ctx, &packetbroker.SetHomeNetworkRoutingPolicyRequest{
-				ForwarderNetId:   uint32(*input.forwarderNetID),
-				ForwarderId:      input.forwarderID,
-				HomeNetworkNetId: uint32(*input.homeNetworkNetID),
-				Policy:           policy,
+			policy.HomeNetworkNetId = uint32(*input.homeNetworkNetID)
+			_, err = client.SetHomeNetworkPolicy(ctx, &packetbroker.SetRoutingPolicyRequest{
+				Policy: policy,
 			})
 		}
 		if err != nil {
@@ -123,14 +121,14 @@ func runPolicy(ctx context.Context) {
 		)
 		if input.policy.defaults {
 			res, err = client.GetDefaultPolicy(ctx, &packetbroker.GetDefaultRoutingPolicyRequest{
-				ForwarderNetId: uint32(*input.forwarderNetID),
-				ForwarderId:    input.forwarderID,
+				ForwarderNetId:    uint32(*input.forwarderNetID),
+				ForwarderTenantId: input.forwarderTenantID,
 			})
 		} else {
 			res, err = client.GetHomeNetworkPolicy(ctx, &packetbroker.GetHomeNetworkRoutingPolicyRequest{
-				ForwarderNetId:   uint32(*input.forwarderNetID),
-				ForwarderId:      input.forwarderID,
-				HomeNetworkNetId: uint32(*input.homeNetworkNetID),
+				ForwarderNetId:    uint32(*input.forwarderNetID),
+				ForwarderTenantId: input.forwarderTenantID,
+				HomeNetworkNetId:  uint32(*input.homeNetworkNetID),
 			})
 		}
 		if err != nil {

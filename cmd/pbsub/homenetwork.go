@@ -7,7 +7,7 @@ import (
 	"errors"
 	"io"
 
-	packetbroker "go.packetbroker.org/api/v1"
+	packetbroker "go.packetbroker.org/api/v2beta1"
 	"go.packetbroker.org/pb/cmd/internal/console"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
