@@ -34,8 +34,19 @@ basicConstraints = CA:FALSE
 keyUsage         = digitalSignature
 extendedKeyUsage = clientAuth
 
-# The URI has the format pb://[ID@]NETID
-#    NETID: 6 digit hex LoRa Alliance issued NetID
-#    ID:    optional Forwarder ID
-
-subjectAltName   = URI:pb://demo@000000
+# The URI has the format pb://[ID@]NETID[/TENANTID]
+#    NETID:    6 digit hex LoRa Alliance issued NetID
+#    ID:       optional Forwarder ID
+#    TENANTID: optional tenant ID
+#
+# With Forwarder ID and tenant ID:
+# subjectAltName = URI:pb://demo@000000/tenant-a
+#
+# With tenant ID only:
+# subjectAltName = URI:pb://000000/tenant-a
+#
+# With Forwarder ID only:
+# subjectAltName = URI:pb://demo@000000
+#
+# With NetID only:
+subjectAltName = URI:pb://000000
