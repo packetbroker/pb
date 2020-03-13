@@ -17,14 +17,21 @@ import (
 
 const usage = `Usage:
 
-      Get policy:
-      $ pbadmin policy get --forwarder-net-id NETID [--forwarder-id ID] [--defaults|--home-network-net-id NETID]
+      Tenant management:
+      $ pbadmin tenant list --net-id NETID
+      $ pbadmin tenant get --net-id NETID [--tenant-id TENANTID]
+      $ pbadmin tenant set --net-id NETID [--tenant-id TENANTID] [--dev-addr-prefixes PREFIX,PREFIX]
+      $ pbadmin tenant delete --net-id NETID [--tenant-id TENANTID]
 
-      Set policy:
-      $ pbadmin policy set --forwarder-net-id NETID [--forwarder-id ID] [--defaults|--home-network-net-id NETID] \
+      Routing policy management:
+      $ pbadmin policy --forwarder-net-id NETID [--forwarder-tenant-id TENANTID] \
+            [--defaults|--home-network-net-id NETID [--home-network-tenant-id TENANTID]]
+      $ pbadmin policy --forwarder-net-id NETID [--forwarder-id ID] \
+            [--defaults|--home-network-net-id NETID [--home-network-tenant-id TENANTID]] \
             [--set-uplink JMASLD|--unset-uplink] [--set-downlink JMA|--unset-downlink]
 
 Commands:
+      tenant
       policy
 
 Flags:`
@@ -65,6 +72,8 @@ func main() {
 	defer conn.Close()
 
 	switch input.mode {
+	case "tenant":
+		runTenant(ctx)
 	case "policy":
 		runPolicy(ctx)
 	}
