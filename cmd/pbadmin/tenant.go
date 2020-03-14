@@ -8,7 +8,7 @@ import (
 	"os"
 
 	flag "github.com/spf13/pflag"
-	packetbroker "go.packetbroker.org/api/v2beta1"
+	packetbroker "go.packetbroker.org/api/v2"
 	"go.packetbroker.org/pb/cmd/internal/console"
 	"go.uber.org/zap"
 	"htdvisser.dev/exp/clicontext"
@@ -21,9 +21,9 @@ func parseTenantFlags() bool {
 	}
 	switch os.Args[2] {
 	case "list":
-	case "get":
 	case "set":
 		flag.CommandLine.StringSliceVar(&input.tenant.devAddrPrefixes, "dev-addr-prefixes", nil, "DevAddr prefixes")
+	case "get":
 	case "delete":
 	default:
 		fmt.Fprintln(os.Stderr, "Invalid command")
@@ -44,26 +44,26 @@ func runTenant(ctx context.Context) {
 	client := packetbroker.NewTenantManagerClient(conn)
 	switch os.Args[2] {
 	case "list":
-		res, err := client.ListTenants(ctx, &packetbroker.ListTenantsRequest{
-			NetId: uint32(*input.netID),
-		})
-		if err != nil {
-			logger.Error("Failed to list tenants", zap.Error(err))
-			clicontext.SetExitCode(ctx, 1)
-			return
+		pageSize := 50
+		for i := 0; ; i += pageSize {
+			res, err := client.ListTenants(ctx, &packetbroker.ListTenantsRequest{
+				NetId:  uint32(*input.netID),
+				Offset: uint32(i),
+				Limit:  uint32(pageSize),
+			})
+			if err != nil {
+				logger.Error("Failed to list tenants", zap.Error(err))
+				clicontext.SetExitCode(ctx, 1)
+				return
+			}
+			for _, t := range res.Tenants {
+				console.WriteProto(t)
+			}
+			if i+len(res.Tenants) >= int(res.Total) {
+				break
+			}
 		}
-		console.WriteProto(res)
-	case "get":
-		tenant, err := client.GetTenant(ctx, &packetbroker.GetTenantRequest{
-			NetId:    uint32(*input.netID),
-			TenantId: input.tenantID,
-		})
-		if err != nil {
-			logger.Error("Failed to get tenant", zap.Error(err))
-			clicontext.SetExitCode(ctx, 1)
-			return
-		}
-		console.WriteProto(tenant)
+
 	case "set":
 		prefixes := make([]*packetbroker.DevAddrPrefix, len(input.tenant.devAddrPrefixes))
 		for i, s := range input.tenant.devAddrPrefixes {
@@ -87,6 +87,19 @@ func runTenant(ctx context.Context) {
 			clicontext.SetExitCode(ctx, 1)
 			return
 		}
+
+	case "get":
+		tenant, err := client.GetTenant(ctx, &packetbroker.GetTenantRequest{
+			NetId:    uint32(*input.netID),
+			TenantId: input.tenantID,
+		})
+		if err != nil {
+			logger.Error("Failed to get tenant", zap.Error(err))
+			clicontext.SetExitCode(ctx, 1)
+			return
+		}
+		console.WriteProto(tenant)
+
 	case "delete":
 		_, err := client.DeleteTenant(ctx, &packetbroker.DeleteTenantRequest{
 			NetId:    uint32(*input.netID),

@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	flag "github.com/spf13/pflag"
-	packetbroker "go.packetbroker.org/api/v2beta1"
+	packetbroker "go.packetbroker.org/api/v2"
 	"go.packetbroker.org/pb/cmd/internal/config"
 	"go.packetbroker.org/pb/internal/client"
 )
@@ -32,11 +32,10 @@ type inputData struct {
 		devAddrPrefixes []string
 	}
 	policy struct {
-		defaults      bool
-		setUplink     string
-		unsetUplink   bool
-		setDownlink   string
-		unsetDownlink bool
+		defaults    bool
+		setUplink   string
+		setDownlink string
+		unset       bool
 	}
 }
 

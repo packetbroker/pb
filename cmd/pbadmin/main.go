@@ -24,11 +24,14 @@ const usage = `Usage:
       $ pbadmin tenant delete --net-id NETID [--tenant-id TENANTID]
 
       Routing policy management:
-      $ pbadmin policy --forwarder-net-id NETID [--forwarder-tenant-id TENANTID] \
+      $ pbadmin policy get --forwarder-net-id NETID [--forwarder-tenant-id TENANTID] \
             [--defaults|--home-network-net-id NETID [--home-network-tenant-id TENANTID]]
-      $ pbadmin policy --forwarder-net-id NETID [--forwarder-id ID] \
+      $ pbadmin policy set --forwarder-net-id NETID [--forwarder-id ID] \
             [--defaults|--home-network-net-id NETID [--home-network-tenant-id TENANTID]] \
-            [--set-uplink JMASLD|--unset-uplink] [--set-downlink JMA|--unset-downlink]
+            --set-uplink JMASL --set-downlink JMA
+      $ pbadmin policy set --forwarder-net-id NETID [--forwarder-id ID] \
+            [--defaults|--home-network-net-id NETID [--home-network-tenant-id TENANTID]] \
+            --unset
 
 Commands:
       tenant

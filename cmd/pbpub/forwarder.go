@@ -8,7 +8,7 @@ import (
 	"io"
 
 	"github.com/gogo/protobuf/jsonpb"
-	packetbroker "go.packetbroker.org/api/v2beta1"
+	packetbroker "go.packetbroker.org/api/v2"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -32,9 +32,10 @@ func runForwarder(ctx context.Context) error {
 			return err
 		}
 		stream, err := client.Publish(ctx, &packetbroker.PublishUplinkMessageRequest{
-			ForwarderNetId: uint32(*input.forwarderNetID),
-			ForwarderId:    input.forwarderID,
-			Message:        msg,
+			ForwarderNetId:    uint32(*input.forwarderNetID),
+			ForwarderId:       input.forwarderID,
+			ForwarderTenantId: input.forwarderTenantID,
+			Message:           msg,
 		})
 		if err != nil {
 			logger.Error("Failed to publish uplink message", zap.Error(err))

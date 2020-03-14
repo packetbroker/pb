@@ -75,25 +75,25 @@ As a Forwarder, you can configure a default routing policy for all Home Networks
 As Forwarder NetID `000042`, to see the default routing policy:
 
 ```bash
-$ pbadmin policy --forwarder-net-id 000042 --defaults
+$ pbadmin policy get --forwarder-net-id 000042 --defaults
 ```
 
 To see the routing policy for Home Network NetID `C00123`:
 
 ```bash
-$ pbadmin policy --forwarder-net-id 000042 --home-network-net-id C00123
+$ pbadmin policy get --forwarder-net-id 000042 --home-network-net-id C00123
 ```
 
 To see the routing policy for you own network:
 
 ```bash
-$ pbadmin policy --forwarder-net-id 000042 --home-network-net-id 000042
+$ pbadmin policy get --forwarder-net-id 000042 --home-network-net-id 000042
 ```
 
 To see the routing policy of Forwrader tenant `tenant-a` for Home Network NetID `C00123` tenant `tenant-b`:
 
 ```bash
-$ pbadmin policy --forwarder-net-id 000042 --forwarder-tenant-id tenant-a \
+$ pbadmin policy get --forwarder-net-id 000042 --forwarder-tenant-id tenant-a \
     --home-network-net-id C00123 --home-network-tenant-id tenant-b
 ```
 
@@ -106,31 +106,30 @@ You can set policies by specifying letters from the following table:
 | Application data | `A` | `A` |
 | Signal Quality | `S` | |
 | Localization | `L` | |
-| Allow Downlink | `D` | |
 
 To enable all exchange by default:
 
 ```bash
-$ pbadmin policy --forwarder-net-id 000042 --defaults \
-    --set-uplink JMASLD --set-downlink --JMA
+$ pbadmin policy set --forwarder-net-id 000042 --defaults \
+    --set-uplink JMASL --set-downlink --JMA
 ```
 
 To enable only device activation and MAC commands in both directions with Home Network NetID `C00123`:
 
 ```bash
-$ pbadmin policy --forwarder-net-id 000042 --home-network-net-id C00123 \
-    --set-uplink JMD --set-downlink --JM
+$ pbadmin policy set --forwarder-net-id 000042 --home-network-net-id C00123 \
+    --set-uplink JM --set-downlink --JM
 ```
 
 To enable only device activation and MAC commands in both directions of Forwarder tenant `tenant-a` with Home Network NetID `C00123` tenant `tenant-b`:
 
 ```bash
-$ pbadmin policy --forwarder-net-id 000042 --forwarder-tenant-id tenant-a \
+$ pbadmin policy set --forwarder-net-id 000042 --forwarder-tenant-id tenant-a \
     --home-network-net-id C00123 --home-network-tenant-id tenant-b \
-    --set-uplink JMD --set-downlink --JM
+    --set-uplink JM --set-downlink --JM
 ```
 
-To remove the uplink and downlink policy, use `--unset-uplink` and `--unset-downlink` respectively.
+To unset the routing policy, use `--unset`.
 
 ### Publish and Subscribe Traffic
 
@@ -138,32 +137,40 @@ To subscribe to routed downlink traffic:
 
 ```bash
 $ pbsub --forwarder-net-id 000042 --forwarder-id example --group debug
+$ pbsub --forwarder-net-id 000042 --forwarder-id example \
+    --forwarder-tenant-id test --group debug
 ```
 
 To subscribe to routed uplink traffic:
 
 ```bash
 $ pbsub --home-network-net-id 000042 --group debug
+$ pbsub --home-network-net-id 000042 --home-network-tenant-id test --group debug
 ```
 
 You can also subscribe to routed uplink traffic from your own Forwarder NetID and optionally a specific ID:
 
 ```bash
-$ pbsub --home-network-net-id 000042 --forwarder-net-id 000042 --forwarder-id example --group debug
+$ pbsub --home-network-net-id 000042 --filter-forwarder-net-id 000042 \
+    --filter-forwarder-id example --group debug
 ```
 
->**Important**: When using `pbsub`, always specify a shared subscription group that is different from the group you use in production. Otherwise, traffic gets split to your production subscriptions and your testing subscriptions.
+>**Important**: When using `pbsub`, specify a shared subscription group that is different from the group used in production. Otherwise, traffic gets split to your production subscriptions and your testing subscriptions.
 
 To publish an uplink message for testing, you can pipe a JSON file to `pbpub`, specifying a Forwarder:
 
 ```bash
 $ cat uplink.json | pbpub --forwarder-net-id 000042 --forwarder-id example
+$ cat uplink.json | pbpub --forwarder-net-id 000042 --forwarder-id example \
+    --forwarder-tenant-id test
 ```
 
 To publish a downlink message for testing, you can pipe a JSON file to `pbpub`, specifying a Home Network:
 
 ```bash
-$ cat downlink.json | pbpub --home-network-net-id
+$ cat downlink.json | pbpub --home-network-net-id 000042
+$ cat downlink.json | pbpub --home-network-net-id 000042 \
+    --home-network-tenant-id test
 ```
 
 See [Examples](./examples) for example JSON files.

@@ -7,7 +7,7 @@ import (
 	"errors"
 	"io"
 
-	packetbroker "go.packetbroker.org/api/v2beta1"
+	packetbroker "go.packetbroker.org/api/v2"
 	"go.packetbroker.org/pb/cmd/internal/console"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -51,9 +51,10 @@ func runHomeNetwork(ctx context.Context) error {
 
 	client := packetbroker.NewRouterHomeNetworkDataClient(conn)
 	stream, err := client.Subscribe(ctx, &packetbroker.SubscribeHomeNetworkRequest{
-		HomeNetworkNetId: uint32(*input.homeNetworkNetID),
-		Group:            input.group,
-		Filters:          filters,
+		HomeNetworkNetId:    uint32(*input.homeNetworkNetID),
+		HomeNetworkTenantId: input.homeNetworkTenantID,
+		Group:               input.group,
+		Filters:             filters,
 	})
 	if err != nil {
 		logger.Error("Failed to subscribe", zap.Error(err))

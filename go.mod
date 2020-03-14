@@ -6,7 +6,7 @@ require (
 	github.com/gogo/protobuf v1.3.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
 	github.com/spf13/pflag v1.0.5
-	go.packetbroker.org/api/v2beta1 v0.0.0-20200313220911-1725a47cfed2
+	go.packetbroker.org/api/v2 v2.0.0-20200323093014-1b2f5861ed08
 	go.uber.org/multierr v1.5.0 // indirect
 	go.uber.org/zap v1.14.0
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b
