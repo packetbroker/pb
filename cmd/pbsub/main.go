@@ -18,10 +18,12 @@ import (
 const usage = `Usage:
 
       Subscribe as Forwarder:
-      $ pbsub --forwarder-net-id NETID [--forwarder-id ID]
+      $ pbsub --forwarder-net-id NETID [--forwarder-id ID] \
+          [--forwarder-tenant-id TENANTID]
 
       Subscribe as Home Network:
-      $ pbsub --home-network-net-id NETID [--filter-forwarder-net-id NETID [--filter-forwarder-id ID]]
+      $ pbsub --home-network-net-id NETID [--home-network-tenant-id TENANTID] \
+          [--filter-forwarder-net-id NETID [--filter-forwarder-id ID]]
 
 Flags:`
 

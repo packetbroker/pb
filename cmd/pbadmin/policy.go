@@ -8,41 +8,55 @@ import (
 	"os"
 
 	flag "github.com/spf13/pflag"
-	packetbroker "go.packetbroker.org/api/v1"
+	packetbroker "go.packetbroker.org/api/v2"
 	"go.packetbroker.org/pb/cmd/internal/console"
 	"go.uber.org/zap"
 	"htdvisser.dev/exp/clicontext"
 )
 
 func parsePolicyFlags() bool {
-	flag.BoolVar(&input.policy.defaults, "defaults", false, "default policy")
-	flag.StringVar(&input.policy.setUplink, "set-uplink", "", "concatenated J (join-request), M (MAC data), A (application data), S (signal quality), L (localization), D (allow downlink)")
-	flag.BoolVar(&input.policy.unsetUplink, "unset-uplink", false, "unset uplink policy")
-	flag.StringVar(&input.policy.setDownlink, "set-downlink", "", "concatenated J (join-accept), M (MAC data), A (application data)")
-	flag.BoolVar(&input.policy.unsetDownlink, "unset-downlink", false, "unset downlink policy")
+	if len(os.Args) < 3 {
+		fmt.Fprintln(os.Stderr, "Missing command")
+		return false
+	}
+	switch os.Args[2] {
+	case "list":
+	case "set":
+		flag.StringVar(&input.policy.setUplink, "set-uplink", "", "concatenated J (join-request), M (MAC data), A (application data), S (signal quality), L (localization)")
+		flag.StringVar(&input.policy.setDownlink, "set-downlink", "", "concatenated J (join-accept), M (MAC data), A (application data)")
+		flag.BoolVar(&input.policy.unset, "unset", false, "unset policy")
+		fallthrough
+	case "get":
+		flag.BoolVar(&input.policy.defaults, "defaults", false, "default policy")
+	default:
+		fmt.Fprintln(os.Stderr, "Invalid command")
+		return false
+	}
 
-	flag.CommandLine.Parse(os.Args[2:])
+	flag.CommandLine.Parse(os.Args[3:])
 
 	if input.forwarderNetIDHex == "" {
 		fmt.Fprintln(os.Stderr, "Must set forwarder-net-id")
 		return false
 	}
-	if input.policy.defaults == (input.homeNetworkNetIDHex != "") {
-		fmt.Fprintln(os.Stderr, "Must set either home-network-net-id or defaults")
-		return false
-	}
-	if input.policy.setUplink != "" && input.policy.unsetUplink || input.policy.setDownlink != "" && input.policy.unsetDownlink {
-		fmt.Fprintln(os.Stderr, "Cannot set and unset policies")
-		return false
+	switch os.Args[2] {
+	case "set":
+		if (input.policy.setUplink != "" || input.policy.setDownlink != "") == input.policy.unset {
+			fmt.Fprintln(os.Stderr, "Must set or unset policies")
+			return false
+		}
+		fallthrough
+	case "get":
+		if input.policy.defaults == (input.homeNetworkNetIDHex != "") {
+			fmt.Fprintln(os.Stderr, "Must set either home-network-net-id or defaults")
+			return false
+		}
 	}
 
 	return true
 }
 
 func parseUplinkPolicy() *packetbroker.RoutingPolicy_Uplink {
-	if input.policy.setUplink == "" {
-		return nil
-	}
 	var res packetbroker.RoutingPolicy_Uplink
 	for _, l := range input.policy.setUplink {
 		switch l {
@@ -56,8 +70,6 @@ func parseUplinkPolicy() *packetbroker.RoutingPolicy_Uplink {
 			res.SignalQuality = true
 		case 'L':
 			res.Localization = true
-		case 'D':
-			res.AllowDownlink = true
 		default:
 			logger.Warn("Invalid uplink policy", zap.String("designator", string(l)))
 		}
@@ -66,9 +78,6 @@ func parseUplinkPolicy() *packetbroker.RoutingPolicy_Uplink {
 }
 
 func parseDownlinkPolicy() *packetbroker.RoutingPolicy_Downlink {
-	if input.policy.setDownlink == "" {
-		return nil
-	}
 	var res packetbroker.RoutingPolicy_Downlink
 	for _, l := range input.policy.setDownlink {
 		switch l {
@@ -87,27 +96,48 @@ func parseDownlinkPolicy() *packetbroker.RoutingPolicy_Downlink {
 
 func runPolicy(ctx context.Context) {
 	client := packetbroker.NewRoutingPolicyManagerClient(conn)
-	if input.policy.setUplink != "" || input.policy.unsetUplink ||
-		input.policy.setDownlink != "" || input.policy.unsetDownlink {
+	switch os.Args[2] {
+	case "list":
+		pageSize := 50
+		for i := 0; ; i += pageSize {
+			res, err := client.ListHomeNetworkPolicies(ctx, &packetbroker.ListHomeNetworkRoutingPoliciesRequest{
+				ForwarderNetId:    uint32(*input.forwarderNetID),
+				ForwarderTenantId: input.forwarderTenantID,
+				Offset:            uint32(i),
+				Limit:             uint32(pageSize),
+			})
+			if err != nil {
+				logger.Error("Failed to list home network policies", zap.Error(err))
+				clicontext.SetExitCode(ctx, 1)
+				return
+			}
+			for _, p := range res.Policies {
+				console.WriteProto(p)
+			}
+			if i+len(res.Policies) >= int(res.Total) {
+				break
+			}
+		}
+
+	case "set":
 		var (
 			policy = &packetbroker.RoutingPolicy{
-				Uplink:   parseUplinkPolicy(),
-				Downlink: parseDownlinkPolicy(),
+				ForwarderNetId:    uint32(*input.forwarderNetID),
+				ForwarderTenantId: input.forwarderTenantID,
+				Uplink:            parseUplinkPolicy(),
+				Downlink:          parseDownlinkPolicy(),
 			}
 			err error
 		)
 		if input.policy.defaults {
-			_, err = client.SetDefaultPolicy(ctx, &packetbroker.SetDefaultRoutingPolicyRequest{
-				ForwarderNetId: uint32(*input.forwarderNetID),
-				ForwarderId:    input.forwarderID,
-				Policy:         policy,
+			_, err = client.SetDefaultPolicy(ctx, &packetbroker.SetRoutingPolicyRequest{
+				Policy: policy,
 			})
 		} else {
-			_, err = client.SetHomeNetworkPolicy(ctx, &packetbroker.SetHomeNetworkRoutingPolicyRequest{
-				ForwarderNetId:   uint32(*input.forwarderNetID),
-				ForwarderId:      input.forwarderID,
-				HomeNetworkNetId: uint32(*input.homeNetworkNetID),
-				Policy:           policy,
+			policy.HomeNetworkNetId = uint32(*input.homeNetworkNetID)
+			policy.HomeNetworkTenantId = input.homeNetworkTenantID
+			_, err = client.SetHomeNetworkPolicy(ctx, &packetbroker.SetRoutingPolicyRequest{
+				Policy: policy,
 			})
 		}
 		if err != nil {
@@ -116,21 +146,22 @@ func runPolicy(ctx context.Context) {
 			return
 		}
 		console.WriteProto(policy)
-	} else {
+
+	case "get":
 		var (
 			res *packetbroker.GetRoutingPolicyResponse
 			err error
 		)
 		if input.policy.defaults {
 			res, err = client.GetDefaultPolicy(ctx, &packetbroker.GetDefaultRoutingPolicyRequest{
-				ForwarderNetId: uint32(*input.forwarderNetID),
-				ForwarderId:    input.forwarderID,
+				ForwarderNetId:    uint32(*input.forwarderNetID),
+				ForwarderTenantId: input.forwarderTenantID,
 			})
 		} else {
 			res, err = client.GetHomeNetworkPolicy(ctx, &packetbroker.GetHomeNetworkRoutingPolicyRequest{
-				ForwarderNetId:   uint32(*input.forwarderNetID),
-				ForwarderId:      input.forwarderID,
-				HomeNetworkNetId: uint32(*input.homeNetworkNetID),
+				ForwarderNetId:    uint32(*input.forwarderNetID),
+				ForwarderTenantId: input.forwarderTenantID,
+				HomeNetworkNetId:  uint32(*input.homeNetworkNetID),
 			})
 		}
 		if err != nil {

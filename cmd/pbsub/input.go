@@ -7,7 +7,7 @@ import (
 	"os"
 
 	flag "github.com/spf13/pflag"
-	packetbroker "go.packetbroker.org/api/v1"
+	packetbroker "go.packetbroker.org/api/v2"
 	"go.packetbroker.org/pb/cmd/internal/config"
 	"go.packetbroker.org/pb/internal/client"
 )
@@ -18,8 +18,10 @@ type inputData struct {
 	forwarderNetIDHex   string
 	forwarderNetID      *packetbroker.NetID
 	forwarderID         string
+	forwarderTenantID   string
 	homeNetworkNetIDHex string
 	homeNetworkNetID    *packetbroker.NetID
+	homeNetworkTenantID string
 	group               string
 	homeNetworkFilters  struct {
 		forwarderNetIDHex string
@@ -36,7 +38,9 @@ func parseInput() bool {
 
 	flag.StringVar(&input.forwarderNetIDHex, "forwarder-net-id", "", "NetID of the Forwarder (hex)")
 	flag.StringVar(&input.forwarderID, "forwarder-id", "", "ID of the Forwarder")
+	flag.StringVar(&input.forwarderTenantID, "forwarder-tenant-id", "", "Tenant ID of the Forwarder")
 	flag.StringVar(&input.homeNetworkNetIDHex, "home-network-net-id", "", "NetID of the Home Network (hex)")
+	flag.StringVar(&input.homeNetworkTenantID, "home-network-tenant-id", "", "Tenant ID of the Home Network")
 	flag.StringVar(&input.group, "group", "", "group name of shared subscription")
 	flag.StringVar(&input.homeNetworkFilters.forwarderNetIDHex, "filter-forwarder-net-id", "", "filter Forwarder by NetID")
 	flag.StringVar(&input.homeNetworkFilters.forwarderID, "filter-forwarder-id", "", "filter Forwarder by ID")

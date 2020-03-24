@@ -4,15 +4,14 @@ go 1.13
 
 require (
 	github.com/gogo/protobuf v1.3.1
-	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0
+	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
 	github.com/spf13/pflag v1.0.5
-	go.packetbroker.org/api v1.0.2
-	go.uber.org/atomic v1.5.1 // indirect
-	go.uber.org/multierr v1.4.0 // indirect
-	go.uber.org/zap v1.13.0
-	golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f
-	golang.org/x/tools v0.0.0-20200103221440-774c71fcf114 // indirect
-	google.golang.org/grpc v1.26.0
-	htdvisser.dev/exp/clicontext v0.0.0-20200118131415-2ff239b506a0
+	go.packetbroker.org/api/v2 v2.0.0
+	go.uber.org/zap v1.14.1
+	golang.org/x/lint v0.0.0-20200302205851-738671d3881b
+	golang.org/x/tools v0.0.0-20200324053659-5c746ccfa245 // indirect
+	google.golang.org/grpc v1.28.0
+	honnef.co/go/tools v0.0.1-2020.1.3 // indirect
+	htdvisser.dev/exp/clicontext v0.0.0-20200220095133-8c004734b8b8
 	mvdan.cc/gofumpt v0.0.0-20191220113447-b896b372089f
 )

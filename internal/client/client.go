@@ -56,16 +56,16 @@ func appendDefaultPort(target string, port int) (string, error) {
 func DialContext(ctx context.Context, logger *zap.Logger, config *Config, defaultPort int) (*grpc.ClientConn, error) {
 	cert, err := tls.LoadX509KeyPair(config.CertFile, config.KeyFile)
 	if err != nil {
-		return nil, fmt.Errorf("client: failed to load X.509 certificate file %q and key file %q: %w",
+		return nil, fmt.Errorf("client: load X.509 certificate file %q and key file %q: %w",
 			config.CertFile, config.KeyFile, err)
 	}
 	buf, err := ioutil.ReadFile(config.CAFile)
 	if err != nil {
-		return nil, fmt.Errorf("client: failed to read CA file %q: %w", config.CAFile, err)
+		return nil, fmt.Errorf("client: read CA file %q: %w", config.CAFile, err)
 	}
 	rootCAs := x509.NewCertPool()
 	if !rootCAs.AppendCertsFromPEM(buf) {
-		return nil, fmt.Errorf("client: failed to append CAs from %q", config.CAFile)
+		return nil, fmt.Errorf("client: append CAs from %q", config.CAFile)
 	}
 	creds := credentials.NewTLS(&tls.Config{
 		Certificates: []tls.Certificate{cert},
