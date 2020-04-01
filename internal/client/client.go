@@ -19,6 +19,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
 )
 
 // Config configures Client.
@@ -87,6 +88,11 @@ func DialContext(ctx context.Context, logger *zap.Logger, config *Config, defaul
 	return grpc.DialContext(ctx, address,
 		grpc.WithTransportCredentials(creds),
 		grpc.WithBlock(),
+		grpc.WithKeepaliveParams(keepalive.ClientParameters{
+			Time:                5 * time.Minute,
+			Timeout:             20 * time.Second,
+			PermitWithoutStream: false,
+		}),
 		grpc.FailOnNonTempDialError(true),
 		grpc.WithUserAgent(fmt.Sprintf("%s go/%s %s/%s",
 			filepath.Base(os.Args[0]),
