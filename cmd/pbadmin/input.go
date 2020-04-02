@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	flag "github.com/spf13/pflag"
-	packetbroker "go.packetbroker.org/api/v2"
+	packetbroker "go.packetbroker.org/api/v3"
 	"go.packetbroker.org/pb/cmd/internal/config"
 	"go.packetbroker.org/pb/internal/client"
 )
