@@ -16,7 +16,7 @@
   "forwarderReceiveTime": "2020-01-24T16:46:01Z",
   "gatewayReceiveTime": "2020-01-24T16:46:00Z",
   "gatewayRegion": "EU_863_870",
-  "data_rate_index": 5,
+  "dataRateIndex": 5,
   "frequency": 868100000,
   "gatewayMetadata": {
     "teaser": {
