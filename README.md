@@ -32,8 +32,8 @@ If you don't specify a port, `pbadmin`, `pbpub` and `pbsub` use the default port
 
 | Service | Port | Used By |
 | --- | ---: | --- |
-| Control Plane | `1912` | `pbadmin` |
-| Data Plane | `1913` | `pbpub`, `pbsub` |
+| Control Plane | `1900` | `pbadmin` |
+| Data Plane | `1900` | `pbpub`, `pbsub` |
 
 ### Manage Tenants
 
