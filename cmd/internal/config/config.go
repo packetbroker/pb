@@ -21,7 +21,7 @@ func ClientFlags() {
 	flag.String("address", "", `address of the server "host[:port]" (default $PB_ADDRESS)`)
 	flag.String("cert-file", "cert.pem", "path to a PEM encoded TLS server certificate file")
 	flag.String("key-file", "key.pem", "path to a PEM encoded TLS server key file")
-	flag.String("ca-file", "ca.pem", "path to a file containing PEM encoded root certificate authorities")
+	flag.String("ca-file", "", "path to a file containing PEM encoded root certificate authorities")
 }
 
 // Client returns client configuration.
