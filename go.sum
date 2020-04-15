@@ -49,8 +49,8 @@ github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXf
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.4.0 h1:2E4SXV/wtOkTonXsotYi4li6zVWxYlZuYNCXe9XRJyk=
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
-go.packetbroker.org/api v1.0.2 h1:gmujpnY5i2t8EhoeMnw5Qsoz0jNKcZi/hyOvn8E88y8=
-go.packetbroker.org/api v1.0.2/go.mod h1:Pp00aBCa7AFHc/x5JC57vHkzPrudb4QcgHTKuUHoNaY=
+go.packetbroker.org/api v1.0.3-0.20200331134023-7153d170ce6d h1:bKphWxPPTeFQd+PbMIi77eY8rf/T3bf6r9vdGbZhY0E=
+go.packetbroker.org/api v1.0.3-0.20200331134023-7153d170ce6d/go.mod h1:Pp00aBCa7AFHc/x5JC57vHkzPrudb4QcgHTKuUHoNaY=
 go.uber.org/atomic v1.4.0/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
 go.uber.org/atomic v1.5.0 h1:OI5t8sDa1Or+q8AeE+yKeB/SDYioSHAgcVljj9JIETY=
 go.uber.org/atomic v1.5.0/go.mod h1:sABNBOSYdrvTF6hTgEIbc7YasKWGhgEQZyfxyTvoXHQ=

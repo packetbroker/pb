@@ -8,7 +8,7 @@ import (
 	"io"
 
 	"github.com/gogo/protobuf/jsonpb"
-	packetbroker "go.packetbroker.org/api/v1"
+	packetbroker "go.packetbroker.org/api/v1unary"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -31,7 +31,7 @@ func runHomeNetwork(ctx context.Context) error {
 			}
 			return err
 		}
-		stream, err := client.Publish(ctx, &packetbroker.PublishDownlinkMessageRequest{
+		res, err := client.Publish(ctx, &packetbroker.PublishDownlinkMessageRequest{
 			HomeNetworkNetId: uint32(*input.homeNetworkNetID),
 			ForwarderNetId:   uint32(*input.forwarderNetID),
 			ForwarderId:      input.forwarderID,
@@ -39,20 +39,8 @@ func runHomeNetwork(ctx context.Context) error {
 		})
 		if err != nil {
 			logger.Error("Failed to publish downlink message", zap.Error(err))
-			continue
-		}
-		for {
-			res, err := stream.Recv()
-			if err != nil {
-				if !errors.Is(err, io.EOF) && status.Code(err) != codes.Canceled {
-					logger.Error("Failed to receive publish downlink message progress", zap.Error(err))
-				}
-				break
-			}
-			logger.Info("Publish downlink message state change",
-				zap.String("id", res.Id),
-				zap.String("state", res.State.String()),
-			)
+		} else {
+			logger.Info("Published downlink message", zap.String("id", res.Id))
 		}
 	}
 }
