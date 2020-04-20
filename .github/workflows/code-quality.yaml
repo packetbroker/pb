@@ -1,4 +1,4 @@
-name: Go Code
+name: Code Quality
 
 on:
   push:
@@ -13,12 +13,12 @@ jobs:
     name: Quality
     runs-on: ubuntu-latest
     steps:
-    - name: Install Go
-      uses: actions/setup-go@v1
-      with:
-        go-version: '1.14.1'
     - name: Check out code
-      uses: actions/checkout@v1
+      uses: actions/checkout@v2
+    - name: Install Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: '~1.14'
     - name: Get dependencies
       run: make deps.dev
     - name: Check code quality
@@ -37,15 +37,14 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         go-arch: [amd64, '386']
-        go-version: ['1.13']
     runs-on: ${{ matrix.os }}
     steps:
+    - name: Check out code
+      uses: actions/checkout@v2
     - name: Install Go
-      uses: actions/setup-go@v1
+      uses: actions/setup-go@v2
       with:
-        go-version: ${{ matrix.go-version }}
-    - name: Checkout code
-      uses: actions/checkout@v1
+        go-version: '~1.14'
     - name: Test coverage and races
       run: make test.race
       if: matrix.go-arch != '386'
