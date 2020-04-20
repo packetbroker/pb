@@ -1,5 +1,6 @@
 // Copyright © 2020 The Things Industries B.V.
 
+// Command pbpub publishes traffic to Packet Broker.
 package main
 
 import (

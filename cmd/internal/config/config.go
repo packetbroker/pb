@@ -1,5 +1,6 @@
 // Copyright © 2020 The Things Industries B.V.
 
+// Package config provides configuration used by commands.
 package config
 
 import (

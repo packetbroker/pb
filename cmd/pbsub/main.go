@@ -1,5 +1,6 @@
 // Copyright © 2020 The Things Industries B.V.
 
+// Command pbsub subscribes to Packet Broker traffic.
 package main
 
 import (

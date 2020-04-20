@@ -1,5 +1,6 @@
 // Copyright © 2020 The Things Industries B.V.
 
+// Package logging implements common logging functionality used by commands.
 package logging
 
 import "go.uber.org/zap"

@@ -1,5 +1,6 @@
 // Copyright © 2020 The Things Industries B.V.
 
+// Command pbadmin configures Packet Broker.
 package main
 
 import (

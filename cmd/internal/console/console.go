@@ -1,5 +1,6 @@
 // Copyright © 2020 The Things Industries B.V.
 
+// Package console provides functionality for Console access.
 package console
 
 import (
