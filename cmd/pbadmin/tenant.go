@@ -9,7 +9,7 @@ import (
 
 	flag "github.com/spf13/pflag"
 	packetbroker "go.packetbroker.org/api/v3"
-	"go.packetbroker.org/pb/cmd/internal/console"
+	"go.packetbroker.org/pb/cmd/internal/protojson"
 	"go.uber.org/zap"
 	"htdvisser.dev/exp/clicontext"
 )
@@ -57,7 +57,11 @@ func runTenant(ctx context.Context) {
 				return
 			}
 			for _, t := range res.Tenants {
-				console.WriteProto(t)
+				if err = protojson.Write(os.Stdout, t); err != nil {
+					logger.Error("Failed to convert tenant to JSON", zap.Error(err))
+					clicontext.SetExitCode(ctx, 1)
+					return
+				}
 			}
 			if i+len(res.Tenants) >= int(res.Total) {
 				break
@@ -98,7 +102,11 @@ func runTenant(ctx context.Context) {
 			clicontext.SetExitCode(ctx, 1)
 			return
 		}
-		console.WriteProto(tenant)
+		if err = protojson.Write(os.Stdout, tenant); err != nil {
+			logger.Error("Failed to convert tenant to JSON", zap.Error(err))
+			clicontext.SetExitCode(ctx, 1)
+			return
+		}
 
 	case "delete":
 		_, err := client.DeleteTenant(ctx, &packetbroker.DeleteTenantRequest{
