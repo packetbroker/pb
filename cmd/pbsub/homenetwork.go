@@ -6,9 +6,10 @@ import (
 	"context"
 	"errors"
 	"io"
+	"os"
 
 	packetbroker "go.packetbroker.org/api/v3"
-	"go.packetbroker.org/pb/cmd/internal/console"
+	"go.packetbroker.org/pb/cmd/internal/protojson"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -70,6 +71,8 @@ func runHomeNetwork(ctx context.Context) error {
 			}
 			return err
 		}
-		console.WriteProto(msg)
+		if err = protojson.Write(os.Stdout, msg); err != nil {
+			return err
+		}
 	}
 }

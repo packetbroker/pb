@@ -9,7 +9,7 @@ import (
 
 	flag "github.com/spf13/pflag"
 	packetbroker "go.packetbroker.org/api/v3"
-	"go.packetbroker.org/pb/cmd/internal/console"
+	"go.packetbroker.org/pb/cmd/internal/protojson"
 	"go.uber.org/zap"
 	"htdvisser.dev/exp/clicontext"
 )
@@ -112,7 +112,11 @@ func runPolicy(ctx context.Context) {
 				return
 			}
 			for _, p := range res.Policies {
-				console.WriteProto(p)
+				if err = protojson.Write(os.Stdout, p); err != nil {
+					logger.Error("Failed to convert policy to JSON", zap.Error(err))
+					clicontext.SetExitCode(ctx, 1)
+					return
+				}
 			}
 			if i+len(res.Policies) >= int(res.Total) {
 				break
@@ -145,7 +149,11 @@ func runPolicy(ctx context.Context) {
 			clicontext.SetExitCode(ctx, 1)
 			return
 		}
-		console.WriteProto(policy)
+		if err = protojson.Write(os.Stdout, policy); err != nil {
+			logger.Error("Failed to convert policy to JSON", zap.Error(err))
+			clicontext.SetExitCode(ctx, 1)
+			return
+		}
 
 	case "get":
 		var (
@@ -169,6 +177,6 @@ func runPolicy(ctx context.Context) {
 			clicontext.SetExitCode(ctx, 1)
 			return
 		}
-		console.WriteProto(res.Policy)
+		protojson.Write(os.Stdout, res.Policy)
 	}
 }

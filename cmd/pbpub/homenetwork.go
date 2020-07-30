@@ -7,8 +7,8 @@ import (
 	"errors"
 	"io"
 
-	"github.com/gogo/protobuf/jsonpb"
 	packetbroker "go.packetbroker.org/api/v3"
+	"go.packetbroker.org/pb/cmd/internal/protojson"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -24,7 +24,7 @@ func runHomeNetwork(ctx context.Context) error {
 		default:
 		}
 		msg := new(packetbroker.DownlinkMessage)
-		if err := jsonpb.UnmarshalNext(decoder, msg); err != nil {
+		if err := protojson.Decode(decoder, msg); err != nil {
 			if !errors.Is(err, io.EOF) && status.Code(err) != codes.Canceled {
 				logger.Error("Failed to decode downlink message", zap.Error(err))
 				clicontext.SetExitCode(ctx, 1)
