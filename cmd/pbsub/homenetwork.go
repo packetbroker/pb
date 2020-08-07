@@ -18,10 +18,14 @@ import (
 
 func runHomeNetwork(ctx context.Context) error {
 	// Subscribe to all MAC payload and join-requests.
+	macFilter := &packetbroker.RoutingFilter_MACPayload{}
+	if len(input.homeNetworkFilters.devAddrPrefixes) > 0 {
+		macFilter.DevAddrPrefixes = input.homeNetworkFilters.devAddrPrefixes
+	}
 	filters := []*packetbroker.RoutingFilter{
 		{
 			Message: &packetbroker.RoutingFilter_Mac{
-				Mac: &packetbroker.RoutingFilter_MACPayload{},
+				Mac: macFilter,
 			},
 		},
 		{

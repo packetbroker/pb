@@ -24,9 +24,11 @@ type inputData struct {
 	homeNetworkTenantID string
 	group               string
 	homeNetworkFilters  struct {
-		forwarderNetIDHex string
-		forwarderNetID    *packetbroker.NetID
-		forwarderID       string
+		forwarderNetIDHex   string
+		forwarderNetID      *packetbroker.NetID
+		forwarderID         string
+		devAddrPrefixesText []string
+		devAddrPrefixes     []*packetbroker.DevAddrPrefix
 	}
 }
 
@@ -44,6 +46,7 @@ func parseInput() bool {
 	flag.StringVar(&input.group, "group", "", "group name of shared subscription")
 	flag.StringVar(&input.homeNetworkFilters.forwarderNetIDHex, "filter-forwarder-net-id", "", "filter Forwarder by NetID")
 	flag.StringVar(&input.homeNetworkFilters.forwarderID, "filter-forwarder-id", "", "filter Forwarder by ID")
+	flag.StringSliceVar(&input.homeNetworkFilters.devAddrPrefixesText, "filter-dev-addr-prefixes", nil, "filter DevAddr prefixes (i.e. 00000000/3)")
 
 	flag.Parse()
 
@@ -78,6 +81,17 @@ func parseInput() bool {
 				if err := input.homeNetworkFilters.forwarderNetID.UnmarshalText([]byte(input.homeNetworkFilters.forwarderNetIDHex)); err != nil {
 					fmt.Fprintln(os.Stderr, "Invalid filter-forwarder-net-id:", err)
 					return false
+				}
+			}
+			if len(input.homeNetworkFilters.devAddrPrefixesText) > 0 {
+				input.homeNetworkFilters.devAddrPrefixes = make([]*packetbroker.DevAddrPrefix, len(input.homeNetworkFilters.devAddrPrefixesText))
+				for i, text := range input.homeNetworkFilters.devAddrPrefixesText {
+					var prefix packetbroker.DevAddrPrefix
+					if err := prefix.UnmarshalText([]byte(text)); err != nil {
+						fmt.Fprintln(os.Stderr, "Invalid filter-dev-addr-prefixes:", err)
+						return false
+					}
+					input.homeNetworkFilters.devAddrPrefixes[i] = &prefix
 				}
 			}
 		}
