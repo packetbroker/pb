@@ -167,9 +167,10 @@ func runPolicy(ctx context.Context) {
 			})
 		} else {
 			res, err = client.GetHomeNetworkPolicy(ctx, &packetbroker.GetHomeNetworkRoutingPolicyRequest{
-				ForwarderNetId:    uint32(*input.forwarderNetID),
-				ForwarderTenantId: input.forwarderTenantID,
-				HomeNetworkNetId:  uint32(*input.homeNetworkNetID),
+				ForwarderNetId:      uint32(*input.forwarderNetID),
+				ForwarderTenantId:   input.forwarderTenantID,
+				HomeNetworkNetId:    uint32(*input.homeNetworkNetID),
+				HomeNetworkTenantId: input.homeNetworkTenantID,
 			})
 		}
 		if err != nil {
