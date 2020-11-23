@@ -13,6 +13,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.2
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/spf13/pflag v1.0.5
+	go.packetbroker.org/api/iam v0.0.0-00010101000000-000000000000
 	go.packetbroker.org/api/routing v0.0.0-00010101000000-000000000000
 	go.packetbroker.org/api/v3 v3.1.1
 	go.uber.org/multierr v1.6.0 // indirect
