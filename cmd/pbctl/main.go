@@ -1,6 +1,6 @@
 // Copyright © 2020 The Things Industries B.V.
 
-// Command pbadmin configures Packet Broker.
+// Command pbctl configures Packet Broker.
 package main
 
 import (
@@ -19,18 +19,18 @@ import (
 const usage = `Usage:
 
       Tenant management:
-      $ pbadmin tenant list --net-id NETID
-      $ pbadmin tenant get --net-id NETID [--tenant-id TENANTID]
-      $ pbadmin tenant set --net-id NETID [--tenant-id TENANTID] [--dev-addr-prefixes PREFIX,PREFIX]
-      $ pbadmin tenant delete --net-id NETID [--tenant-id TENANTID]
+      $ pbctl tenant list --net-id NETID
+      $ pbctl tenant get --net-id NETID [--tenant-id TENANTID]
+      $ pbctl tenant set --net-id NETID [--tenant-id TENANTID] [--dev-addr-prefixes PREFIX,PREFIX]
+      $ pbctl tenant delete --net-id NETID [--tenant-id TENANTID]
 
       Routing policy management:
-      $ pbadmin policy get --forwarder-net-id NETID [--forwarder-tenant-id TENANTID] \
+      $ pbctl policy get --forwarder-net-id NETID [--forwarder-tenant-id TENANTID] \
             [--defaults|--home-network-net-id NETID [--home-network-tenant-id TENANTID]]
-      $ pbadmin policy set --forwarder-net-id NETID [--forwarder-id ID] \
+      $ pbctl policy set --forwarder-net-id NETID [--forwarder-id ID] \
             [--defaults|--home-network-net-id NETID [--home-network-tenant-id TENANTID]] \
             --set-uplink JMASL --set-downlink JMA
-      $ pbadmin policy set --forwarder-net-id NETID [--forwarder-id ID] \
+      $ pbctl policy set --forwarder-net-id NETID [--forwarder-id ID] \
             [--defaults|--home-network-net-id NETID [--home-network-tenant-id TENANTID]] \
             --unset
 

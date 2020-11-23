@@ -11,7 +11,7 @@ Packet Broker Clients are command-line utilities for working with [Packet Broker
 Make sure you have [Go](https://golang.org/doc/install) installed in your environment.
 
 ```bash
-$ go get go.packetbroker.org/pb/cmd/pbadmin
+$ go get go.packetbroker.org/pb/cmd/pbctl
 $ go get go.packetbroker.org/pb/cmd/pbpub
 $ go get go.packetbroker.org/pb/cmd/pbsub
 ```
@@ -28,11 +28,12 @@ Instead of passing the Packet Broker address via the `--address` flag on each co
 export PB_ADDRESS=staging.packetbroker.io
 ```
 
-If you don't specify a port, `pbadmin`, `pbpub` and `pbsub` use the default ports:
+If you don't specify a port, `pbadmin`, `pbctl`, `pbpub` and `pbsub` use the default ports:
 
 | Service | Port | Used By |
 | --- | ---: | --- |
-| Control Plane | `1900` | `pbadmin` |
+| IAM | `1900` | `pbadmin` |
+| Control Plane | `1900` | `pbctl` |
 | Data Plane | `1900` | `pbpub`, `pbsub` |
 
 ### Manage Tenants
@@ -44,7 +45,7 @@ Tenants are optional. When there are no tenants or when a DevAddr does not match
 As NetID `000013`, to create or update tenant `tenant-a` with DevAddr prefixes `26AA0000/16` and `26BB0000/16`:
 
 ```bash
-$ pbadmin tenant set --net-id 000013 --tenant-id tenant-a \
+$ pbctl tenant set --net-id 000013 --tenant-id tenant-a \
     --dev-addr-prefixes 26AA0000/16,26BB0000/16
 ```
 
@@ -53,47 +54,47 @@ $ pbadmin tenant set --net-id 000013 --tenant-id tenant-a \
 To list tenants:
 
 ```bash
-$ pbadmin tenant list --net-id 000013
+$ pbctl tenant list --net-id 000013
 ```
 
 To get a tenant:
 
 ```bash
-$ pbadmin tenant get --net-id 000013 --tenant-id tenant-a
+$ pbctl tenant get --net-id 000013 --tenant-id tenant-a
 ```
 
 To delete a tenant:
 
 ```bash
-$ pbadmin tenant delete --net-id 000013 --tenant-id tenant-a
+$ pbctl tenant delete --net-id 000013 --tenant-id tenant-a
 ```
 
 ### Configure Routing Policies
 
-As a Forwarder, you can configure a default routing policy for all Home Networks, and routing policies per Home Network with `pbadmin`. 
+As a Forwarder, you can configure a default routing policy for all Home Networks, and routing policies per Home Network with `pbctl`. 
 
 As Forwarder NetID `000042`, to see the default routing policy:
 
 ```bash
-$ pbadmin policy get --forwarder-net-id 000042 --defaults
+$ pbctl policy get --forwarder-net-id 000042 --defaults
 ```
 
 To see the routing policy for Home Network NetID `C00123`:
 
 ```bash
-$ pbadmin policy get --forwarder-net-id 000042 --home-network-net-id C00123
+$ pbctl policy get --forwarder-net-id 000042 --home-network-net-id C00123
 ```
 
 To see the routing policy for you own network:
 
 ```bash
-$ pbadmin policy get --forwarder-net-id 000042 --home-network-net-id 000042
+$ pbctl policy get --forwarder-net-id 000042 --home-network-net-id 000042
 ```
 
 To see the routing policy of Forwrader tenant `tenant-a` for Home Network NetID `C00123` tenant `tenant-b`:
 
 ```bash
-$ pbadmin policy get --forwarder-net-id 000042 --forwarder-tenant-id tenant-a \
+$ pbctl policy get --forwarder-net-id 000042 --forwarder-tenant-id tenant-a \
     --home-network-net-id C00123 --home-network-tenant-id tenant-b
 ```
 
@@ -110,21 +111,21 @@ You can set policies by specifying letters from the following table:
 To enable all exchange by default:
 
 ```bash
-$ pbadmin policy set --forwarder-net-id 000042 --defaults \
+$ pbctl policy set --forwarder-net-id 000042 --defaults \
     --set-uplink JMASL --set-downlink --JMA
 ```
 
 To enable only device activation and MAC commands in both directions with Home Network NetID `C00123`:
 
 ```bash
-$ pbadmin policy set --forwarder-net-id 000042 --home-network-net-id C00123 \
+$ pbctl policy set --forwarder-net-id 000042 --home-network-net-id C00123 \
     --set-uplink JM --set-downlink --JM
 ```
 
 To enable only device activation and MAC commands in both directions of Forwarder tenant `tenant-a` with Home Network NetID `C00123` tenant `tenant-b`:
 
 ```bash
-$ pbadmin policy set --forwarder-net-id 000042 --forwarder-tenant-id tenant-a \
+$ pbctl policy set --forwarder-net-id 000042 --forwarder-tenant-id tenant-a \
     --home-network-net-id C00123 --home-network-tenant-id tenant-b \
     --set-uplink JM --set-downlink --JM
 ```
