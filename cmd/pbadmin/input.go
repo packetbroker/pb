@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	flag "github.com/spf13/pflag"
 	packetbroker "go.packetbroker.org/api/v3"
@@ -58,6 +59,10 @@ func parseInput() bool {
 		}
 	case "tenant":
 		if !parseTenantFlags() {
+			return false
+		}
+	case "apikey":
+		if !parseAPIKeyFlags() {
 			return false
 		}
 	default:

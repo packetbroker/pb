@@ -19,22 +19,28 @@ import (
 const usage = `Usage:
 
       Network registry:
-      $ pbctl network list
-      $ pbctl network create --net-id NETID [--name NAME]
-      $ pbctl network get --net-id NETID
-      $ pbctl network update --net-id NETID [--name NAME]
-      $ pbctl network delete --net-id NETID
+      $ pbadmin network list
+      $ pbadmin network create --net-id NETID [--name NAME]
+      $ pbadmin network get --net-id NETID
+      $ pbadmin network update --net-id NETID [--name NAME]
+      $ pbadmin network delete --net-id NETID
 
       Tenant registry:
-      $ pbctl tenant list --net-id NETID
-      $ pbctl tenant create --net-id NETID --tenant-id TENANTID [--dev-addr-prefixes PREFIX,PREFIX]
-      $ pbctl tenant get --net-id NETID --tenant-id TENANTID
-      $ pbctl tenant update --net-id NETID --tenant-id TENANTID [--dev-addr-prefixes PREFIX,PREFIX]
-      $ pbctl tenant delete --net-id NETID --tenant-id TENANTID
+      $ pbadmin tenant list --net-id NETID
+      $ pbadmin tenant create --net-id NETID --tenant-id TENANTID [--dev-addr-prefixes PREFIX,PREFIX]
+      $ pbadmin tenant get --net-id NETID --tenant-id TENANTID
+      $ pbadmin tenant update --net-id NETID --tenant-id TENANTID [--dev-addr-prefixes PREFIX,PREFIX]
+      $ pbadmin tenant delete --net-id NETID --tenant-id TENANTID
+
+      API keys:
+      $ pbadmin apikey list --net-id NETID [--tenant-id TENANTID] [--cluster-id CLUSTERID]
+      $ pbadmin apikey create --net-id NETID [--tenant-id TENANTID] [--cluster-id CLUSTERID] [--valid-for 8760h]
+      $ pbadmin apikey delete --key-id KEYID
 
 Commands:
       network
       tenant
+      apikey
 
 Flags:`
 
@@ -78,5 +84,7 @@ func main() {
 		runNetwork(ctx)
 	case "tenant":
 		runTenant(ctx)
+	case "apikey":
+		runAPIKey(ctx)
 	}
 }
