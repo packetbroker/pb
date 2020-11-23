@@ -38,7 +38,7 @@ var input = new(inputData)
 
 func parseInput() bool {
 	config.CommonFlags(&input.help, &input.debug)
-	config.ClientFlags()
+	config.OAuthClientFlags()
 
 	flag.StringVar(&input.forwarderNetIDHex, "forwarder-net-id", "", "NetID of the Forwarder (hex)")
 	flag.StringVar(&input.forwarderTenantID, "forwarder-tenant-id", "", "Tenant ID of the Forwarder")
@@ -61,7 +61,7 @@ func parseInput() bool {
 	}
 
 	var err error
-	input.client, err = config.Client()
+	input.client, err = config.OAuthClient(ctx)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Invalid client settings:", err)
 		return false

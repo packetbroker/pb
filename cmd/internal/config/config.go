@@ -4,6 +4,7 @@
 package config
 
 import (
+	"context"
 	"errors"
 	"os"
 
@@ -13,34 +14,37 @@ import (
 
 // CommonFlags defines common flags.
 func CommonFlags(help, debug *bool) {
-	flag.BoolVar(help, "help", false, "show usage")
-	flag.BoolVar(debug, "debug", false, "debug mode")
+	flag.BoolVarP(help, "help", "h", false, "show usage")
+	flag.BoolVarP(debug, "debug", "d", false, "debug mode")
 }
 
-// ClientFlags defines flags used for Client configuration.
-func ClientFlags() {
+// clientFlags defines common flags used for Client configuration.
+func clientFlags() {
 	flag.String("address", "", `address of the server "host[:port]" (default $PB_ADDRESS)`)
-	flag.String("cert-file", "cert.pem", "path to a PEM encoded TLS server certificate file")
-	flag.String("key-file", "key.pem", "path to a PEM encoded TLS server key file")
-	flag.String("ca-file", "", "path to a file containing PEM encoded root certificate authorities")
+	flag.Bool("insecure", false, "insecure")
 }
 
-// Client returns client configuration.
-func Client() (*client.Config, error) {
+// BasicAuthClientFlags defines flags used for Basic authentication.
+func BasicAuthClientFlags() {
+	clientFlags()
+	flag.StringP("username", "u", "", "IAM username (default $PB_IAM_USERNAME)")
+	flag.StringP("password", "p", "", "IAM password (default $PB_IAM_PASSWORD)")
+}
+
+// OAuthClientFlags defines flags used for OAuth Client Credentials flow.
+func OAuthClientFlags() {
+	clientFlags()
+	flag.String("client-id", "", "OAuth client ID")
+	flag.String("client-secret", "", "OAuth client secret")
+}
+
+// initClient returns initial client configuration.
+func initClient() (*client.Config, error) {
 	var (
 		res client.Config
 		err error
 	)
 	if res.Address, err = flag.CommandLine.GetString("address"); err != nil {
-		return nil, err
-	}
-	if res.CertFile, err = flag.CommandLine.GetString("cert-file"); err != nil {
-		return nil, err
-	}
-	if res.KeyFile, err = flag.CommandLine.GetString("key-file"); err != nil {
-		return nil, err
-	}
-	if res.CAFile, err = flag.CommandLine.GetString("ca-file"); err != nil {
 		return nil, err
 	}
 	if res.Address == "" {
@@ -49,8 +53,48 @@ func Client() (*client.Config, error) {
 	if res.Address == "" {
 		return nil, errors.New("missing server address")
 	}
-	if res.CertFile == "" || res.KeyFile == "" {
-		return nil, errors.New("missing TLS client settings")
-	}
+	res.Insecure, _ = flag.CommandLine.GetBool("insecure")
 	return &res, nil
+}
+
+// BasicAuthClient returns a client configured with Basic authentication.
+func BasicAuthClient() (*client.Config, error) {
+	res, err := initClient()
+	if err != nil {
+		return nil, err
+	}
+	var username, password string
+	if username, err = flag.CommandLine.GetString("username"); err != nil {
+		return nil, err
+	}
+	if username == "" {
+		username = os.Getenv("PB_IAM_USERNAME")
+	}
+	if password, err = flag.CommandLine.GetString("password"); err != nil {
+		return nil, err
+	}
+	if password == "" {
+		password = os.Getenv("PB_IAM_PASSWORD")
+	}
+	allowInsecure, _ := flag.CommandLine.GetBool("insecure")
+	res.Credentials = client.BasicAuth(username, password, allowInsecure)
+	return res, nil
+}
+
+// OAuthClient returns a client configured with OAuth Client Credentials authentication.
+func OAuthClient(ctx context.Context) (*client.Config, error) {
+	res, err := initClient()
+	if err != nil {
+		return nil, err
+	}
+	var clientID, clientSecret string
+	if clientID, err = flag.CommandLine.GetString("client-id"); err != nil {
+		return nil, err
+	}
+	if clientSecret, err = flag.CommandLine.GetString("client-secret"); err != nil {
+		return nil, err
+	}
+	allowInsecure, _ := flag.CommandLine.GetBool("insecure")
+	res.Credentials = client.OAuthClient(ctx, clientID, clientSecret, allowInsecure)
+	return res, nil
 }

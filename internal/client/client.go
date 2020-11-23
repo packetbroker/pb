@@ -4,10 +4,7 @@ package client
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -26,10 +23,8 @@ import (
 type Config struct {
 	Address     string
 	DialTimeout time.Duration
-
-	CertFile,
-	KeyFile,
-	CAFile string
+	Insecure    bool
+	Credentials credentials.PerRPCCredentials
 }
 
 func appendDefaultPort(target string, port int) (string, error) {
@@ -55,27 +50,6 @@ func appendDefaultPort(target string, port int) (string, error) {
 
 // DialContext dials a Packet Broker service using the given configuration.
 func DialContext(ctx context.Context, logger *zap.Logger, config *Config, defaultPort int) (*grpc.ClientConn, error) {
-	cert, err := tls.LoadX509KeyPair(config.CertFile, config.KeyFile)
-	if err != nil {
-		return nil, fmt.Errorf("client: load X.509 certificate file %q and key file %q: %w",
-			config.CertFile, config.KeyFile, err)
-	}
-	var rootCAs *x509.CertPool
-	if config.CAFile != "" {
-		buf, err := ioutil.ReadFile(config.CAFile)
-		if err != nil {
-			return nil, fmt.Errorf("client: read CA file %q: %w", config.CAFile, err)
-		}
-		rootCAs = x509.NewCertPool()
-		if !rootCAs.AppendCertsFromPEM(buf) {
-			return nil, fmt.Errorf("client: append CAs from %q", config.CAFile)
-		}
-	}
-	creds := credentials.NewTLS(&tls.Config{
-		Certificates: []tls.Certificate{cert},
-		RootCAs:      rootCAs,
-	})
-
 	timeout := config.DialTimeout
 	if timeout == 0 {
 		timeout = 5 * time.Second
@@ -88,8 +62,16 @@ func DialContext(ctx context.Context, logger *zap.Logger, config *Config, defaul
 		return nil, err
 	}
 
+	var securityOpt grpc.DialOption
+	if config.Insecure {
+		securityOpt = grpc.WithInsecure()
+	} else {
+		securityOpt = grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(nil, ""))
+	}
+
 	return grpc.DialContext(ctx, address,
-		grpc.WithTransportCredentials(creds),
+		securityOpt,
+		grpc.WithPerRPCCredentials(config.Credentials),
 		grpc.WithBlock(),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
 			Time:                5 * time.Minute,
