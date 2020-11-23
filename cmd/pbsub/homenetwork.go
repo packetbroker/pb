@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 
+	routingpb "go.packetbroker.org/api/routing"
 	packetbroker "go.packetbroker.org/api/v3"
 	"go.packetbroker.org/pb/cmd/internal/protojson"
 	"go.uber.org/zap"
@@ -35,31 +36,13 @@ func runHomeNetwork(ctx context.Context) error {
 		},
 	}
 
-	if input.homeNetworkFilters.forwarderNetID != nil {
-		forwarder := &packetbroker.ForwarderIdentifier{
-			NetId: uint32(*input.homeNetworkFilters.forwarderNetID),
-		}
-		logger := logger
-		if id := input.homeNetworkFilters.forwarderID; id != "" {
-			forwarder.ForwarderId = id
-			logger = logger.With(zap.Any("id", id))
-		}
-		logger.Debug("Filter Forwarder", zap.Any("net_id", forwarder.NetId))
-		for _, f := range filters {
-			f.Forwarders = &packetbroker.RoutingFilter_ForwarderWhitelist{
-				ForwarderWhitelist: &packetbroker.ForwarderIdentifiers{
-					List: []*packetbroker.ForwarderIdentifier{forwarder},
-				},
-			}
-		}
-	}
-
-	client := packetbroker.NewRouterHomeNetworkDataClient(conn)
-	stream, err := client.Subscribe(ctx, &packetbroker.SubscribeHomeNetworkRequest{
-		HomeNetworkNetId:    uint32(*input.homeNetworkNetID),
-		HomeNetworkTenantId: input.homeNetworkTenantID,
-		Group:               input.group,
-		Filters:             filters,
+	client := routingpb.NewHomeNetworkDataClient(conn)
+	stream, err := client.Subscribe(ctx, &routingpb.SubscribeHomeNetworkRequest{
+		HomeNetworkNetId:     uint32(*input.homeNetworkNetID),
+		HomeNetworkClusterId: input.homeNetworkClusterID,
+		HomeNetworkTenantId:  input.homeNetworkTenantID,
+		Group:                input.group,
+		Filters:              filters,
 	})
 	if err != nil {
 		logger.Error("Failed to subscribe", zap.Error(err))

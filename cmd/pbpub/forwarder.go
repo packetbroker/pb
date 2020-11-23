@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 
+	routingpb "go.packetbroker.org/api/routing"
 	packetbroker "go.packetbroker.org/api/v3"
 	"go.packetbroker.org/pb/cmd/internal/protojson"
 	"go.uber.org/zap"
@@ -16,7 +17,7 @@ import (
 )
 
 func runForwarder(ctx context.Context) error {
-	client := packetbroker.NewRouterForwarderDataClient(conn)
+	client := routingpb.NewForwarderDataClient(conn)
 	for {
 		select {
 		case <-ctx.Done():
@@ -31,11 +32,11 @@ func runForwarder(ctx context.Context) error {
 			}
 			return err
 		}
-		res, err := client.Publish(ctx, &packetbroker.PublishUplinkMessageRequest{
-			ForwarderNetId:    uint32(*input.forwarderNetID),
-			ForwarderId:       input.forwarderID,
-			ForwarderTenantId: input.forwarderTenantID,
-			Message:           msg,
+		res, err := client.Publish(ctx, &routingpb.PublishUplinkMessageRequest{
+			ForwarderNetId:     uint32(*input.forwarderNetID),
+			ForwarderClusterId: input.forwarderClusterID,
+			ForwarderTenantId:  input.forwarderTenantID,
+			Message:            msg,
 		})
 		if err != nil {
 			logger.Error("Failed to publish uplink message", zap.Error(err))

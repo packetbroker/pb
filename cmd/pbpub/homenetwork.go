@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 
+	routingpb "go.packetbroker.org/api/routing"
 	packetbroker "go.packetbroker.org/api/v3"
 	"go.packetbroker.org/pb/cmd/internal/protojson"
 	"go.uber.org/zap"
@@ -16,7 +17,7 @@ import (
 )
 
 func runHomeNetwork(ctx context.Context) error {
-	client := packetbroker.NewRouterHomeNetworkDataClient(conn)
+	client := routingpb.NewHomeNetworkDataClient(conn)
 	for {
 		select {
 		case <-ctx.Done():
@@ -31,13 +32,14 @@ func runHomeNetwork(ctx context.Context) error {
 			}
 			return err
 		}
-		res, err := client.Publish(ctx, &packetbroker.PublishDownlinkMessageRequest{
-			HomeNetworkNetId:    uint32(*input.homeNetworkNetID),
-			HomeNetworkTenantId: input.homeNetworkTenantID,
-			ForwarderNetId:      uint32(*input.forwarderNetID),
-			ForwarderId:         input.forwarderID,
-			ForwarderTenantId:   input.forwarderTenantID,
-			Message:             msg,
+		res, err := client.Publish(ctx, &routingpb.PublishDownlinkMessageRequest{
+			HomeNetworkNetId:     uint32(*input.homeNetworkNetID),
+			HomeNetworkClusterId: input.homeNetworkClusterID,
+			HomeNetworkTenantId:  input.homeNetworkTenantID,
+			ForwarderNetId:       uint32(*input.forwarderNetID),
+			ForwarderClusterId:   input.forwarderClusterID,
+			ForwarderTenantId:    input.forwarderTenantID,
+			Message:              msg,
 		})
 		if err != nil {
 			logger.Error("Failed to publish downlink message", zap.Error(err))

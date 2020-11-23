@@ -8,7 +8,7 @@ import (
 	"io"
 	"os"
 
-	packetbroker "go.packetbroker.org/api/v3"
+	routingpb "go.packetbroker.org/api/routing"
 	"go.packetbroker.org/pb/cmd/internal/protojson"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -17,12 +17,12 @@ import (
 )
 
 func runForwarder(ctx context.Context) error {
-	client := packetbroker.NewRouterForwarderDataClient(conn)
-	stream, err := client.Subscribe(ctx, &packetbroker.SubscribeForwarderRequest{
-		ForwarderNetId:    uint32(*input.forwarderNetID),
-		ForwarderId:       input.forwarderID,
-		ForwarderTenantId: input.forwarderTenantID,
-		Group:             input.group,
+	client := routingpb.NewForwarderDataClient(conn)
+	stream, err := client.Subscribe(ctx, &routingpb.SubscribeForwarderRequest{
+		ForwarderNetId:     uint32(*input.forwarderNetID),
+		ForwarderClusterId: input.forwarderClusterID,
+		ForwarderTenantId:  input.forwarderTenantID,
+		Group:              input.group,
 	})
 	if err != nil {
 		logger.Error("Failed to subscribe", zap.Error(err))

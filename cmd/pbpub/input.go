@@ -13,15 +13,16 @@ import (
 )
 
 type inputData struct {
-	help, debug         bool
-	client              *client.Config
-	forwarderNetIDHex   string
-	forwarderNetID      *packetbroker.NetID
-	forwarderID         string
-	forwarderTenantID   string
-	homeNetworkNetIDHex string
-	homeNetworkNetID    *packetbroker.NetID
-	homeNetworkTenantID string
+	help, debug          bool
+	client               *client.Config
+	forwarderNetIDHex    string
+	forwarderNetID       *packetbroker.NetID
+	forwarderClusterID   string
+	forwarderTenantID    string
+	homeNetworkNetIDHex  string
+	homeNetworkNetID     *packetbroker.NetID
+	homeNetworkClusterID string
+	homeNetworkTenantID  string
 }
 
 var input = new(inputData)
@@ -31,9 +32,10 @@ func parseInput() bool {
 	config.ClientFlags()
 
 	flag.StringVar(&input.forwarderNetIDHex, "forwarder-net-id", "", "NetID of the Forwarder (hex)")
-	flag.StringVar(&input.forwarderID, "forwarder-id", "", "ID of the Forwarder")
+	flag.StringVar(&input.forwarderClusterID, "forwarder-cluster-id", "", "Cluster ID of the Forwarder")
 	flag.StringVar(&input.forwarderTenantID, "forwarder-tenant-id", "", "Tenant ID of the Forwarder")
 	flag.StringVar(&input.homeNetworkNetIDHex, "home-network-net-id", "", "NetID of the Home Network (hex)")
+	flag.StringVar(&input.homeNetworkClusterID, "home-network-cluster-id", "", "Cluster ID of the Home Network")
 	flag.StringVar(&input.homeNetworkTenantID, "home-network-tenant-id", "", "Tenant ID of the Home Network")
 
 	flag.Parse()
