@@ -34,13 +34,13 @@ func Write(w io.Writer, m proto.Message) error {
 	return err
 }
 
-var unmarhsalOptions = protojson.UnmarshalOptions{
+var unmarshalOptions = protojson.UnmarshalOptions{
 	AllowPartial: true,
 }
 
 // Unmarshal unmarshals the proto message using the default options for Packet Broker.
 func Unmarshal(b []byte, m proto.Message) error {
-	return unmarhsalOptions.Unmarshal(b, m)
+	return unmarshalOptions.Unmarshal(b, m)
 }
 
 // Decode reads a JSON message from the JSON decoder and unmarshals it (see Unmarshal).
