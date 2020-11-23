@@ -1,6 +1,6 @@
 // Copyright © 2020 The Things Industries B.V.
 
-// Command pbctl configures Packet Broker.
+// Command pbctl configures Packet Broker Router.
 package main
 
 import (
@@ -18,12 +18,6 @@ import (
 
 const usage = `Usage:
 
-      Tenant management:
-      $ pbctl tenant list --net-id NETID
-      $ pbctl tenant get --net-id NETID [--tenant-id TENANTID]
-      $ pbctl tenant set --net-id NETID [--tenant-id TENANTID] [--dev-addr-prefixes PREFIX,PREFIX]
-      $ pbctl tenant delete --net-id NETID [--tenant-id TENANTID]
-
       Routing policy management:
       $ pbctl policy get --forwarder-net-id NETID [--forwarder-tenant-id TENANTID] \
             [--defaults|--home-network-net-id NETID [--home-network-tenant-id TENANTID]]
@@ -35,7 +29,6 @@ const usage = `Usage:
             --unset
 
 Commands:
-      tenant
       policy
 
 Flags:`
@@ -76,8 +69,6 @@ func main() {
 	defer conn.Close()
 
 	switch input.mode {
-	case "tenant":
-		runTenant(ctx)
 	case "policy":
 		runPolicy(ctx)
 	}
