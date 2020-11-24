@@ -9,7 +9,8 @@ import (
 	"os"
 
 	flag "github.com/spf13/pflag"
-	"go.packetbroker.org/pb/internal/client"
+	"go.packetbroker.org/pb/pkg/client"
+	"go.packetbroker.org/pb/pkg/token"
 )
 
 // CommonFlags defines common flags.
@@ -31,11 +32,12 @@ func BasicAuthClientFlags() {
 	flag.StringP("password", "p", "", "IAM password (default $PB_IAM_PASSWORD)")
 }
 
-// OAuthClientFlags defines flags used for OAuth Client Credentials flow.
-func OAuthClientFlags() {
+// OAuth2ClientFlags defines flags used for OAuth Client Credentials flow.
+func OAuth2ClientFlags() {
 	clientFlags()
-	flag.String("client-id", "", "OAuth client ID")
-	flag.String("client-secret", "", "OAuth client secret")
+	flag.String("client-id", "", "OAuth 2.0 client ID")
+	flag.String("client-secret", "", "OAuth 2.0 client secret")
+	flag.String("token-url", "https://iam.packetbroker.org/token", "OAuth 2.0 token URL")
 }
 
 // initClient returns initial client configuration.
@@ -81,13 +83,16 @@ func BasicAuthClient() (*client.Config, error) {
 	return res, nil
 }
 
-// OAuthClient returns a client configured with OAuth Client Credentials authentication.
-func OAuthClient(ctx context.Context) (*client.Config, error) {
+// OAuth2Client returns a client configured with OAuth Client Credentials authentication.
+func OAuth2Client(ctx context.Context) (*client.Config, error) {
 	res, err := initClient()
 	if err != nil {
 		return nil, err
 	}
-	var clientID, clientSecret string
+	var tokenURL, clientID, clientSecret string
+	if tokenURL, err = flag.CommandLine.GetString("token-url"); err != nil {
+		return nil, err
+	}
 	if clientID, err = flag.CommandLine.GetString("client-id"); err != nil {
 		return nil, err
 	}
@@ -95,6 +100,6 @@ func OAuthClient(ctx context.Context) (*client.Config, error) {
 		return nil, err
 	}
 	allowInsecure, _ := flag.CommandLine.GetBool("insecure")
-	res.Credentials = client.OAuthClient(ctx, clientID, clientSecret, allowInsecure)
+	res.Credentials = client.OAuth2(ctx, tokenURL, clientID, clientSecret, token.AllScopes(), allowInsecure)
 	return res, nil
 }

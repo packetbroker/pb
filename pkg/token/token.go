@@ -50,7 +50,7 @@ type PacketBrokerClaims struct {
 // Claims defines the JSON Web Token claims.
 type Claims struct {
 	jwt.Claims
-	PacketBroker *PacketBrokerClaims `json:"https://jwt.packetbroker.org/claims,omitempty"`
+	PacketBroker *PacketBrokerClaims `json:"https://iam.packetbroker.org/claims,omitempty"`
 }
 
 // Sign signs the claims with the given key and returns the compact token.

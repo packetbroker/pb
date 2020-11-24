@@ -11,7 +11,7 @@ import (
 
 	flag "github.com/spf13/pflag"
 	"go.packetbroker.org/pb/cmd/internal/logging"
-	"go.packetbroker.org/pb/internal/client"
+	"go.packetbroker.org/pb/pkg/client"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"htdvisser.dev/exp/clicontext"

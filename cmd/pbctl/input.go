@@ -10,7 +10,7 @@ import (
 	flag "github.com/spf13/pflag"
 	packetbroker "go.packetbroker.org/api/v3"
 	"go.packetbroker.org/pb/cmd/internal/config"
-	"go.packetbroker.org/pb/internal/client"
+	"go.packetbroker.org/pb/pkg/client"
 )
 
 type inputData struct {
@@ -38,7 +38,7 @@ var input = new(inputData)
 
 func parseInput() bool {
 	config.CommonFlags(&input.help, &input.debug)
-	config.OAuthClientFlags()
+	config.OAuth2ClientFlags()
 
 	flag.StringVar(&input.forwarderNetIDHex, "forwarder-net-id", "", "NetID of the Forwarder (hex)")
 	flag.StringVar(&input.forwarderTenantID, "forwarder-tenant-id", "", "Tenant ID of the Forwarder")
@@ -61,7 +61,7 @@ func parseInput() bool {
 	}
 
 	var err error
-	input.client, err = config.OAuthClient(ctx)
+	input.client, err = config.OAuth2Client(ctx)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Invalid client settings:", err)
 		return false
