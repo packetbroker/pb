@@ -9,6 +9,11 @@ import (
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 
+const (
+	// ScopeNetworks is the networks scope.
+	ScopeNetworks = "networks"
+)
+
 // PublicKeyProvider provides a set of public keys.
 type PublicKeyProvider interface {
 	PublicKeys() (*jose.JSONWebKeySet, error)
@@ -37,9 +42,9 @@ func (f PrivateKeyProviderFunc) PrivateKey() (*jose.JSONWebKey, error) {
 
 // Network defines a Packet Broker network.
 type Network struct {
-	NetID    uint32 `json:"nid"`
-	TenantID string `json:"tid,omitempty"`
-	ID       string `json:"id,omitempty"`
+	NetID     uint32 `json:"nid"`
+	TenantID  string `json:"tid,omitempty"`
+	ClusterID string `json:"cid,omitempty"`
 }
 
 // PacketBrokerClaims defines claims specific for Packet Broker.

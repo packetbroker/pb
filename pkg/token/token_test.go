@@ -51,9 +51,9 @@ func TestRoundtrip(t *testing.T) {
 			PacketBroker: &PacketBrokerClaims{
 				Networks: []Network{
 					{
-						NetID:    0x000013,
-						TenantID: "tenant-a",
-						ID:       "test",
+						NetID:     0x000013,
+						TenantID:  "tenant-a",
+						ClusterID: "test",
 					},
 				},
 			},
