@@ -12,6 +12,7 @@ import (
 	packetbroker "go.packetbroker.org/api/v3"
 	"go.packetbroker.org/pb/cmd/internal/protojson"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"htdvisser.dev/exp/clicontext"
 )
 
@@ -23,8 +24,8 @@ func parseTenantFlags() bool {
 	switch os.Args[2] {
 	case "list":
 	case "create", "update":
-		flag.CommandLine.StringVar(&input.tenant.name, "name", "", "tenant name")
-		flag.CommandLine.StringSliceVar(&input.tenant.devAddrPrefixesHex, "dev-addr-prefixes", nil, "DevAddr prefixes")
+		flag.StringVar(&input.tenant.name, "name", "", "tenant name")
+		flag.StringSliceVar(&input.tenant.devAddrPrefixesHex, "dev-addr-prefixes", nil, "DevAddr prefixes")
 	case "get":
 	case "delete":
 	default:
@@ -33,6 +34,15 @@ func parseTenantFlags() bool {
 	}
 
 	flag.CommandLine.Parse(os.Args[3:])
+
+	flag.Visit(func(f *flag.Flag) {
+		switch f.Name {
+		case "name":
+			input.tenant.hasName = true
+		case "dev-addr-prefixes":
+			input.tenant.hasDevAddrPrefixes = true
+		}
+	})
 
 	if !input.help {
 		if input.netIDHex == "" {
@@ -123,16 +133,19 @@ func runTenant(ctx context.Context) {
 		}
 
 	case "update":
-		_, err := client.UpdateTenant(ctx, &iampb.UpdateTenantRequest{
-			Tenant: &packetbroker.Tenant{
-				NetId:           uint32(*input.netID),
-				TenantId:        input.tenantID,
-				Name:            input.tenant.name,
-				DevAddrPrefixes: input.tenant.devAddrPrefixes,
-				// TODO: Contact info
-			},
-		})
-		if err != nil {
+		req := &iampb.UpdateTenantRequest{
+			NetId:    uint32(*input.netID),
+			TenantId: input.tenantID,
+		}
+		if input.tenant.hasName {
+			req.Name = wrapperspb.String(input.tenant.name)
+		}
+		if input.tenant.hasDevAddrPrefixes {
+			req.DevAddrPrefixes = &iampb.UpdateTenantRequest_DevAddrPrefixesValue{
+				Value: input.tenant.devAddrPrefixes,
+			}
+		}
+		if _, err := client.UpdateTenant(ctx, req); err != nil {
 			logger.Error("Failed to update tenant", zap.Error(err))
 			clicontext.SetExitCode(ctx, 1)
 			return

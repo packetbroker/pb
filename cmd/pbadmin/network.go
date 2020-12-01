@@ -12,6 +12,7 @@ import (
 	packetbroker "go.packetbroker.org/api/v3"
 	"go.packetbroker.org/pb/cmd/internal/protojson"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"htdvisser.dev/exp/clicontext"
 )
 
@@ -23,7 +24,7 @@ func parseNetworkFlags() bool {
 	switch os.Args[2] {
 	case "list":
 	case "create", "update":
-		flag.CommandLine.StringVar(&input.network.name, "name", "", "network name")
+		flag.StringVar(&input.network.name, "name", "", "network name")
 	case "get":
 	case "delete":
 	default:
@@ -32,6 +33,13 @@ func parseNetworkFlags() bool {
 	}
 
 	flag.CommandLine.Parse(os.Args[3:])
+
+	flag.Visit(func(f *flag.Flag) {
+		switch f.Name {
+		case "name":
+			input.network.hasName = true
+		}
+	})
 
 	if !input.help {
 		switch os.Args[2] {
@@ -103,14 +111,13 @@ func runNetwork(ctx context.Context) {
 		}
 
 	case "update":
-		_, err := client.UpdateNetwork(ctx, &iampb.UpdateNetworkRequest{
-			Network: &packetbroker.Network{
-				NetId: uint32(*input.netID),
-				Name:  input.network.name,
-				// TODO: Contact info
-			},
-		})
-		if err != nil {
+		req := &iampb.UpdateNetworkRequest{
+			NetId: uint32(*input.netID),
+		}
+		if input.network.hasName {
+			req.Name = wrapperspb.String(input.network.name)
+		}
+		if _, err := client.UpdateNetwork(ctx, req); err != nil {
 			logger.Error("Failed to update network", zap.Error(err))
 			clicontext.SetExitCode(ctx, 1)
 			return

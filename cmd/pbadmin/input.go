@@ -24,10 +24,13 @@ type inputData struct {
 	tenantID    string
 	mode        string
 	network     struct {
-		name string
+		hasName bool
+		name    string
 	}
 	tenant struct {
+		hasName            bool
 		name               string
+		hasDevAddrPrefixes bool
 		devAddrPrefixesHex []string
 		devAddrPrefixes    []*packetbroker.DevAddrPrefix
 	}
