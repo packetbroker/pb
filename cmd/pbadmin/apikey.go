@@ -6,13 +6,11 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
 	flag "github.com/spf13/pflag"
 	iampb "go.packetbroker.org/api/iam"
 	"go.packetbroker.org/pb/cmd/internal/protojson"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"htdvisser.dev/exp/clicontext"
 )
 
@@ -22,9 +20,7 @@ func parseAPIKeyFlags() bool {
 		return false
 	}
 	switch os.Args[2] {
-	case "list":
-	case "create":
-		flag.CommandLine.DurationVar(&input.apiKey.validFor, "valid-for", 365*24*time.Hour, "valid for")
+	case "list", "create":
 	case "delete":
 		flag.CommandLine.StringVar(&input.apiKey.keyID, "key-id", "", "API Key ID")
 	default:
@@ -77,14 +73,10 @@ func runAPIKey(ctx context.Context) {
 		}
 
 	case "create":
-		notBefore := time.Now()
-		notAfter := notBefore.Add(input.apiKey.validFor)
 		res, err := client.CreateAPIKey(ctx, &iampb.CreateAPIKeyRequest{
 			NetId:     uint32(*input.netID),
 			TenantId:  input.tenantID,
 			ClusterId: input.apiKey.clusterID,
-			NotBefore: timestamppb.New(notBefore),
-			NotAfter:  timestamppb.New(notAfter),
 		})
 		if err != nil {
 			logger.Error("Failed to create API key", zap.Error(err))

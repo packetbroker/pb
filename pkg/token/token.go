@@ -14,6 +14,13 @@ const (
 	ScopeNetworks = "networks"
 )
 
+// AllScopes returns all possible scopes.
+func AllScopes() []string {
+	return []string{
+		ScopeNetworks,
+	}
+}
+
 // PublicKeyProvider provides a set of public keys.
 type PublicKeyProvider interface {
 	PublicKeys() (*jose.JSONWebKeySet, error)
