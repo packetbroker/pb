@@ -10,7 +10,6 @@ import (
 
 	flag "github.com/spf13/pflag"
 	"go.packetbroker.org/pb/pkg/client"
-	"go.packetbroker.org/pb/pkg/token"
 )
 
 // CommonFlags defines common flags.
@@ -84,7 +83,7 @@ func BasicAuthClient() (*client.Config, error) {
 }
 
 // OAuth2Client returns a client configured with OAuth Client Credentials authentication.
-func OAuth2Client(ctx context.Context) (*client.Config, error) {
+func OAuth2Client(ctx context.Context, scopes ...string) (*client.Config, error) {
 	res, err := initClient()
 	if err != nil {
 		return nil, err
@@ -100,6 +99,6 @@ func OAuth2Client(ctx context.Context) (*client.Config, error) {
 		return nil, err
 	}
 	allowInsecure, _ := flag.CommandLine.GetBool("insecure")
-	res.Credentials = client.OAuth2(ctx, tokenURL, clientID, clientSecret, token.AllScopes(), allowInsecure)
+	res.Credentials = client.OAuth2(ctx, tokenURL, clientID, clientSecret, scopes, allowInsecure)
 	return res, nil
 }

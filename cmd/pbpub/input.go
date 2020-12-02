@@ -41,7 +41,7 @@ func parseInput() bool {
 	flag.Parse()
 
 	var err error
-	input.client, err = config.OAuth2Client(ctx)
+	input.client, err = config.OAuth2Client(ctx, "networks")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Invalid client settings:", err)
 		return false
