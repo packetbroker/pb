@@ -25,7 +25,7 @@ func parseTenantFlags() bool {
 	case "list":
 	case "create", "update":
 		flag.StringVar(&input.tenant.name, "name", "", "tenant name")
-		flag.StringSliceVar(&input.tenant.devAddrPrefixesHex, "dev-addr-prefixes", nil, "DevAddr prefixes")
+		flag.StringSliceVar(&input.tenant.devAddrBlocksHex, "dev-addr-blocks", nil, "DevAddr blocks")
 	case "get":
 	case "delete":
 	default:
@@ -39,8 +39,8 @@ func parseTenantFlags() bool {
 		switch f.Name {
 		case "name":
 			input.tenant.hasName = true
-		case "dev-addr-prefixes":
-			input.tenant.hasDevAddrPrefixes = true
+		case "dev-addr-blocks":
+			input.tenant.hasDevAddrBlocks = true
 		}
 	})
 
@@ -51,14 +51,14 @@ func parseTenantFlags() bool {
 		}
 		switch os.Args[2] {
 		case "create", "update":
-			input.tenant.devAddrPrefixes = make([]*packetbroker.DevAddrPrefix, len(input.tenant.devAddrPrefixesHex))
-			for i, s := range input.tenant.devAddrPrefixesHex {
-				prefix, err := parseDevAddrPrefixClusterID(s)
+			input.tenant.devAddrBlocks = make([]*packetbroker.DevAddrBlock, len(input.tenant.devAddrBlocksHex))
+			for i, s := range input.tenant.devAddrBlocksHex {
+				block, err := parseDevAddrBlock(s)
 				if err != nil {
-					fmt.Fprintln(os.Stderr, "Invalid DevAddr prefixes:", err)
+					fmt.Fprintln(os.Stderr, "Invalid DevAddr block:", err)
 					return false
 				}
-				input.tenant.devAddrPrefixes[i] = prefix
+				input.tenant.devAddrBlocks[i] = block
 			}
 			fallthrough
 		case "get", "delete":
@@ -103,10 +103,10 @@ func runTenant(ctx context.Context) {
 	case "create":
 		_, err := client.CreateTenant(ctx, &iampb.CreateTenantRequest{
 			Tenant: &packetbroker.Tenant{
-				NetId:           uint32(*input.netID),
-				TenantId:        input.tenantID,
-				Name:            input.tenant.name,
-				DevAddrPrefixes: input.tenant.devAddrPrefixes,
+				NetId:         uint32(*input.netID),
+				TenantId:      input.tenantID,
+				Name:          input.tenant.name,
+				DevAddrBlocks: input.tenant.devAddrBlocks,
 				// TODO: Contact info
 			},
 		})
@@ -140,9 +140,9 @@ func runTenant(ctx context.Context) {
 		if input.tenant.hasName {
 			req.Name = wrapperspb.String(input.tenant.name)
 		}
-		if input.tenant.hasDevAddrPrefixes {
-			req.DevAddrPrefixes = &iampb.UpdateTenantRequest_DevAddrPrefixesValue{
-				Value: input.tenant.devAddrPrefixes,
+		if input.tenant.hasDevAddrBlocks {
+			req.DevAddrBlocks = &iampb.UpdateTenantRequest_DevAddrBlocksValue{
+				Value: input.tenant.devAddrBlocks,
 			}
 		}
 		if _, err := client.UpdateTenant(ctx, req); err != nil {

@@ -28,11 +28,11 @@ type inputData struct {
 		name    string
 	}
 	tenant struct {
-		hasName            bool
-		name               string
-		hasDevAddrPrefixes bool
-		devAddrPrefixesHex []string
-		devAddrPrefixes    []*packetbroker.DevAddrPrefix
+		hasName          bool
+		name             string
+		hasDevAddrBlocks bool
+		devAddrBlocksHex []string
+		devAddrBlocks    []*packetbroker.DevAddrBlock
 	}
 	apiKey struct {
 		clusterID string
@@ -114,14 +114,17 @@ func parseDevAddrPrefix(s string) (*packetbroker.DevAddrPrefix, error) {
 	return res, nil
 }
 
-func parseDevAddrPrefixClusterID(s string) (*packetbroker.DevAddrPrefix, error) {
+func parseDevAddrBlock(s string) (*packetbroker.DevAddrBlock, error) {
 	parts := strings.SplitN(s, "=", 2)
 	prefix, err := parseDevAddrPrefix(parts[0])
 	if err != nil {
 		return nil, err
 	}
-	if len(parts) > 1 {
-		prefix.HomeNetworkClusterId = parts[1]
+	block := &packetbroker.DevAddrBlock{
+		Prefix: prefix,
 	}
-	return prefix, nil
+	if len(parts) > 1 {
+		block.HomeNetworkClusterId = parts[1]
+	}
+	return block, nil
 }
