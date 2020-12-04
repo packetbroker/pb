@@ -49,7 +49,6 @@ func parseInput() bool {
 	config.BasicAuthClientFlags()
 
 	flag.StringVar(&input.netIDHex, "net-id", "", "NetID (hex)")
-	flag.StringVar(&input.tenantID, "tenant-id", "", "Tenant ID")
 
 	if len(os.Args) < 2 {
 		flag.Parse()

@@ -33,6 +33,8 @@ func parseTenantFlags() bool {
 		return false
 	}
 
+	flag.StringVar(&input.tenantID, "tenant-id", "", "Tenant ID")
+
 	flag.CommandLine.Parse(os.Args[3:])
 
 	flag.Visit(func(f *flag.Flag) {
@@ -76,12 +78,11 @@ func runTenant(ctx context.Context) {
 	client := iampb.NewTenantRegistryClient(conn)
 	switch os.Args[2] {
 	case "list":
-		pageSize := 50
-		for i := 0; ; i += pageSize {
+		offset := uint32(0)
+		for {
 			res, err := client.ListTenants(ctx, &iampb.ListTenantsRequest{
 				NetId:  uint32(*input.netID),
-				Offset: uint32(i),
-				Limit:  uint32(pageSize),
+				Offset: offset,
 			})
 			if err != nil {
 				logger.Error("Failed to list tenants", zap.Error(err))
@@ -95,7 +96,8 @@ func runTenant(ctx context.Context) {
 					return
 				}
 			}
-			if i+len(res.Tenants) >= int(res.Total) {
+			offset += uint32(len(res.Tenants))
+			if len(res.Tenants) == 0 || offset >= res.Total {
 				break
 			}
 		}

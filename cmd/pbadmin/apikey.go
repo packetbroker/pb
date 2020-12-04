@@ -22,13 +22,14 @@ func parseAPIKeyFlags() bool {
 	switch os.Args[2] {
 	case "list", "create":
 	case "delete":
-		flag.CommandLine.StringVar(&input.apiKey.keyID, "key-id", "", "API Key ID")
+		flag.StringVar(&input.apiKey.keyID, "key-id", "", "API Key ID")
 	default:
 		fmt.Fprintln(os.Stderr, "Invalid command")
 		return false
 	}
 
-	flag.CommandLine.StringVar(&input.apiKey.clusterID, "cluster-id", "", "cluster ID")
+	flag.StringVar(&input.tenantID, "tenant-id", "", "Tenant ID")
+	flag.StringVar(&input.apiKey.clusterID, "cluster-id", "", "cluster ID")
 
 	flag.CommandLine.Parse(os.Args[3:])
 

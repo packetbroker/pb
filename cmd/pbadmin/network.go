@@ -58,11 +58,10 @@ func runNetwork(ctx context.Context) {
 	client := iampb.NewNetworkRegistryClient(conn)
 	switch os.Args[2] {
 	case "list":
-		pageSize := 50
-		for i := 0; ; i += pageSize {
+		offset := uint32(0)
+		for {
 			res, err := client.ListNetworks(ctx, &iampb.ListNetworksRequest{
-				Offset: uint32(i),
-				Limit:  uint32(pageSize),
+				Offset: offset,
 			})
 			if err != nil {
 				logger.Error("Failed to list networks", zap.Error(err))
@@ -76,7 +75,8 @@ func runNetwork(ctx context.Context) {
 					return
 				}
 			}
-			if i+len(res.Networks) >= int(res.Total) {
+			offset += uint32(len(res.Networks))
+			if len(res.Networks) == 0 || offset >= res.Total {
 				break
 			}
 		}
