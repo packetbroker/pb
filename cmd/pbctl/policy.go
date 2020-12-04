@@ -6,12 +6,14 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	flag "github.com/spf13/pflag"
 	routingpb "go.packetbroker.org/api/routing"
 	packetbroker "go.packetbroker.org/api/v3"
 	"go.packetbroker.org/pb/cmd/internal/protojson"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"htdvisser.dev/exp/clicontext"
 )
 
@@ -22,6 +24,7 @@ func parsePolicyFlags() bool {
 	}
 	switch os.Args[2] {
 	case "list":
+		flag.BoolVar(&input.policy.defaults, "defaults", false, "default policies")
 	case "set":
 		flag.StringVar(&input.policy.setUplink, "set-uplink", "", "concatenated J (join-request), M (MAC data), A (application data), S (signal quality), L (localization)")
 		flag.StringVar(&input.policy.setDownlink, "set-downlink", "", "concatenated J (join-accept), M (MAC data), A (application data)")
@@ -37,10 +40,6 @@ func parsePolicyFlags() bool {
 	flag.CommandLine.Parse(os.Args[3:])
 
 	if !input.help {
-		if input.forwarderNetIDHex == "" {
-			fmt.Fprintln(os.Stderr, "Must set forwarder-net-id")
-			return false
-		}
 		switch os.Args[2] {
 		case "set":
 			if (input.policy.setUplink != "" || input.policy.setDownlink != "") == input.policy.unset {
@@ -101,27 +100,44 @@ func runPolicy(ctx context.Context) {
 	client := routingpb.NewPolicyManagerClient(conn)
 	switch os.Args[2] {
 	case "list":
-		pageSize := 50
-		for i := 0; ; i += pageSize {
-			res, err := client.ListHomeNetworkPolicies(ctx, &routingpb.ListHomeNetworkPoliciesRequest{
-				ForwarderNetId:    uint32(*input.forwarderNetID),
-				ForwarderTenantId: input.forwarderTenantID,
-				Offset:            uint32(i),
-				Limit:             uint32(pageSize),
-			})
-			if err != nil {
-				logger.Error("Failed to list home network policies", zap.Error(err))
-				clicontext.SetExitCode(ctx, 1)
-				return
+		var lastUpdatedAt time.Time
+		for {
+			var policies []*packetbroker.RoutingPolicy
+			if input.policy.defaults {
+				res, err := client.ListDefaultPolicies(ctx, &routingpb.ListDefaultPoliciesRequest{
+					UpdatedSince: timestamppb.New(lastUpdatedAt),
+				})
+				if err != nil {
+					logger.Error("Failed to list default policies", zap.Error(err))
+					clicontext.SetExitCode(ctx, 1)
+					return
+				}
+				policies = res.Policies
+			} else {
+				req := &routingpb.ListHomeNetworkPoliciesRequest{
+					UpdatedSince: timestamppb.New(lastUpdatedAt),
+				}
+				if input.forwarderNetID != nil {
+					req.ForwarderNetId = uint32(*input.forwarderNetID)
+					req.ForwarderTenantId = input.forwarderTenantID
+				}
+				res, err := client.ListHomeNetworkPolicies(ctx, req)
+				if err != nil {
+					logger.Error("Failed to list Home Network policies", zap.Error(err))
+					clicontext.SetExitCode(ctx, 1)
+					return
+				}
+				policies = res.Policies
 			}
-			for _, p := range res.Policies {
-				if err = protojson.Write(os.Stdout, p); err != nil {
+			for _, p := range policies {
+				if err := protojson.Write(os.Stdout, p); err != nil {
 					logger.Error("Failed to convert policy to JSON", zap.Error(err))
 					clicontext.SetExitCode(ctx, 1)
 					return
 				}
+				lastUpdatedAt = p.UpdatedAt.AsTime()
 			}
-			if i+len(res.Policies) >= int(res.Total) {
+			if len(policies) == 0 {
 				break
 			}
 		}

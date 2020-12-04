@@ -19,6 +19,7 @@ import (
 const usage = `Usage:
 
       Routing policy management:
+      $ pbctl policy list [--forwarder-net-id NETID] [--defaults]
       $ pbctl policy get --forwarder-net-id NETID [--forwarder-tenant-id TENANTID] \
             [--defaults|--home-network-net-id NETID [--home-network-tenant-id TENANTID]]
       $ pbctl policy set --forwarder-net-id NETID [--forwarder-id ID] \
