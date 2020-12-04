@@ -52,6 +52,10 @@ func parseInput() bool {
 		if !parsePolicyFlags() {
 			return false
 		}
+	case "route":
+		if !parseRouteFlags() {
+			return false
+		}
 	default:
 		fmt.Fprintln(os.Stderr, "Invalid command")
 		return false

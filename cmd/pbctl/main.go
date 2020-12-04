@@ -29,8 +29,12 @@ const usage = `Usage:
             [--defaults|--home-network-net-id NETID [--home-network-tenant-id TENANTID]] \
             --unset
 
+      Routes:
+      $ pbctl route list
+
 Commands:
       policy
+      route
 
 Flags:`
 
@@ -72,5 +76,7 @@ func main() {
 	switch input.mode {
 	case "policy":
 		runPolicy(ctx)
+	case "route":
+		runRoute(ctx)
 	}
 }
