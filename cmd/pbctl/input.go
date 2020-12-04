@@ -42,11 +42,6 @@ func parseInput() bool {
 	config.BasicAuthClientFlags()
 	config.OAuth2ClientFlags()
 
-	flag.StringVar(&input.forwarderNetIDHex, "forwarder-net-id", "", "NetID of the Forwarder (hex)")
-	flag.StringVar(&input.forwarderTenantID, "forwarder-tenant-id", "", "Tenant ID of the Forwarder")
-	flag.StringVar(&input.homeNetworkNetIDHex, "home-network-net-id", "", "NetID of the Home Network (hex)")
-	flag.StringVar(&input.homeNetworkTenantID, "home-network-tenant-id", "", "Tenant ID of the Home Network")
-
 	if len(os.Args) < 2 {
 		flag.Parse()
 		return false

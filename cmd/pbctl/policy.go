@@ -37,6 +37,11 @@ func parsePolicyFlags() bool {
 		return false
 	}
 
+	flag.StringVar(&input.forwarderNetIDHex, "forwarder-net-id", "", "NetID of the Forwarder (hex)")
+	flag.StringVar(&input.forwarderTenantID, "forwarder-tenant-id", "", "Tenant ID of the Forwarder")
+	flag.StringVar(&input.homeNetworkNetIDHex, "home-network-net-id", "", "NetID of the Home Network (hex)")
+	flag.StringVar(&input.homeNetworkTenantID, "home-network-tenant-id", "", "Tenant ID of the Home Network")
+
 	flag.CommandLine.Parse(os.Args[3:])
 
 	if !input.help {
@@ -50,6 +55,20 @@ func parsePolicyFlags() bool {
 		case "get":
 			if input.policy.defaults == (input.homeNetworkNetIDHex != "") {
 				fmt.Fprintln(os.Stderr, "Must set either home-network-net-id or defaults")
+				return false
+			}
+		}
+		if input.forwarderNetIDHex != "" {
+			input.forwarderNetID = new(packetbroker.NetID)
+			if err := input.forwarderNetID.UnmarshalText([]byte(input.forwarderNetIDHex)); err != nil {
+				fmt.Fprintln(os.Stderr, "Invalid forwarder-net-id:", err)
+				return false
+			}
+		}
+		if input.homeNetworkNetIDHex != "" {
+			input.homeNetworkNetID = new(packetbroker.NetID)
+			if err := input.homeNetworkNetID.UnmarshalText([]byte(input.homeNetworkNetIDHex)); err != nil {
+				fmt.Fprintln(os.Stderr, "Invalid home-network-net-id:", err)
 				return false
 			}
 		}
