@@ -53,14 +53,14 @@ func parseInput() bool {
 
 	flag.Parse()
 
-	var err error
-	input.client, err = config.OAuth2Client(ctx, "networks")
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Invalid client settings:", err)
-		return false
-	}
-
 	if !input.help {
+		var err error
+		input.client, err = config.OAuth2Client(ctx, "networks")
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Invalid client settings:", err)
+			return false
+		}
+
 		if (input.forwarderNetIDHex != "") == (input.homeNetworkNetIDHex != "") {
 			fmt.Fprintln(os.Stderr, "Must set either forwarder-net-id or home-network-net-id")
 			return false

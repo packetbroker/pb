@@ -62,27 +62,12 @@ func parseInput() bool {
 		return false
 	}
 
-	var err error
-	input.client, err = config.AutomaticClient(ctx, "networks")
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Invalid client settings:", err)
-		return false
-	}
-
 	if !input.help {
-		if input.forwarderNetIDHex != "" {
-			input.forwarderNetID = new(packetbroker.NetID)
-			if err := input.forwarderNetID.UnmarshalText([]byte(input.forwarderNetIDHex)); err != nil {
-				fmt.Fprintln(os.Stderr, "Invalid forwarder-net-id:", err)
-				return false
-			}
-		}
-		if input.homeNetworkNetIDHex != "" {
-			input.homeNetworkNetID = new(packetbroker.NetID)
-			if err := input.homeNetworkNetID.UnmarshalText([]byte(input.homeNetworkNetIDHex)); err != nil {
-				fmt.Fprintln(os.Stderr, "Invalid home-network-net-id:", err)
-				return false
-			}
+		var err error
+		input.client, err = config.AutomaticClient(ctx, "networks")
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Invalid client settings:", err)
+			return false
 		}
 	}
 

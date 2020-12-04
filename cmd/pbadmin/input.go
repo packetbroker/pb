@@ -73,14 +73,14 @@ func parseInput() bool {
 		return false
 	}
 
-	var err error
-	input.client, err = config.BasicAuthClient()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Invalid client settings:", err)
-		return false
-	}
-
 	if !input.help {
+		var err error
+		input.client, err = config.BasicAuthClient()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Invalid client settings:", err)
+			return false
+		}
+
 		if input.netIDHex != "" {
 			input.netID = new(packetbroker.NetID)
 			if err := input.netID.UnmarshalText([]byte(input.netIDHex)); err != nil {
