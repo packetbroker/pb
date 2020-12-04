@@ -18,25 +18,23 @@ func CommonFlags(help, debug *bool) {
 	flag.BoolVarP(debug, "debug", "d", false, "debug mode")
 }
 
-// clientFlags defines common flags used for Client configuration.
-func clientFlags() {
+// ClientFlags defines common flags used for Client configuration.
+func ClientFlags() {
 	flag.String("address", "", `address of the server "host[:port]" (default $PB_ADDRESS)`)
 	flag.Bool("insecure", false, "insecure")
 }
 
 // BasicAuthClientFlags defines flags used for Basic authentication.
 func BasicAuthClientFlags() {
-	clientFlags()
 	flag.StringP("username", "u", "", "IAM username (default $PB_IAM_USERNAME)")
 	flag.StringP("password", "p", "", "IAM password (default $PB_IAM_PASSWORD)")
 }
 
 // OAuth2ClientFlags defines flags used for OAuth Client Credentials flow.
 func OAuth2ClientFlags() {
-	clientFlags()
-	flag.String("client-id", "", "OAuth 2.0 client ID")
-	flag.String("client-secret", "", "OAuth 2.0 client secret")
-	flag.String("token-url", "https://iam.packetbroker.org/token", "OAuth 2.0 token URL")
+	flag.String("client-id", "", "OAuth 2.0 client ID (default $PB_CLIENT_ID)")
+	flag.String("client-secret", "", "OAuth 2.0 client secret (default $PB_CLIENT_SECRET)")
+	flag.String("token-url", client.DefaultTokenURL, "OAuth 2.0 token URL")
 }
 
 // initClient returns initial client configuration.
@@ -58,6 +56,8 @@ func initClient() (*client.Config, error) {
 	return &res, nil
 }
 
+var errNoCredentials = errors.New("no credentials")
+
 // BasicAuthClient returns a client configured with Basic authentication.
 func BasicAuthClient() (*client.Config, error) {
 	res, err := initClient()
@@ -77,6 +77,9 @@ func BasicAuthClient() (*client.Config, error) {
 	if password == "" {
 		password = os.Getenv("PB_IAM_PASSWORD")
 	}
+	if username == "" || password == "" {
+		return nil, errNoCredentials
+	}
 	allowInsecure, _ := flag.CommandLine.GetBool("insecure")
 	res.Credentials = client.BasicAuth(username, password, allowInsecure)
 	return res, nil
@@ -95,10 +98,32 @@ func OAuth2Client(ctx context.Context, scopes ...string) (*client.Config, error)
 	if clientID, err = flag.CommandLine.GetString("client-id"); err != nil {
 		return nil, err
 	}
+	if clientID == "" {
+		clientID = os.Getenv("PB_CLIENT_ID")
+	}
 	if clientSecret, err = flag.CommandLine.GetString("client-secret"); err != nil {
 		return nil, err
+	}
+	if clientSecret == "" {
+		clientSecret = os.Getenv("PB_CLIENT_SECRET")
+	}
+	if clientID == "" || clientSecret == "" {
+		return nil, errNoCredentials
 	}
 	allowInsecure, _ := flag.CommandLine.GetBool("insecure")
 	res.Credentials = client.OAuth2(ctx, tokenURL, clientID, clientSecret, scopes, allowInsecure)
 	return res, nil
+}
+
+// AutomaticClient returns a client configured based on available settings.
+// Basic authentication is preferred. Otherwise, OAuth Client Credentials are used.
+func AutomaticClient(ctx context.Context, oauthScopes ...string) (*client.Config, error) {
+	config, err := BasicAuthClient()
+	if err == nil {
+		return config, nil
+	}
+	if errors.Is(err, errNoCredentials) {
+		return OAuth2Client(ctx, oauthScopes...)
+	}
+	return nil, err
 }
