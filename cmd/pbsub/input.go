@@ -25,9 +25,6 @@ type inputData struct {
 	homeNetworkTenantID  string
 	group                string
 	homeNetworkFilters   struct {
-		forwarderNetIDHex   string
-		forwarderNetID      *packetbroker.NetID
-		forwarderID         string
 		devAddrPrefixesText []string
 		devAddrPrefixes     []*packetbroker.DevAddrPrefix
 	}
@@ -47,8 +44,6 @@ func parseInput() bool {
 	flag.StringVar(&input.homeNetworkClusterID, "home-network-cluster-id", "", "Cluster ID of the Home Network")
 	flag.StringVar(&input.homeNetworkTenantID, "home-network-tenant-id", "", "Tenant ID of the Home Network")
 	flag.StringVar(&input.group, "group", "", "group name of shared subscription")
-	flag.StringVar(&input.homeNetworkFilters.forwarderNetIDHex, "filter-forwarder-net-id", "", "filter Forwarder by NetID")
-	flag.StringVar(&input.homeNetworkFilters.forwarderID, "filter-forwarder-id", "", "filter Forwarder by ID")
 	flag.StringSliceVar(&input.homeNetworkFilters.devAddrPrefixesText, "filter-dev-addr-prefixes", nil, "filter DevAddr prefixes (i.e. 00000000/3)")
 
 	flag.Parse()
@@ -78,13 +73,6 @@ func parseInput() bool {
 			if err := input.homeNetworkNetID.UnmarshalText([]byte(input.homeNetworkNetIDHex)); err != nil {
 				fmt.Fprintln(os.Stderr, "Invalid home-network-net-id:", err)
 				return false
-			}
-			if input.homeNetworkFilters.forwarderNetIDHex != "" {
-				input.homeNetworkFilters.forwarderNetID = new(packetbroker.NetID)
-				if err := input.homeNetworkFilters.forwarderNetID.UnmarshalText([]byte(input.homeNetworkFilters.forwarderNetIDHex)); err != nil {
-					fmt.Fprintln(os.Stderr, "Invalid filter-forwarder-net-id:", err)
-					return false
-				}
 			}
 			if len(input.homeNetworkFilters.devAddrPrefixesText) > 0 {
 				input.homeNetworkFilters.devAddrPrefixes = make([]*packetbroker.DevAddrPrefix, len(input.homeNetworkFilters.devAddrPrefixesText))

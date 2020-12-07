@@ -20,11 +20,13 @@ import (
 const usage = `Usage:
 
       Publish as Forwarder:
-      $ cat message.json | pbpub --forwarder-net-id NETID [--forwarder-id ID] [--forwarder-tenant-id TENANTID]
+      $ cat message.json | pbpub --forwarder-net-id NETID [--forwarder-cluster-id CLUSTERID] \
+          [--forwarder-tenant-id TENANTID]
 
       Publish as Home Network:
-      $ cat message.json | pbpub --home-network-net-id NETID [--home-network-tenant-id TENANTID] \
-          --forwarder-net-id NETID [--forwarder-id ID] [--forwarder-tenant-id TENANTID]
+      $ cat message.json | pbpub --home-network-net-id NETID --forwarder-net-id NETID \
+          [--home-network-cluster-id CLUSTERID] [--home-network-tenant-id TENANTID] \
+          [--forwarder-cluster-id CLUSTERID] [--forwarder-tenant-id TENANTID]
 
 Flags:`
 
