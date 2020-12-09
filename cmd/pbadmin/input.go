@@ -45,7 +45,7 @@ var input = new(inputData)
 
 func parseInput() bool {
 	config.CommonFlags(&input.help, &input.debug)
-	config.ClientFlags()
+	config.ClientFlags("iam.packetbroker.org:443")
 	config.BasicAuthClientFlags()
 
 	flag.StringVar(&input.netIDHex, "net-id", "", "NetID (hex)")

@@ -29,7 +29,7 @@ var input = new(inputData)
 
 func parseInput() bool {
 	config.CommonFlags(&input.help, &input.debug)
-	config.ClientFlags()
+	config.ClientFlags("")
 	config.OAuth2ClientFlags()
 
 	flag.StringVar(&input.forwarderNetIDHex, "forwarder-net-id", "", "NetID of the Forwarder (hex)")

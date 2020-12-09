@@ -38,7 +38,7 @@ var input = new(inputData)
 
 func parseInput() bool {
 	config.CommonFlags(&input.help, &input.debug)
-	config.ClientFlags()
+	config.ClientFlags("packetbroker.io:443")
 	config.BasicAuthClientFlags()
 	config.OAuth2ClientFlags()
 

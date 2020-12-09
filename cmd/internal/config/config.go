@@ -19,8 +19,12 @@ func CommonFlags(help, debug *bool) {
 }
 
 // ClientFlags defines common flags used for Client configuration.
-func ClientFlags() {
-	flag.String("address", "", `address of the server "host[:port]" (default $PB_ADDRESS)`)
+func ClientFlags(defaultAddress string) {
+	if defaultAddress != "" {
+		flag.String("address", "", `address of the server "host[:port]" (default $PB_ADDRESS)`)
+	} else {
+		flag.String("address", defaultAddress, `address of the server "host[:port]"`)
+	}
 	flag.Bool("insecure", false, "insecure")
 }
 
