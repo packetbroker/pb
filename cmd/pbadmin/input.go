@@ -17,22 +17,22 @@ import (
 )
 
 type inputData struct {
-	help, debug bool
-	client      *client.Config
-	netIDHex    string
-	netID       *packetbroker.NetID
-	tenantID    string
-	mode        string
-	network     struct {
+	help, debug      bool
+	client           *client.Config
+	netIDHex         string
+	netID            *packetbroker.NetID
+	tenantID         string
+	devAddrBlocksHex []string
+	devAddrBlocks    []*packetbroker.DevAddrBlock
+	hasDevAddrBlocks bool
+	mode             string
+	network          struct {
 		hasName bool
 		name    string
 	}
 	tenant struct {
-		hasName          bool
-		name             string
-		hasDevAddrBlocks bool
-		devAddrBlocksHex []string
-		devAddrBlocks    []*packetbroker.DevAddrBlock
+		hasName bool
+		name    string
 	}
 	apiKey struct {
 		clusterID string

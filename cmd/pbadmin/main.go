@@ -20,9 +20,9 @@ const usage = `Usage:
 
       Network registry:
       $ pbadmin network list
-      $ pbadmin network create --net-id NETID [--name NAME]
+      $ pbadmin network create --net-id NETID [--name NAME] [--dev-addr-prefixes PREFIX,PREFIX]
       $ pbadmin network get --net-id NETID
-      $ pbadmin network update --net-id NETID [--name NAME]
+      $ pbadmin network update --net-id NETID [--name NAME] [--dev-addr-prefixes PREFIX,PREFIX]
       $ pbadmin network delete --net-id NETID
 
       Tenant registry:

@@ -25,7 +25,7 @@ func parseTenantFlags() bool {
 	case "list":
 	case "create", "update":
 		flag.StringVar(&input.tenant.name, "name", "", "tenant name")
-		flag.StringSliceVar(&input.tenant.devAddrBlocksHex, "dev-addr-blocks", nil, "DevAddr blocks")
+		flag.StringSliceVar(&input.devAddrBlocksHex, "dev-addr-blocks", nil, "DevAddr blocks")
 	case "get":
 	case "delete":
 	default:
@@ -42,7 +42,7 @@ func parseTenantFlags() bool {
 		case "name":
 			input.tenant.hasName = true
 		case "dev-addr-blocks":
-			input.tenant.hasDevAddrBlocks = true
+			input.hasDevAddrBlocks = true
 		}
 	})
 
@@ -53,14 +53,14 @@ func parseTenantFlags() bool {
 		}
 		switch os.Args[2] {
 		case "create", "update":
-			input.tenant.devAddrBlocks = make([]*packetbroker.DevAddrBlock, len(input.tenant.devAddrBlocksHex))
-			for i, s := range input.tenant.devAddrBlocksHex {
+			input.devAddrBlocks = make([]*packetbroker.DevAddrBlock, len(input.devAddrBlocksHex))
+			for i, s := range input.devAddrBlocksHex {
 				block, err := parseDevAddrBlock(s)
 				if err != nil {
 					fmt.Fprintln(os.Stderr, "Invalid DevAddr block:", err)
 					return false
 				}
-				input.tenant.devAddrBlocks[i] = block
+				input.devAddrBlocks[i] = block
 			}
 			fallthrough
 		case "get", "delete":
@@ -108,7 +108,7 @@ func runTenant(ctx context.Context) {
 				NetId:         uint32(*input.netID),
 				TenantId:      input.tenantID,
 				Name:          input.tenant.name,
-				DevAddrBlocks: input.tenant.devAddrBlocks,
+				DevAddrBlocks: input.devAddrBlocks,
 				// TODO: Contact info
 			},
 		})
@@ -142,9 +142,9 @@ func runTenant(ctx context.Context) {
 		if input.tenant.hasName {
 			req.Name = wrapperspb.String(input.tenant.name)
 		}
-		if input.tenant.hasDevAddrBlocks {
-			req.DevAddrBlocks = &iampb.UpdateTenantRequest_DevAddrBlocksValue{
-				Value: input.tenant.devAddrBlocks,
+		if input.hasDevAddrBlocks {
+			req.DevAddrBlocks = &iampb.DevAddrBlocksValue{
+				Value: input.devAddrBlocks,
 			}
 		}
 		if _, err := client.UpdateTenant(ctx, req); err != nil {

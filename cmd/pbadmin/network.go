@@ -25,6 +25,7 @@ func parseNetworkFlags() bool {
 	case "list":
 	case "create", "update":
 		flag.StringVar(&input.network.name, "name", "", "network name")
+		flag.StringSliceVar(&input.devAddrBlocksHex, "dev-addr-blocks", nil, "DevAddr blocks")
 	case "get":
 	case "delete":
 	default:
@@ -38,12 +39,25 @@ func parseNetworkFlags() bool {
 		switch f.Name {
 		case "name":
 			input.network.hasName = true
+		case "dev-addr-blocks":
+			input.hasDevAddrBlocks = true
 		}
 	})
 
 	if !input.help {
 		switch os.Args[2] {
-		case "create", "get", "update", "delete":
+		case "create", "update":
+			input.devAddrBlocks = make([]*packetbroker.DevAddrBlock, len(input.devAddrBlocksHex))
+			for i, s := range input.devAddrBlocksHex {
+				block, err := parseDevAddrBlock(s)
+				if err != nil {
+					fmt.Fprintln(os.Stderr, "Invalid DevAddr block:", err)
+					return false
+				}
+				input.devAddrBlocks[i] = block
+			}
+			fallthrough
+		case "get", "delete":
 			if input.netIDHex == "" {
 				fmt.Fprintln(os.Stderr, "Must set net-id")
 				return false
@@ -84,8 +98,9 @@ func runNetwork(ctx context.Context) {
 	case "create":
 		_, err := client.CreateNetwork(ctx, &iampb.CreateNetworkRequest{
 			Network: &packetbroker.Network{
-				NetId: uint32(*input.netID),
-				Name:  input.network.name,
+				NetId:         uint32(*input.netID),
+				Name:          input.network.name,
+				DevAddrBlocks: input.devAddrBlocks,
 				// TODO: Contact info
 			},
 		})
@@ -116,6 +131,11 @@ func runNetwork(ctx context.Context) {
 		}
 		if input.network.hasName {
 			req.Name = wrapperspb.String(input.network.name)
+		}
+		if input.hasDevAddrBlocks {
+			req.DevAddrBlocks = &iampb.DevAddrBlocksValue{
+				Value: input.devAddrBlocks,
+			}
 		}
 		if _, err := client.UpdateNetwork(ctx, req); err != nil {
 			logger.Error("Failed to update network", zap.Error(err))
