@@ -38,8 +38,8 @@ var input = new(inputData)
 
 func parseInput() bool {
 	config.CommonFlags(&input.help, &input.debug)
-	config.ClientFlags("packetbroker.io:443")
-	config.BasicAuthClientFlags()
+	config.ClientFlags("cp.packetbroker.io:443")
+	config.BasicAuthClientFlags(config.BasicAuthRouter)
 	config.OAuth2ClientFlags()
 
 	if len(os.Args) < 2 {
@@ -63,7 +63,7 @@ func parseInput() bool {
 
 	if !input.help {
 		var err error
-		input.client, err = config.AutomaticClient(ctx, "networks")
+		input.client, err = config.AutomaticClient(ctx, config.BasicAuthRouter, "networks")
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Invalid client settings:", err)
 			return false
