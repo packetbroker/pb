@@ -96,7 +96,7 @@ func runNetwork(ctx context.Context) {
 		}
 
 	case "create":
-		_, err := client.CreateNetwork(ctx, &iampb.CreateNetworkRequest{
+		res, err := client.CreateNetwork(ctx, &iampb.CreateNetworkRequest{
 			Network: &packetbroker.Network{
 				NetId:         uint32(*input.netID),
 				Name:          input.network.name,
@@ -109,9 +109,14 @@ func runNetwork(ctx context.Context) {
 			clicontext.SetExitCode(ctx, 1)
 			return
 		}
+		if err := protojson.Write(os.Stdout, res.Network); err != nil {
+			logger.Error("Failed to convert network to JSON", zap.Error(err))
+			clicontext.SetExitCode(ctx, 1)
+			return
+		}
 
 	case "get":
-		network, err := client.GetNetwork(ctx, &iampb.NetworkRequest{
+		res, err := client.GetNetwork(ctx, &iampb.NetworkRequest{
 			NetId: uint32(*input.netID),
 		})
 		if err != nil {
@@ -119,7 +124,7 @@ func runNetwork(ctx context.Context) {
 			clicontext.SetExitCode(ctx, 1)
 			return
 		}
-		if err = protojson.Write(os.Stdout, network); err != nil {
+		if err := protojson.Write(os.Stdout, res.Network); err != nil {
 			logger.Error("Failed to convert network to JSON", zap.Error(err))
 			clicontext.SetExitCode(ctx, 1)
 			return

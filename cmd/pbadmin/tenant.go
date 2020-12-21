@@ -103,7 +103,7 @@ func runTenant(ctx context.Context) {
 		}
 
 	case "create":
-		_, err := client.CreateTenant(ctx, &iampb.CreateTenantRequest{
+		res, err := client.CreateTenant(ctx, &iampb.CreateTenantRequest{
 			Tenant: &packetbroker.Tenant{
 				NetId:         uint32(*input.netID),
 				TenantId:      input.tenantID,
@@ -117,9 +117,14 @@ func runTenant(ctx context.Context) {
 			clicontext.SetExitCode(ctx, 1)
 			return
 		}
+		if err := protojson.Write(os.Stdout, res.Tenant); err != nil {
+			logger.Error("Failed to convert tenant to JSON", zap.Error(err))
+			clicontext.SetExitCode(ctx, 1)
+			return
+		}
 
 	case "get":
-		tenant, err := client.GetTenant(ctx, &iampb.TenantRequest{
+		res, err := client.GetTenant(ctx, &iampb.TenantRequest{
 			NetId:    uint32(*input.netID),
 			TenantId: input.tenantID,
 		})
@@ -128,7 +133,7 @@ func runTenant(ctx context.Context) {
 			clicontext.SetExitCode(ctx, 1)
 			return
 		}
-		if err = protojson.Write(os.Stdout, tenant); err != nil {
+		if err := protojson.Write(os.Stdout, res.Tenant); err != nil {
 			logger.Error("Failed to convert tenant to JSON", zap.Error(err))
 			clicontext.SetExitCode(ctx, 1)
 			return
