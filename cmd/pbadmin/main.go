@@ -71,7 +71,7 @@ func main() {
 	defer logger.Sync()
 
 	var err error
-	conn, err = client.DialContext(ctx, logger, input.client, 1900)
+	conn, err = client.DialContext(ctx, logger, input.client, 443)
 	if err != nil {
 		logger.Error("Failed to connect", zap.String("address", input.client.Address), zap.Error(err))
 		exitCode = 1

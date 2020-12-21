@@ -46,7 +46,8 @@ var input = new(inputData)
 func parseInput() bool {
 	config.CommonFlags(&input.help, &input.debug)
 	config.ClientFlags("iam.packetbroker.org:443")
-	config.BasicAuthClientFlags()
+	config.BasicAuthClientFlags(config.BasicAuthIAM)
+	config.OAuth2ClientFlags()
 
 	flag.StringVar(&input.netIDHex, "net-id", "", "NetID (hex)")
 
@@ -75,7 +76,7 @@ func parseInput() bool {
 
 	if !input.help {
 		var err error
-		input.client, err = config.BasicAuthClient()
+		input.client, err = config.AutomaticClient(ctx, config.BasicAuthIAM, "networks")
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Invalid client settings:", err)
 			return false
