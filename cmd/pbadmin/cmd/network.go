@@ -68,7 +68,7 @@ var (
 					NetId:         uint32(netID),
 					Name:          name,
 					DevAddrBlocks: devAddrBlocks,
-					// TODO: Contact info
+					// TODO: Contact info (https://github.com/packetbroker/pb/issues/5)
 				},
 			})
 			if err != nil {
@@ -109,7 +109,7 @@ var (
 			netID := pbflag.GetNetID(cmd.Flags(), "")
 			req := &iampb.UpdateNetworkRequest{
 				NetId: uint32(netID),
-				// TODO: Contact info
+				// TODO: Contact info (https://github.com/packetbroker/pb/issues/5)
 			}
 			if cmd.Flags().Lookup("name").Changed {
 				name, _ := cmd.Flags().GetString("name")
