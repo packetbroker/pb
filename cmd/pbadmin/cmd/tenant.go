@@ -76,7 +76,7 @@ var (
 					TenantId:      tenantID.ID,
 					Name:          name,
 					DevAddrBlocks: devAddrBlocks,
-					// TODO: Contact info
+					// TODO: Contact info (https://github.com/packetbroker/pb/issues/5)
 				},
 			})
 			if err != nil {
@@ -120,7 +120,7 @@ var (
 			req := &iampb.UpdateTenantRequest{
 				NetId:    uint32(tenantID.NetID),
 				TenantId: tenantID.ID,
-				// TODO: Contact info
+				// TODO: Contact info (https://github.com/packetbroker/pb/issues/5)
 			}
 			if cmd.Flags().Lookup("name").Changed {
 				name, _ := cmd.Flags().GetString("name")

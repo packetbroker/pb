@@ -49,7 +49,7 @@ func OAuth2(ctx context.Context, tokenURL, clientID, clientSecret string, scopes
 		TokenURL:     tokenURL,
 	}
 	return &clientCredentials{
-		// TODO: Cache tokens on disk
+		// TODO: Cache tokens on disk (https://github.com/packetbroker/pb/issues/6)
 		tokenSource: config.TokenSource(ctx),
 		insecure:    insecure,
 	}
