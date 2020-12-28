@@ -2,7 +2,23 @@
 
 Packet Broker Clients are command-line utilities for working with [Packet Broker](https://www.packetbroker.org).
 
----
+## Services
+
+Action | Service | Client | Basic Auth | OAuth 2.0
+--- | --- | --- | --- | ---
+Manage networks | IAM | `pbadmin` | administrator |
+Manage tenants | IAM | `pbadmin` | administrator | network
+Manage API keys | IAM | `pbadmin` | administrator | network
+Manage routing policies | Control Plane | `pbctl` | | network and tenant
+List routes | Control Plane | `pbctl` | router |
+List routing policies | Control Plane | `pbctl` | router |
+Publish and subscribe | Data Plane | `pbpub`, `pbsub` | | network
+
+IAM and Control Plane are deployed in a global cluster. Routers (with Data Plane) are deployed in regional clusters:
+
+Region | Address
+--- | ---
+Europe | `eu.packetbroker.io:443`
 
 ## Getting Started
 
@@ -12,43 +28,55 @@ Make sure you have [Go](https://golang.org/doc/install) installed in your enviro
 
 ```bash
 $ go get go.packetbroker.org/pb/cmd/pbadmin
+$ go get go.packetbroker.org/pb/cmd/pbctl
 $ go get go.packetbroker.org/pb/cmd/pbpub
 $ go get go.packetbroker.org/pb/cmd/pbsub
 ```
 
 ### Configuration
 
-In order to use the Packet Broker Clients, you need a client certificate signed by Packet Broker CA. Please see [Configuration](./configs) for more information.
+Create a configuration file `$HOME/.pb.yaml` or `.pb.yaml` in the working directory:
 
-Make sure you have `cert.pem`, `key.pem` and [`ca.pem`](./configs/ca.pem) in your working directory.
+```yaml
+# Router region:
+router-address: "eu.packetbroker.org:443"
 
-Instead of passing the Packet Broker address via the `--address` flag on each command, you can set `PB_ADDRESS` in your environment like so:
+# Network or tenant API key ID and secret key value:
+client-id: "KZUCD5XAYT6EJ5BH"
+client-secret: "E67X5675UCQFTTJMUD73URQOLPA5VT4GBFLPCMUHZWK52ML5"
 
-```bash
-export PB_ADDRESS=staging.packetbroker.io
+# Uncomment if using pbadmin with full administrative access:
+#iam-username: "admin"
+#iam-password: "admin"
+
+# Uncomment if using pbctl with router access:
+#controlplane-username: "router"
+#controlplane-password: "router"
 ```
 
-If you don't specify a port, `pbadmin`, `pbpub` and `pbsub` use the default ports:
+### Command-Line Interface
 
-| Service | Port | Used By |
-| --- | ---: | --- |
-| Control Plane | `1900` | `pbadmin` |
-| Data Plane | `1900` | `pbpub`, `pbsub` |
+The command-line utilities `pbadmin`, `pbctl`, `pbpub` and `pbsub` contain extensive examples. Specify `--help` to show examples and possible flags.
 
 ### Manage Tenants
 
-Packet Broker supports multi-tenancy to assign `DevAddr` blocks to tenants. When routing uplink traffic, Packet Broker Router looks up the Home Network tenant by DevAddr and applies routing policies on the tenant-level. Forwarders can specify a tenant ID as well.
+Packet Broker Identity and Access Management (IAM) stores networks and tenants. Networks are LoRaWAN networks with a NetID, i.e. `000013` (with DevAddr prefix `26000000/7`). Tenants make use of one or more DevAddr blocks within a NetID, i.e. NetID `000013` with prefix `26AA0000/16`. Tenants have a unique identifier within the NetID, called the tenant ID.
 
-Tenants are optional. When there are no tenants or when a DevAddr does not match any tenant's DevAddr prefixes, the tenant ID remains empty and the routing policies of the NetID is used.
-
-As NetID `000013`, to create or update tenant `tenant-a` with DevAddr prefixes `26AA0000/16` and `26BB0000/16`:
+As NetID `000013`, to create tenant `tenant-a` with DevAddr blocks `26AA0000/16` and `26BB0000/16`:
 
 ```bash
-$ pbadmin tenant set --net-id 000013 --tenant-id tenant-a \
-    --dev-addr-prefixes 26AA0000/16,26BB0000/16
+$ pbadmin tenant create --net-id 000013 --tenant-id tenant-a \
+    --name "Tenant A" --dev-addr-blocks 26AA0000/16,26BB0000/16
 ```
 
 >The prefixes indicate the base DevAddr and the bit length, like [CIDR notation](https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing#CIDR_notation). For example, `26AA0000/16` matches all DevAddr from `26AA0000` to `26AAFFFF`.
+
+Optionally, you can specify a Home Network cluster. If your network uses multiple clusters, you can let Packet Broker route traffic to these clusters:
+
+```bash
+$ pbadmin tenant update --net-id 000013 --tenant-id tenant a \
+    --dev-addr-blocks 26AA0000/16=eu1,26BB0000/16=eu2
+```
 
 To list tenants:
 
@@ -68,32 +96,42 @@ To delete a tenant:
 $ pbadmin tenant delete --net-id 000013 --tenant-id tenant-a
 ```
 
+### Manage API Keys
+
+API keys are used by clients of Packet Broker Router: LoRaWAN network servers and the command-line utilities `pbpub` and `pbsub`.
+
+You can create API keys for a network, a tenant, a named cluster in a network and a named cluster in a tenant. For example, to create an API key for a tenant:
+
+```bash
+$ pbadmin apikey create --net-id 000042 --tenant-id tenant-a
+```
+
+And for a named cluster in a tenant:
+
+```bash
+$ pbadmin apikey create --net-id 000042 --tenant-id tenant-a --cluster-id eu1
+```
+
 ### Configure Routing Policies
 
-As a Forwarder, you can configure a default routing policy for all Home Networks, and routing policies per Home Network with `pbadmin`. 
+As a Forwarder, you can configure a default routing policy for all Home Networks and routing policies per Home Network with `pbctl`. 
 
 As Forwarder NetID `000042`, to see the default routing policy:
 
 ```bash
-$ pbadmin policy get --forwarder-net-id 000042 --defaults
+$ pbctl policy get --forwarder-net-id 000042 --defaults
 ```
 
 To see the routing policy for Home Network NetID `C00123`:
 
 ```bash
-$ pbadmin policy get --forwarder-net-id 000042 --home-network-net-id C00123
-```
-
-To see the routing policy for you own network:
-
-```bash
-$ pbadmin policy get --forwarder-net-id 000042 --home-network-net-id 000042
+$ pbctl policy get --forwarder-net-id 000042 --home-network-net-id C00123
 ```
 
 To see the routing policy of Forwrader tenant `tenant-a` for Home Network NetID `C00123` tenant `tenant-b`:
 
 ```bash
-$ pbadmin policy get --forwarder-net-id 000042 --forwarder-tenant-id tenant-a \
+$ pbctl policy get --forwarder-net-id 000042 --forwarder-tenant-id tenant-a \
     --home-network-net-id C00123 --home-network-tenant-id tenant-b
 ```
 
@@ -110,67 +148,67 @@ You can set policies by specifying letters from the following table:
 To enable all exchange by default:
 
 ```bash
-$ pbadmin policy set --forwarder-net-id 000042 --defaults \
+$ pbctl policy set --forwarder-net-id 000042 --defaults \
     --set-uplink JMASL --set-downlink --JMA
 ```
 
 To enable only device activation and MAC commands in both directions with Home Network NetID `C00123`:
 
 ```bash
-$ pbadmin policy set --forwarder-net-id 000042 --home-network-net-id C00123 \
+$ pbctl policy set --forwarder-net-id 000042 --home-network-net-id C00123 \
     --set-uplink JM --set-downlink --JM
 ```
 
 To enable only device activation and MAC commands in both directions of Forwarder tenant `tenant-a` with Home Network NetID `C00123` tenant `tenant-b`:
 
 ```bash
-$ pbadmin policy set --forwarder-net-id 000042 --forwarder-tenant-id tenant-a \
+$ pbctl policy set --forwarder-net-id 000042 --forwarder-tenant-id tenant-a \
     --home-network-net-id C00123 --home-network-tenant-id tenant-b \
     --set-uplink JM --set-downlink --JM
 ```
 
-To unset the routing policy, use `--unset`.
-
 ### Publish and Subscribe Traffic
 
-To subscribe to routed downlink traffic:
+To subscribe to routed downlink traffic as network, tenant, and with or without named cluster:
 
 ```bash
-$ pbsub --forwarder-net-id 000042 --forwarder-id example --group debug
-$ pbsub --forwarder-net-id 000042 --forwarder-id example \
-    --forwarder-tenant-id test --group debug
+$ pbsub --forwarder-net-id 000042 --group debug
+$ pbsub --forwarder-net-id 000042 --forwarder-tenant-id tenant-a --group debug
+$ pbsub --forwarder-net-id 000042 --forwarder-cluster-id eu1 --group debug
+$ pbsub --forwarder-net-id 000042 --forwarder-tenant-id tenant-a \
+    --forwarder-cluster-id eu1 --group debug
 ```
 
-To subscribe to routed uplink traffic:
+To subscribe to routed uplink traffic as network, tenant, and with or without named cluster:
 
 ```bash
 $ pbsub --home-network-net-id 000042 --group debug
-$ pbsub --home-network-net-id 000042 --home-network-tenant-id test --group debug
-```
-
-You can also subscribe to routed uplink traffic from your own Forwarder NetID and optionally a specific ID:
-
-```bash
-$ pbsub --home-network-net-id 000042 --filter-forwarder-net-id 000042 \
-    --filter-forwarder-id example --group debug
+$ pbsub --home-network-net-id 000042 --home-network-tenant-id tenant-a --group debug
+$ pbsub --home-network-net-id 000042 --home-network-cluster-id eu1 --group debug
+$ pbsub --home-network-net-id 000042 --home-network-tenant-id tenant-a \
+    --home-network-cluster-id eu1 --group debug
 ```
 
 >**Important**: When using `pbsub`, specify a shared subscription group that is different from the group used in production. Otherwise, traffic gets split to your production subscriptions and your testing subscriptions.
 
-To publish an uplink message for testing, you can pipe a JSON file to `pbpub`, specifying a Forwarder:
+To publish an uplink message in `uplink.json` as Forwarder network, tenant, and with or without named cluster:
 
 ```bash
-$ cat uplink.json | pbpub --forwarder-net-id 000042 --forwarder-id example
-$ cat uplink.json | pbpub --forwarder-net-id 000042 --forwarder-id example \
-    --forwarder-tenant-id test
+$ pbpub --forwarder-net-id 000042 < uplink.json
+$ pbpub --forwarder-net-id 000042 --forwarder-tenant-id tenant-a < uplink.json
+$ pbpub --forwarder-net-id 000042 --forwarder-cluster-id eu1 < uplink.json
+$ pbpub --forwarder-net-id 000042 --forwarder-tenant-id tenant-a \
+    --forwarder-cluster-id eu1 < uplink.json
 ```
 
-To publish a downlink message for testing, you can pipe a JSON file to `pbpub`, specifying a Home Network:
+To publish a downlink message in `downlink.json`, as Home Network network, tenant, and with or without named cluster:
 
 ```bash
-$ cat downlink.json | pbpub --home-network-net-id 000042
-$ cat downlink.json | pbpub --home-network-net-id 000042 \
-    --home-network-tenant-id test
+$ pbpub --home-network-net-id 000042 < downlink.json
+$ pbpub --home-network-net-id 000042 --home-network-tenant-id tenant-a < downlink.json
+$ pbpub --home-network-net-id 000042 --home-network-cluster-id eu1 < downlink.json
+$ pbpub --home-network-net-id 000042 --home-network-tenant-id tenant-a \
+    --home-network-cluster-id eu1 < downlink.json
 ```
 
 See [Examples](./examples) for example JSON files.

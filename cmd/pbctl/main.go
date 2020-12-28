@@ -2,7 +2,7 @@
 
 package main
 
-import "go.packetbroker.org/pb/cmd/pbsub/cmd"
+import "go.packetbroker.org/pb/cmd/pbctl/cmd"
 
 func main() {
 	cmd.Execute()
