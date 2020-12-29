@@ -3,15 +3,12 @@
 package cmd
 
 import (
-	"os"
-	"time"
-
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	routingpb "go.packetbroker.org/api/routing"
 	packetbroker "go.packetbroker.org/api/v3"
+	"go.packetbroker.org/pb/cmd/internal/column"
 	pbflag "go.packetbroker.org/pb/cmd/internal/pbflag"
-	"go.packetbroker.org/pb/cmd/internal/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -40,7 +37,7 @@ var (
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
 				client        = routingpb.NewPolicyManagerClient(conn)
-				lastUpdatedAt time.Time
+				lastUpdatedAt *timestamppb.Timestamp
 			)
 			forwarderTenantID := pbflag.GetTenantID(cmd.Flags(), "forwarder")
 			defaults, _ := cmd.Flags().GetBool("defaults")
@@ -48,7 +45,7 @@ var (
 				var policies []*packetbroker.RoutingPolicy
 				if defaults {
 					res, err := client.ListDefaultPolicies(ctx, &routingpb.ListDefaultPoliciesRequest{
-						UpdatedSince: timestamppb.New(lastUpdatedAt),
+						UpdatedSince: lastUpdatedAt,
 					})
 					if err != nil {
 						return err
@@ -56,7 +53,7 @@ var (
 					policies = res.Policies
 				} else {
 					req := &routingpb.ListHomeNetworkPoliciesRequest{
-						UpdatedSince: timestamppb.New(lastUpdatedAt),
+						UpdatedSince: lastUpdatedAt,
 					}
 					if !forwarderTenantID.IsEmpty() {
 						req.ForwarderNetId = uint32(forwarderTenantID.NetID)
@@ -68,15 +65,11 @@ var (
 					}
 					policies = res.Policies
 				}
-				for _, p := range policies {
-					if err := protojson.Write(os.Stdout, p); err != nil {
-						return err
-					}
-					lastUpdatedAt = p.UpdatedAt.AsTime()
-				}
 				if len(policies) == 0 {
 					break
 				}
+				column.WritePolicies(tabout, defaults, policies...)
+				lastUpdatedAt = policies[len(policies)-1].GetUpdatedAt()
 			}
 			return nil
 		},
@@ -124,8 +117,9 @@ may use their infrastructure.`,
 				Uplink:            uplink,
 				Downlink:          downlink,
 			}
+			defaults, _ := cmd.Flags().GetBool("defaults")
 			var err error
-			if defaults, _ := cmd.Flags().GetBool("defaults"); defaults {
+			if defaults {
 				_, err = client.SetDefaultPolicy(ctx, &routingpb.SetPolicyRequest{
 					Policy: policy,
 				})
@@ -140,7 +134,7 @@ may use their infrastructure.`,
 			if err != nil {
 				return err
 			}
-			return protojson.Write(os.Stdout, policy)
+			return column.WritePolicies(tabout, defaults, policy)
 		},
 	}
 	policyGetCmd = &cobra.Command{
@@ -163,7 +157,8 @@ may use their infrastructure.`,
 				err    error
 			)
 			forwarderTenantID := pbflag.GetTenantID(cmd.Flags(), "forwarder")
-			if defaults, _ := cmd.Flags().GetBool("defaults"); defaults {
+			defaults, _ := cmd.Flags().GetBool("defaults")
+			if defaults {
 				res, err = client.GetDefaultPolicy(ctx, &routingpb.GetDefaultPolicyRequest{
 					ForwarderNetId:    uint32(forwarderTenantID.NetID),
 					ForwarderTenantId: forwarderTenantID.ID,
@@ -180,7 +175,7 @@ may use their infrastructure.`,
 			if err != nil {
 				return err
 			}
-			return protojson.Write(os.Stdout, res.Policy)
+			return column.WritePolicies(tabout, defaults, res.Policy)
 		},
 	}
 	policyDeleteCmd = &cobra.Command{

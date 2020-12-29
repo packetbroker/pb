@@ -4,14 +4,13 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	iampb "go.packetbroker.org/api/iam"
 	packetbroker "go.packetbroker.org/api/v3"
+	"go.packetbroker.org/pb/cmd/internal/column"
 	pbflag "go.packetbroker.org/pb/cmd/internal/pbflag"
-	"go.packetbroker.org/pb/cmd/internal/protojson"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
@@ -20,17 +19,16 @@ var (
 		Use:     "tenant",
 		Aliases: []string{"tenants", "tnt", "tnts", "t"},
 		Short:   "Manage Packet Broker tenants",
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("tenant called")
-		},
 	}
 	tenantListCmd = &cobra.Command{
-		Use:     "list",
-		Aliases: []string{"ls"},
-		Short:   "List tenants",
+		Use:          "list",
+		Aliases:      []string{"ls"},
+		Short:        "List tenants",
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			netID := pbflag.GetNetID(cmd.Flags(), "")
 			offset := uint32(0)
+			fmt.Fprintln(tabout, "NetID\tTenant ID\tName\tDevAddr Blocks\t")
 			for {
 				res, err := iampb.NewTenantRegistryClient(conn).ListTenants(ctx, &iampb.ListTenantsRequest{
 					NetId:  uint32(netID),
@@ -40,9 +38,12 @@ var (
 					return err
 				}
 				for _, t := range res.Tenants {
-					if err = protojson.Write(os.Stdout, t); err != nil {
-						return err
-					}
+					fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t\n",
+						packetbroker.NetID(t.GetNetId()),
+						t.GetTenantId(),
+						t.GetName(),
+						column.DevAddrBlocks(t.GetDevAddrBlocks()),
+					)
 				}
 				offset += uint32(len(res.Tenants))
 				if len(res.Tenants) == 0 || offset >= res.Total {
@@ -82,12 +83,13 @@ var (
 			if err != nil {
 				return err
 			}
-			return protojson.Write(os.Stdout, res.Tenant)
+			return column.WriteTenant(tabout, res.Tenant)
 		},
 	}
 	tenantGetCmd = &cobra.Command{
-		Use:   "get",
-		Short: "Get a tenant",
+		Use:          "get",
+		Short:        "Get a tenant",
+		SilenceUsage: true,
 		Example: `
   Get:
     $ pbadmin tenant get --net-id 000013 --tenant-id tti`,
@@ -100,7 +102,7 @@ var (
 			if err != nil {
 				return err
 			}
-			return protojson.Write(os.Stdout, res.Tenant)
+			return column.WriteTenant(tabout, res.Tenant)
 		},
 	}
 	tenantUpdateCmd = &cobra.Command{

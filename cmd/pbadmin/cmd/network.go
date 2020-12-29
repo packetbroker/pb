@@ -3,14 +3,14 @@
 package cmd
 
 import (
-	"os"
+	"fmt"
 
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	iampb "go.packetbroker.org/api/iam"
 	packetbroker "go.packetbroker.org/api/v3"
-	pbflag "go.packetbroker.org/pb/cmd/internal/pbflag"
-	"go.packetbroker.org/pb/cmd/internal/protojson"
+	"go.packetbroker.org/pb/cmd/internal/column"
+	"go.packetbroker.org/pb/cmd/internal/pbflag"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
@@ -21,11 +21,13 @@ var (
 		Short:   "Manage Packet Broker networks",
 	}
 	networkListCmd = &cobra.Command{
-		Use:     "list",
-		Aliases: []string{"ls"},
-		Short:   "List networks",
+		Use:          "list",
+		Aliases:      []string{"ls"},
+		Short:        "List networks",
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			offset := uint32(0)
+			fmt.Fprintln(tabout, "NetID\tName\tDevAddr Blocks\t")
 			for {
 				res, err := iampb.NewNetworkRegistryClient(conn).ListNetworks(ctx, &iampb.ListNetworksRequest{
 					Offset: offset,
@@ -34,9 +36,11 @@ var (
 					return err
 				}
 				for _, t := range res.Networks {
-					if err = protojson.Write(os.Stdout, t); err != nil {
-						return err
-					}
+					fmt.Fprintf(tabout, "%s\t%s\t%s\t\n",
+						packetbroker.NetID(t.GetNetId()),
+						t.GetName(),
+						column.DevAddrBlocks(t.GetDevAddrBlocks()),
+					)
 				}
 				offset += uint32(len(res.Networks))
 				if len(res.Networks) == 0 || offset >= res.Total {
@@ -74,12 +78,13 @@ var (
 			if err != nil {
 				return err
 			}
-			return protojson.Write(os.Stdout, res.Network)
+			return column.WriteNetwork(tabout, res.Network)
 		},
 	}
 	networkGetCmd = &cobra.Command{
-		Use:   "get",
-		Short: "Get a network",
+		Use:          "get",
+		Short:        "Get a network",
+		SilenceUsage: true,
 		Example: `
   Get:
     $ pbadmin network get --net-id 000013`,
@@ -91,7 +96,7 @@ var (
 			if err != nil {
 				return err
 			}
-			return protojson.Write(os.Stdout, res.Network)
+			return column.WriteNetwork(tabout, res.Network)
 		},
 	}
 	networkUpdateCmd = &cobra.Command{

@@ -8,8 +8,9 @@ import (
 
 	"github.com/spf13/cobra"
 	iampb "go.packetbroker.org/api/iam"
+	packetbroker "go.packetbroker.org/api/v3"
+	"go.packetbroker.org/pb/cmd/internal/column"
 	pbflag "go.packetbroker.org/pb/cmd/internal/pbflag"
-	"go.packetbroker.org/pb/cmd/internal/protojson"
 )
 
 var (
@@ -19,9 +20,10 @@ var (
 		Short:   "Manage Packet Broker API keys for networks and tenants",
 	}
 	apiKeyListCmd = &cobra.Command{
-		Use:     "list",
-		Aliases: []string{"ls"},
-		Short:   "List API keys",
+		Use:          "list",
+		Aliases:      []string{"ls"},
+		Short:        "List API keys",
+		SilenceUsage: true,
 		Example: `
   List API keys of a network:
     $ pbadmin apikey list --net-id 000013
@@ -44,10 +46,15 @@ var (
 			if err != nil {
 				return err
 			}
+			fmt.Fprintln(tabout, "Key ID\tNetID\tTenant ID\tCluster ID\tLast Used\t")
 			for _, t := range res.Keys {
-				if err = protojson.Write(os.Stdout, t); err != nil {
-					return err
-				}
+				fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t%s\t\n",
+					t.GetKeyId(),
+					packetbroker.NetID(t.GetNetId()),
+					t.GetTenantId(),
+					t.GetClusterId(),
+					(*column.TimeSince)(t.GetAuthenticatedAt()),
+				)
 			}
 			return nil
 		},
@@ -82,7 +89,13 @@ the API key in a secure place, as it cannot be retrieved after create.`,
 				return err
 			}
 			fmt.Fprintln(os.Stderr, "Store the API key now in a secure place, as it cannot be retrieved later.")
-			return protojson.Write(os.Stdout, res.Key)
+			return column.WriteKV(tabout,
+				"Key ID", res.Key.GetKeyId(),
+				"Secret Key", res.Key.GetKey(),
+				"NetID", packetbroker.NetID(res.Key.GetNetId()),
+				"Tenant ID", res.Key.GetTenantId(),
+				"Cluster ID", res.Key.GetClusterId(),
+			)
 		},
 	}
 	apiKeyDeleteCmd = &cobra.Command{
