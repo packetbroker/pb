@@ -126,9 +126,10 @@ var (
 		},
 	}
 	networkDeleteCmd = &cobra.Command{
-		Use:     "delete",
-		Aliases: []string{"rm"},
-		Short:   "Delete a network",
+		Use:          "delete",
+		Aliases:      []string{"rm"},
+		Short:        "Delete a network",
+		SilenceUsage: true,
 		Example: `
   Delete:
     $ pbadmin network delete --net-id 000013`,

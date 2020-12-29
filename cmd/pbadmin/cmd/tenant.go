@@ -137,9 +137,10 @@ var (
 		},
 	}
 	tenantDeleteCmd = &cobra.Command{
-		Use:     "delete",
-		Aliases: []string{"rm"},
-		Short:   "Delete a tenant",
+		Use:          "delete",
+		Aliases:      []string{"rm"},
+		Short:        "Delete a tenant",
+		SilenceUsage: true,
 		Example: `
   Delete:
     $ pbadmin tenant delete --net-id 000013 --tenant-id tti`,

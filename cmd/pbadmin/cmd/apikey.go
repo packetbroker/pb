@@ -86,9 +86,10 @@ the API key in a secure place, as it cannot be retrieved after create.`,
 		},
 	}
 	apiKeyDeleteCmd = &cobra.Command{
-		Use:     "delete",
-		Aliases: []string{"rm"},
-		Short:   "Delete an API key",
+		Use:          "delete",
+		Aliases:      []string{"rm"},
+		Short:        "Delete an API key",
+		SilenceUsage: true,
 		Example: `
   Delete an API key:
     $ pbadmin apikey delete --key-id C5232IFFX4UKEELB`,
