@@ -25,7 +25,7 @@ var (
 	ctx    = context.Background()
 	logger *zap.Logger
 	conn   *grpc.ClientConn
-	tabout = tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	tabout = tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
 )
 
 var rootCmd = &cobra.Command{
