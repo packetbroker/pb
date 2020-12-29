@@ -5,6 +5,7 @@ package column
 import (
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 	"time"
 
@@ -50,8 +51,28 @@ func WriteKV(w io.Writer, kv ...interface{}) error {
 	return nil
 }
 
+type sortBlocksByPrefix []*packetbroker.DevAddrBlock
+
+func (r sortBlocksByPrefix) Len() int {
+	return len(r)
+}
+
+func (r sortBlocksByPrefix) Less(i, j int) bool {
+	if r[i].GetPrefix().GetValue() < r[j].GetPrefix().GetValue() {
+		return true
+	} else if r[i].GetPrefix().GetValue() == r[j].GetPrefix().GetValue() {
+		return r[i].GetPrefix().GetLength() < r[j].GetPrefix().GetLength()
+	}
+	return false
+}
+
+func (r sortBlocksByPrefix) Swap(i, j int) {
+	r[i], r[j] = r[j], r[i]
+}
+
 // WriteDevAddrBlocks writes the DevAddr blocks as a table.
 func WriteDevAddrBlocks(w io.Writer, blocks []*packetbroker.DevAddrBlock) error {
+	sort.Sort(sortBlocksByPrefix(blocks))
 	for _, b := range blocks {
 		if _, err := fmt.Fprintf(w, "%08X/%d\t%s\t\n",
 			b.GetPrefix().GetValue(),
