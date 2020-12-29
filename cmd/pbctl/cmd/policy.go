@@ -183,6 +183,47 @@ may use their infrastructure.`,
 			return protojson.Write(os.Stdout, res.Policy)
 		},
 	}
+	policyDeleteCmd = &cobra.Command{
+		Use:          "delete",
+		Aliases:      []string{"rm"},
+		Short:        "Delete a policy",
+		SilenceUsage: true,
+		Example: `
+  Delete default policy of Forwarder network:
+    $ pbctl policy delete --forwarder-net-id 000013 --defaults
+
+  Delete default policy of Forwarder tenant:
+    $ pbctl policy delete --forwarder-net-id 000013 --forwarder-tenant-id tti \
+      --defaults
+
+  Delete policy between The Things Network (NetID 000013) and Senet (000009):
+    $ pbctl policy delete --forwarder-net-id 000013 --home-network-net-id 000009`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			client := routingpb.NewPolicyManagerClient(conn)
+			forwarderTenantID := pbflag.GetTenantID(cmd.Flags(), "forwarder")
+			policy := &packetbroker.RoutingPolicy{
+				ForwarderNetId:    uint32(forwarderTenantID.NetID),
+				ForwarderTenantId: forwarderTenantID.ID,
+			}
+			var err error
+			if defaults, _ := cmd.Flags().GetBool("defaults"); defaults {
+				_, err = client.SetDefaultPolicy(ctx, &routingpb.SetPolicyRequest{
+					Policy: policy,
+				})
+			} else {
+				homeNetworkTenantID := pbflag.GetTenantID(cmd.Flags(), "home-network")
+				policy.HomeNetworkNetId = uint32(homeNetworkTenantID.NetID)
+				policy.HomeNetworkTenantId = homeNetworkTenantID.ID
+				_, err = client.SetHomeNetworkPolicy(ctx, &routingpb.SetPolicyRequest{
+					Policy: policy,
+				})
+			}
+			if err != nil {
+				return err
+			}
+			return nil
+		},
+	}
 )
 
 func policySourceFlags() *flag.FlagSet {
@@ -211,4 +252,7 @@ func init() {
 
 	policyGetCmd.Flags().AddFlagSet(policyTargetFlags())
 	policyCmd.AddCommand(policyGetCmd)
+
+	policyDeleteCmd.Flags().AddFlagSet(policyTargetFlags())
+	policyCmd.AddCommand(policyDeleteCmd)
 }
