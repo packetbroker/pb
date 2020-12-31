@@ -49,10 +49,10 @@ var rootCmd = &cobra.Command{
       $ pbsub --forwarder-net-id 000013 --forwarder-tenant-id community
 
     Subscribe as named cluster in network:
-      $ pbsub  --forwarder-net-id 000013 --forwarder-cluster-id eu1
+      $ pbsub --forwarder-net-id 000013 --forwarder-cluster-id eu1
 
     Subscribe as named cluster in tenant:
-      $ pbsub  --forwarder-net-id 000013 --forwarder-tenant-id community \
+      $ pbsub --forwarder-net-id 000013 --forwarder-tenant-id community \
         --forwarder-cluster-id eu1
 
   Subscribe as Home Network:
