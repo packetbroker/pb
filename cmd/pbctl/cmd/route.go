@@ -12,6 +12,29 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+type sortRoutesByEndpoint []*packetbroker.DevAddrPrefixRoute
+
+func (r sortRoutesByEndpoint) Len() int {
+	return len(r)
+}
+
+func (r sortRoutesByEndpoint) Less(i, j int) bool {
+	if r[i].NetId < r[j].NetId {
+		return true
+	} else if r[i].NetId == r[j].NetId {
+		if r[i].TenantId < r[j].TenantId {
+			return true
+		} else if r[i].TenantId == r[j].TenantId {
+			return r[i].HomeNetworkClusterId < r[j].HomeNetworkClusterId
+		}
+	}
+	return false
+}
+
+func (r sortRoutesByEndpoint) Swap(i, j int) {
+	r[i], r[j] = r[j], r[i]
+}
+
 type sortRoutesByPrefix []*packetbroker.DevAddrPrefixRoute
 
 func (r sortRoutesByPrefix) Len() int {
@@ -22,7 +45,11 @@ func (r sortRoutesByPrefix) Less(i, j int) bool {
 	if r[i].GetPrefix().GetValue() < r[j].GetPrefix().GetValue() {
 		return true
 	} else if r[i].GetPrefix().GetValue() == r[j].GetPrefix().GetValue() {
-		return r[i].GetPrefix().GetLength() < r[j].GetPrefix().GetLength()
+		if r[i].GetPrefix().GetLength() < r[j].GetPrefix().GetLength() {
+			return true
+		} else if r[i].GetPrefix().GetLength() == r[j].GetPrefix().GetLength() {
+			return sortRoutesByEndpoint(r).Less(i, j)
+		}
 	}
 	return false
 }
