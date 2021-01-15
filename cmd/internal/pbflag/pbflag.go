@@ -101,6 +101,10 @@ func (f *devAddrBlocksValue) String() string {
 }
 
 func (f *devAddrBlocksValue) Set(s string) error {
+	if s == "" {
+		*f = []*packetbroker.DevAddrBlock{}
+		return nil
+	}
 	blocks := strings.Split(s, ",")
 	res := make([]*packetbroker.DevAddrBlock, len(blocks))
 	for i, b := range blocks {
