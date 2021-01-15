@@ -134,7 +134,9 @@ func asHomeNetwork(homeNetwork packetbroker.Endpoint, group string) error {
 		},
 		{
 			Message: &packetbroker.RoutingFilter_JoinRequest_{
-				JoinRequest: &packetbroker.RoutingFilter_JoinRequest{},
+				JoinRequest: &packetbroker.RoutingFilter_JoinRequest{
+					EuiPrefixes: []*packetbroker.RoutingFilter_JoinRequest_EUIPrefixes{{}},
+				},
 			},
 		},
 	}
