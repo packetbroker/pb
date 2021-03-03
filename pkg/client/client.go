@@ -13,6 +13,7 @@ import (
 	"time"
 
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -85,9 +86,11 @@ func DialContext(ctx context.Context, logger *zap.Logger, config *Config, defaul
 			runtime.GOOS, runtime.GOARCH,
 		)),
 		grpc.WithChainStreamInterceptor(
+			otelgrpc.StreamClientInterceptor(),
 			grpc_zap.StreamClientInterceptor(logger),
 		),
 		grpc.WithChainUnaryInterceptor(
+			otelgrpc.UnaryClientInterceptor(),
 			grpc_zap.UnaryClientInterceptor(logger),
 		),
 	)
