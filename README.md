@@ -8,10 +8,12 @@ Action | Service | Client | Basic Auth | OAuth 2.0
 --- | --- | --- | --- | ---
 Manage networks | IAM | `pbadmin` | administrator |
 Manage tenants | IAM | `pbadmin` | administrator | network
-Manage API keys | IAM | `pbadmin` | administrator | network
+Manage network API keys | IAM | `pbadmin` | administrator | network
+Manage cluster API keys | IAM | `pbadmin` | administrator |
+List networks and tenants | IAM | `pbadmin` | | cluster
 Manage routing policies | Control Plane | `pbctl` | | network and tenant
-List routes | Control Plane | `pbctl` | router |
-List routing policies | Control Plane | `pbctl` | router |
+List routes | Control Plane | `pbctl` | | cluster
+List routing policies | Control Plane | `pbctl` | | cluster
 Publish and subscribe | Data Plane | `pbpub`, `pbsub` | | network
 
 IAM and Control Plane are deployed in a global cluster. Routers (with Data Plane) are deployed in regional clusters:
@@ -58,14 +60,14 @@ client-secret: "E67X5675UCQFTTJMUD73URQOLPA5VT4GBFLPCMUHZWK52ML5"
 
 The command-line utilities `pbadmin`, `pbctl`, `pbpub` and `pbsub` contain extensive examples. Specify `--help` to show examples and possible flags.
 
-### Manage Tenants
+### Manage Network Tenants
 
 Packet Broker Identity and Access Management (IAM) stores networks and tenants. Networks are LoRaWAN networks with a NetID, i.e. `000013` (with DevAddr prefix `26000000/7`). Tenants make use of one or more DevAddr blocks within a NetID, i.e. NetID `000013` with prefix `26AA0000/16`. Tenants have a unique identifier within the NetID, called the tenant ID.
 
 As NetID `000013`, to create tenant `tenant-a` with DevAddr blocks `26AA0000/16` and `26BB0000/16`:
 
 ```bash
-$ pbadmin tenant create --net-id 000013 --tenant-id tenant-a \
+$ pbadmin network tenant create --net-id 000013 --tenant-id tenant-a \
     --name "Tenant A" --dev-addr-blocks 26AA0000/16,26BB0000/16
 ```
 
@@ -74,42 +76,42 @@ $ pbadmin tenant create --net-id 000013 --tenant-id tenant-a \
 Optionally, you can specify a Home Network cluster. If your network uses multiple clusters, you can let Packet Broker route traffic to these clusters:
 
 ```bash
-$ pbadmin tenant update --net-id 000013 --tenant-id tenant a \
+$ pbadmin network tenant update --net-id 000013 --tenant-id tenant a \
     --dev-addr-blocks 26AA0000/16=eu1,26BB0000/16=eu2
 ```
 
 To list tenants:
 
 ```bash
-$ pbadmin tenant list --net-id 000013
+$ pbadmin network tenant list --net-id 000013
 ```
 
 To get a tenant:
 
 ```bash
-$ pbadmin tenant get --net-id 000013 --tenant-id tenant-a
+$ pbadmin network tenant get --net-id 000013 --tenant-id tenant-a
 ```
 
 To delete a tenant:
 
 ```bash
-$ pbadmin tenant delete --net-id 000013 --tenant-id tenant-a
+$ pbadmin network tenant delete --net-id 000013 --tenant-id tenant-a
 ```
 
-### Manage API Keys
+### Manage Network and Tenant API Keys
 
-API keys are used by clients of Packet Broker Router: LoRaWAN network servers and the command-line utilities `pbpub` and `pbsub`.
+Network API keys are used by clients of Packet Broker Router: LoRaWAN network servers and the command-line utilities `pbpub` and `pbsub`.
 
 You can create API keys for a network, a tenant, a named cluster in a network and a named cluster in a tenant. For example, to create an API key for a tenant:
 
 ```bash
-$ pbadmin apikey create --net-id 000042 --tenant-id tenant-a
+$ pbadmin network apikey create --net-id 000042 --tenant-id tenant-a
 ```
 
 And for a named cluster in a tenant:
 
 ```bash
-$ pbadmin apikey create --net-id 000042 --tenant-id tenant-a --cluster-id eu1
+$ pbadmin network apikey create --net-id 000042 --tenant-id tenant-a --cluster-id eu1
 ```
 
 ### Configure Routing Policies

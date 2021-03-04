@@ -85,6 +85,21 @@ func GetEndpoint(flags *flag.FlagSet, actor string) packetbroker.Endpoint {
 	}
 }
 
+// HasEndpoint returns which endpoint flags are set.
+func HasEndpoint(flags *flag.FlagSet, actor string) (hasNetID, hasTenantID, hasClusterID bool) {
+	flags.Visit(func(f *flag.Flag) {
+		switch f.Name {
+		case actorf(actor, "net-id"):
+			hasNetID = true
+		case actorf(actor, "tenant-id"):
+			hasTenantID = true
+		case actorf(actor, "cluster-id"):
+			hasClusterID = true
+		}
+	})
+	return
+}
+
 type devAddrBlocksValue []*packetbroker.DevAddrBlock
 
 func (f *devAddrBlocksValue) String() string {
@@ -138,6 +153,67 @@ func DevAddrBlocks() *flag.FlagSet {
 func GetDevAddrBlocks(flags *flag.FlagSet) []*packetbroker.DevAddrBlock {
 	blocks := flags.Lookup("dev-addr-blocks").Value.(*devAddrBlocksValue)
 	return []*packetbroker.DevAddrBlock(*blocks)
+}
+
+type apiKeyRightsValue []packetbroker.APIKeyRight
+
+func (p apiKeyRightsValue) String() string {
+	rights := make([]string, 0, len(p))
+	for _, v := range p {
+		switch v {
+		case packetbroker.APIKeyRight_READ_NETWORK:
+			rights = append(rights, "r:network")
+		case packetbroker.APIKeyRight_READ_NETWORK_CONTACT:
+			rights = append(rights, "r:network:contact")
+		case packetbroker.APIKeyRight_READ_TENANT:
+			rights = append(rights, "r:tenant")
+		case packetbroker.APIKeyRight_READ_TENANT_CONTACT:
+			rights = append(rights, "r:tenant:contact")
+		}
+	}
+	return strings.Join(rights, ",")
+}
+
+func (p *apiKeyRightsValue) Set(s string) error {
+	if s == "" {
+		*p = []packetbroker.APIKeyRight{}
+		return nil
+	}
+	rights := strings.Split(s, ",")
+	res := make([]packetbroker.APIKeyRight, len(rights))
+	for i, r := range rights {
+		switch r {
+		case "r:network":
+			res[i] = packetbroker.APIKeyRight_READ_NETWORK
+		case "r:network:contact":
+			res[i] = packetbroker.APIKeyRight_READ_NETWORK_CONTACT
+		case "r:tenant":
+			res[i] = packetbroker.APIKeyRight_READ_TENANT
+		case "r:tenant:contact":
+			res[i] = packetbroker.APIKeyRight_READ_TENANT_CONTACT
+		default:
+			return fmt.Errorf("pbflag: invalid right: %s", r)
+		}
+	}
+	*p = res
+	return nil
+}
+
+func (p *apiKeyRightsValue) Type() string {
+	return "apiKeyRightsValue"
+}
+
+// APIKeyRights returns flags for API key rights.
+func APIKeyRights() *flag.FlagSet {
+	flags := new(flag.FlagSet)
+	flags.Var(new(apiKeyRightsValue), "rights", "API key rights")
+	return flags
+}
+
+// GetAPIKeyRights returns the API key rights from the flags.
+func GetAPIKeyRights(flags *flag.FlagSet) []packetbroker.APIKeyRight {
+	rights := flags.Lookup("rights").Value.(*apiKeyRightsValue)
+	return []packetbroker.APIKeyRight(*rights)
 }
 
 type uplinkPolicyValue packetbroker.RoutingPolicy_Uplink

@@ -15,12 +15,12 @@ import (
 )
 
 var (
-	tenantCmd = &cobra.Command{
+	networkTenantCmd = &cobra.Command{
 		Use:     "tenant",
 		Aliases: []string{"tenants", "tnt", "tnts", "t"},
 		Short:   "Manage Packet Broker tenants",
 	}
-	tenantListCmd = &cobra.Command{
+	networkTenantListCmd = &cobra.Command{
 		Use:          "list",
 		Aliases:      []string{"ls"},
 		Short:        "List tenants",
@@ -53,19 +53,19 @@ var (
 			return nil
 		},
 	}
-	tenantCreateCmd = &cobra.Command{
+	networkTenantCreateCmd = &cobra.Command{
 		Use:   "create",
 		Short: "Create a tenant",
 		Example: `
   Create:
-    $ pbadmin tenant create --net-id 000013 --tenant-id tti
+    $ pbadmin network tenant create --net-id 000013 --tenant-id tti
 
   Create with name:
-    $ pbadmin tenant create --net-id 000013 --tenant-id tti \
+    $ pbadmin network tenant create --net-id 000013 --tenant-id tti \
       --name "The Things Industries"
 
   Define DevAddr blocks to named clusters:
-    $ pbadmin tenant create --net-id 000013 --tenant-id tti \
+    $ pbadmin network tenant create --net-id 000013 --tenant-id tti \
       --dev-addr-blocks 26011000/20=eu1,26012000=eu2`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			tenantID := pbflag.GetTenantID(cmd.Flags(), "")
@@ -86,13 +86,13 @@ var (
 			return column.WriteTenant(tabout, res.Tenant)
 		},
 	}
-	tenantGetCmd = &cobra.Command{
+	networkTenantGetCmd = &cobra.Command{
 		Use:          "get",
 		Short:        "Get a tenant",
 		SilenceUsage: true,
 		Example: `
   Get:
-    $ pbadmin tenant get --net-id 000013 --tenant-id tti`,
+    $ pbadmin network tenant get --net-id 000013 --tenant-id tti`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			tenantID := pbflag.GetTenantID(cmd.Flags(), "")
 			res, err := iampb.NewTenantRegistryClient(conn).GetTenant(ctx, &iampb.TenantRequest{
@@ -105,17 +105,17 @@ var (
 			return column.WriteTenant(tabout, res.Tenant)
 		},
 	}
-	tenantUpdateCmd = &cobra.Command{
+	networkTenantUpdateCmd = &cobra.Command{
 		Use:     "update",
 		Aliases: []string{"up"},
 		Short:   "Update a tenant",
 		Example: `
   Update name:
-    $ pbadmin tenant update --net-id 000013 --tenant-id tti \
+    $ pbadmin network tenant update --net-id 000013 --tenant-id tti \
       --name "The Things Network"
 
   Define DevAddr blocks to named clusters:
-    $ pbadmin tenant update --net-id 000013 --tenant-id tti \
+    $ pbadmin network tenant update --net-id 000013 --tenant-id tti \
       --dev-addr-blocks 26011000/20=eu1,26012000=eu2`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			tenantID := pbflag.GetTenantID(cmd.Flags(), "")
@@ -138,14 +138,14 @@ var (
 			return err
 		},
 	}
-	tenantDeleteCmd = &cobra.Command{
+	networkTenantDeleteCmd = &cobra.Command{
 		Use:          "delete",
 		Aliases:      []string{"rm"},
 		Short:        "Delete a tenant",
 		SilenceUsage: true,
 		Example: `
   Delete:
-    $ pbadmin tenant delete --net-id 000013 --tenant-id tti`,
+    $ pbadmin network tenant delete --net-id 000013 --tenant-id tti`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			tenantID := pbflag.GetTenantID(cmd.Flags(), "")
 			_, err := iampb.NewTenantRegistryClient(conn).DeleteTenant(ctx, &iampb.TenantRequest{
@@ -165,22 +165,22 @@ func tenantSettingsFlags() *flag.FlagSet {
 }
 
 func init() {
-	rootCmd.AddCommand(tenantCmd)
+	networkCmd.AddCommand(networkTenantCmd)
 
-	tenantListCmd.Flags().AddFlagSet(pbflag.NetID(""))
-	tenantCmd.AddCommand(tenantListCmd)
+	networkTenantListCmd.Flags().AddFlagSet(pbflag.NetID(""))
+	networkTenantCmd.AddCommand(networkTenantListCmd)
 
-	tenantCreateCmd.Flags().AddFlagSet(pbflag.TenantID(""))
-	tenantCreateCmd.Flags().AddFlagSet(tenantSettingsFlags())
-	tenantCmd.AddCommand(tenantCreateCmd)
+	networkTenantCreateCmd.Flags().AddFlagSet(pbflag.TenantID(""))
+	networkTenantCreateCmd.Flags().AddFlagSet(tenantSettingsFlags())
+	networkTenantCmd.AddCommand(networkTenantCreateCmd)
 
-	tenantGetCmd.Flags().AddFlagSet(pbflag.TenantID(""))
-	tenantCmd.AddCommand(tenantGetCmd)
+	networkTenantGetCmd.Flags().AddFlagSet(pbflag.TenantID(""))
+	networkTenantCmd.AddCommand(networkTenantGetCmd)
 
-	tenantUpdateCmd.Flags().AddFlagSet(pbflag.TenantID(""))
-	tenantUpdateCmd.Flags().AddFlagSet(tenantSettingsFlags())
-	tenantCmd.AddCommand(tenantUpdateCmd)
+	networkTenantUpdateCmd.Flags().AddFlagSet(pbflag.TenantID(""))
+	networkTenantUpdateCmd.Flags().AddFlagSet(tenantSettingsFlags())
+	networkTenantCmd.AddCommand(networkTenantUpdateCmd)
 
-	tenantDeleteCmd.Flags().AddFlagSet(pbflag.TenantID(""))
-	tenantCmd.AddCommand(tenantDeleteCmd)
+	networkTenantDeleteCmd.Flags().AddFlagSet(pbflag.TenantID(""))
+	networkTenantCmd.AddCommand(networkTenantDeleteCmd)
 }
