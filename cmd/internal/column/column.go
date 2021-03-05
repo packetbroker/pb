@@ -127,20 +127,24 @@ func (t *TimeSince) String() string {
 }
 
 // Rights formats the API key rights.
-type Rights []packetbroker.APIKeyRight
+type Rights []packetbroker.Right
 
 func (r Rights) String() string {
 	rights := make([]string, 0, len(r))
 	for _, v := range r {
 		switch v {
-		case packetbroker.APIKeyRight_READ_NETWORK:
+		case packetbroker.Right_READ_NETWORK:
 			rights = append(rights, "r:network")
-		case packetbroker.APIKeyRight_READ_NETWORK_CONTACT:
+		case packetbroker.Right_READ_NETWORK_CONTACT:
 			rights = append(rights, "r:network:contact")
-		case packetbroker.APIKeyRight_READ_TENANT:
+		case packetbroker.Right_READ_TENANT:
 			rights = append(rights, "r:tenant")
-		case packetbroker.APIKeyRight_READ_TENANT_CONTACT:
+		case packetbroker.Right_READ_TENANT_CONTACT:
 			rights = append(rights, "r:tenant:contact")
+		case packetbroker.Right_READ_ROUTING_POLICY:
+			rights = append(rights, "r:routing_policy")
+		case packetbroker.Right_READ_ROUTE_TABLE:
+			rights = append(rights, "r:route_table")
 		}
 	}
 	return strings.Join(rights, ",")
