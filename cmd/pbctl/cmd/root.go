@@ -33,7 +33,7 @@ var rootCmd = &cobra.Command{
 	Short: "pbctl can be used to manage routing policies and list routes.",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		logger = logging.GetLogger(debug)
-		clientConf, err := config.AutomaticClient(ctx, "controlplane", config.BasicAuthControlPlane, "networks")
+		clientConf, err := config.OAuth2Client(ctx, "controlplane", "networks")
 		if err != nil {
 			return err
 		}
@@ -62,7 +62,6 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().AddFlagSet(config.ClientFlags("controlplane", "cp.packetbroker.org:443"))
-	rootCmd.PersistentFlags().AddFlagSet(config.BasicAuthClientFlags(config.BasicAuthControlPlane))
 	rootCmd.PersistentFlags().AddFlagSet(config.OAuth2ClientFlags())
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.pb.yaml, .pb.yaml)")
