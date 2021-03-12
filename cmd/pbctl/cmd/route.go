@@ -65,7 +65,7 @@ var routeCmd = &cobra.Command{
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var (
-			client        = routingpb.NewRoutesClient(conn)
+			client        = routingpb.NewRoutesClient(cpConn)
 			lastCreatedAt *timestamppb.Timestamp
 			routes        []*packetbroker.DevAddrPrefixRoute
 		)

@@ -36,7 +36,7 @@ var (
     $ pbctl policy list`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
-				client        = routingpb.NewPolicyManagerClient(conn)
+				client        = routingpb.NewPolicyManagerClient(cpConn)
 				lastUpdatedAt *timestamppb.Timestamp
 			)
 			forwarderTenantID := pbflag.GetTenantID(cmd.Flags(), "forwarder")
@@ -108,7 +108,7 @@ may use their infrastructure.`,
     $ pbctl policy set --forwarder-net-id 000013 --home-network-net-id 000009 \
       --set-uplink JM --set-downlink JM`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := routingpb.NewPolicyManagerClient(conn)
+			client := routingpb.NewPolicyManagerClient(cpConn)
 			forwarderTenantID := pbflag.GetTenantID(cmd.Flags(), "forwarder")
 			uplink, downlink := pbflag.GetRoutingPolicy(cmd.Flags())
 			policy := &packetbroker.RoutingPolicy{
@@ -152,7 +152,7 @@ may use their infrastructure.`,
     $ pbctl policy get --forwarder-net-id 000013 --home-network-net-id 000009`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
-				client = routingpb.NewPolicyManagerClient(conn)
+				client = routingpb.NewPolicyManagerClient(cpConn)
 				res    *routingpb.GetPolicyResponse
 				err    error
 			)
@@ -194,7 +194,7 @@ may use their infrastructure.`,
   Delete policy between The Things Network (NetID 000013) and Senet (000009):
     $ pbctl policy delete --forwarder-net-id 000013 --home-network-net-id 000009`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := routingpb.NewPolicyManagerClient(conn)
+			client := routingpb.NewPolicyManagerClient(cpConn)
 			forwarderTenantID := pbflag.GetTenantID(cmd.Flags(), "forwarder")
 			policy := &packetbroker.RoutingPolicy{
 				ForwarderNetId:    uint32(forwarderTenantID.NetID),
