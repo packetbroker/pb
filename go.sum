@@ -287,8 +287,8 @@ go.packetbroker.org/api/iam v1.1.2 h1:bR5rmuzyEfuGw8bqzTwvLT3vITop7IHvcJT/42hntl
 go.packetbroker.org/api/iam v1.1.2/go.mod h1:t+NDJCsCtrFJuquMtbe03zM+NE6DTJTYsoQB0/EYpt4=
 go.packetbroker.org/api/iam/v2 v2.0.3 h1:BwqhGcFL9QfJll+4YSxeaCXcGRYViiV9ydpsCKBf/j4=
 go.packetbroker.org/api/iam/v2 v2.0.3/go.mod h1:6SJ6evvqmaa9+ijxQMaVmyNKmoyerndpZw4qBuKsnpo=
-go.packetbroker.org/api/routing v1.1.2 h1:80Xa3iEhlnNIGcE2XsvKkn4WKJXhXN23u0XRuH/zwmw=
-go.packetbroker.org/api/routing v1.1.2/go.mod h1:bfV8g+mdxIR2Ui4aWdRl9ti0jsKvBqnZsaXZrZO1sCY=
+go.packetbroker.org/api/routing v1.1.3 h1:0MUBQxtl6wKV7xfqXI3Bb4sSN8EBfOgJk4OIY37YHVU=
+go.packetbroker.org/api/routing v1.1.3/go.mod h1:bfV8g+mdxIR2Ui4aWdRl9ti0jsKvBqnZsaXZrZO1sCY=
 go.packetbroker.org/api/v3 v3.3.2 h1:4BmKOW7TNgXh0XC9Ta2x8m3CDJaQG4ccpLpZiiq0qpA=
 go.packetbroker.org/api/v3 v3.3.2/go.mod h1:Cptt9m4x76+c4B6hCmC0rYMImy/O3mAh4cyauor/JWY=
 go.uber.org/atomic v1.4.0/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
