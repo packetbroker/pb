@@ -41,7 +41,7 @@ Create a configuration file `$HOME/.pb.yaml` or `.pb.yaml` in the working direct
 
 ```yaml
 # Router region:
-router-address: "eu.packetbroker.org:443"
+router-address: "eu.packetbroker.io:443"
 
 # Network or tenant API key ID and secret key value:
 client-id: "KZUCD5XAYT6EJ5BH"
