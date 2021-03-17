@@ -147,6 +147,7 @@ func (r Rights) String() string {
 			rights = append(rights, "r:route_table")
 		}
 	}
+	sort.Strings(rights)
 	return strings.Join(rights, ",")
 }
 
