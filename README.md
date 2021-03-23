@@ -21,6 +21,8 @@ IAM and Control Plane are deployed in a global cluster. Routers (with Data Plane
 Region | Address
 --- | ---
 Europe | `eu.packetbroker.io:443`
+North America | `nam.packetbroker.io:443`
+Asia Pacific | `apac.packetbroker.io:443`
 
 ## Getting Started
 
