@@ -12,9 +12,9 @@ Manage network API keys | IAM | `pbadmin` | administrator | network
 Manage cluster API keys | IAM | `pbadmin` | administrator |
 List networks and tenants | IAM | `pbadmin` | | cluster, network
 Manage routing policies | Control Plane | `pbctl` | | network, tenant
-List routes | Control Plane | `pbctl` | | cluster, network
-List routing policies | Control Plane | `pbctl` | | cluster, network
-Publish and subscribe | Data Plane | `pbpub`, `pbsub` | | network
+List routes | Control Plane | `pbctl` | | cluster, network, tenant
+List routing policies | Control Plane | `pbctl` | | cluster, network, tenant
+Publish and subscribe | Data Plane | `pbpub`, `pbsub` | | network, tenant
 
 IAM and Control Plane are deployed in a global cluster. Routers (with Data Plane) are deployed in regional clusters:
 
