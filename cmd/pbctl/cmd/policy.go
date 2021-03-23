@@ -35,10 +35,10 @@ var (
   List Home Network policies of all Forwarders:
     $ pbctl policy list
 
-  List effective Home Network policies for a Home Network:
+  List effective Forwarder policies for a Home Network:
     $ pbctl policy list --home-network-net-id 000013
 
-  List effective Home Network policies for a Home Network tenant:
+  List effective Forwarder policies for a Home Network tenant:
     $ pbctl policy list --home-network-net-id 000013 \
       --home-network-tenant-id tti
 `,
