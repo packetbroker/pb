@@ -10,11 +10,11 @@ Manage networks | IAM | `pbadmin` | administrator |
 Manage tenants | IAM | `pbadmin` | administrator | network
 Manage network API keys | IAM | `pbadmin` | administrator | network
 Manage cluster API keys | IAM | `pbadmin` | administrator |
-List networks and tenants | IAM | `pbadmin` | | cluster
-Manage routing policies | Control Plane | `pbctl` | | network and tenant
-List routes | Control Plane | `pbctl` | | cluster
-List routing policies | Control Plane | `pbctl` | | cluster
-Publish and subscribe | Data Plane | `pbpub`, `pbsub` | | network
+List networks and tenants | IAM | `pbadmin` | | cluster, network
+Manage routing policies | Control Plane | `pbctl` | | network, tenant
+List routes | Control Plane | `pbctl` | | cluster, network, tenant
+List routing policies | Control Plane | `pbctl` | | cluster, network, tenant
+Publish and subscribe | Data Plane | `pbpub`, `pbsub` | | network, tenant
 
 IAM and Control Plane are deployed in a global cluster. Routers (with Data Plane) are deployed in regional clusters:
 
@@ -50,10 +50,6 @@ client-secret: "E67X5675UCQFTTJMUD73URQOLPA5VT4GBFLPCMUHZWK52ML5"
 # Uncomment if using pbadmin with full administrative access:
 #iam-username: "admin"
 #iam-password: "admin"
-
-# Uncomment if using pbctl with router access:
-#controlplane-username: "router"
-#controlplane-password: "router"
 ```
 
 ### Command-Line Interface
@@ -124,17 +120,23 @@ As Forwarder NetID `000042`, to see the default routing policy:
 $ pbctl policy get --forwarder-net-id 000042 --defaults
 ```
 
-To see the routing policy for Home Network NetID `C00123`:
+To see the routing policy between Forwarder `000042` and Home Network NetID `C00123`:
 
 ```bash
 $ pbctl policy get --forwarder-net-id 000042 --home-network-net-id C00123
 ```
 
-To see the routing policy of Forwrader tenant `tenant-a` for Home Network NetID `C00123` tenant `tenant-b`:
+To see the routing policy between Forwarder NetID `000042` tenant `tenant-a` and Home Network NetID `C00123` tenant `tenant-b`:
 
 ```bash
 $ pbctl policy get --forwarder-net-id 000042 --forwarder-tenant-id tenant-a \
     --home-network-net-id C00123 --home-network-tenant-id tenant-b
+```
+
+To see all the routing policies that Forwarders configured for Home Network NetID `C00123`:
+
+```bash
+$ pbctl policy list --home-network-net-id C00123
 ```
 
 You can set policies by specifying letters from the following table:

@@ -24,7 +24,8 @@ var (
 
 	ctx    = context.Background()
 	logger *zap.Logger
-	conn   *grpc.ClientConn
+	iamConn,
+	cpConn *grpc.ClientConn
 	tabout = tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
 )
 
@@ -33,20 +34,32 @@ var rootCmd = &cobra.Command{
 	Short: "pbctl can be used to manage routing policies and list routes.",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		logger = logging.GetLogger(debug)
-		clientConf, err := config.OAuth2Client(ctx, "controlplane", "networks")
+
+		iamClientConf, err := config.OAuth2Client(ctx, "iam", "")
 		if err != nil {
 			return err
 		}
-		conn, err = client.DialContext(ctx, logger, clientConf, 443)
+		iamConn, err = client.DialContext(ctx, logger, iamClientConf, 443)
 		if err != nil {
 			return err
 		}
+
+		cpClientConf, err := config.OAuth2Client(ctx, "controlplane", "networks")
+		if err != nil {
+			return err
+		}
+		cpConn, err = client.DialContext(ctx, logger, cpClientConf, 443)
+		if err != nil {
+			return err
+		}
+
 		return nil
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		logger.Sync()
 		tabout.Flush()
-		conn.Close()
+		iamConn.Close()
+		cpConn.Close()
 	},
 }
 
@@ -61,6 +74,7 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
+	rootCmd.PersistentFlags().AddFlagSet(config.ClientFlags("iam", "iam.packetbroker.org:443"))
 	rootCmd.PersistentFlags().AddFlagSet(config.ClientFlags("controlplane", "cp.packetbroker.org:443"))
 	rootCmd.PersistentFlags().AddFlagSet(config.OAuth2ClientFlags())
 

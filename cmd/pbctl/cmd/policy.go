@@ -33,44 +33,77 @@ var (
     $ pbctl policy list --defaults
 
   List Home Network policies of all Forwarders:
-    $ pbctl policy list`,
+    $ pbctl policy list
+
+  List effective Forwarder policies for a Home Network:
+    $ pbctl policy list --home-network-net-id 000013
+
+  List effective Forwarder policies for a Home Network tenant:
+    $ pbctl policy list --home-network-net-id 000013 \
+      --home-network-tenant-id tti
+`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
-				client        = routingpb.NewPolicyManagerClient(conn)
-				lastUpdatedAt *timestamppb.Timestamp
+				client              = routingpb.NewPolicyManagerClient(cpConn)
+				policies            []*packetbroker.RoutingPolicy
+				defaults            bool
+				homeNetworkTenantID = pbflag.GetTenantID(cmd.Flags(), "home-network")
 			)
-			forwarderTenantID := pbflag.GetTenantID(cmd.Flags(), "forwarder")
-			defaults, _ := cmd.Flags().GetBool("defaults")
-			for {
-				var policies []*packetbroker.RoutingPolicy
-				if defaults {
-					res, err := client.ListDefaultPolicies(ctx, &routingpb.ListDefaultPoliciesRequest{
-						UpdatedSince: lastUpdatedAt,
+			if homeNetworkTenantID.IsEmpty() {
+				var (
+					lastUpdatedAt     *timestamppb.Timestamp
+					forwarderTenantID = pbflag.GetTenantID(cmd.Flags(), "forwarder")
+				)
+				defaults, _ = cmd.Flags().GetBool("defaults")
+				for {
+					var page []*packetbroker.RoutingPolicy
+					if defaults {
+						res, err := client.ListDefaultPolicies(ctx, &routingpb.ListDefaultPoliciesRequest{
+							UpdatedSince: lastUpdatedAt,
+						})
+						if err != nil {
+							return err
+						}
+						page = res.Policies
+					} else {
+						req := &routingpb.ListHomeNetworkPoliciesRequest{
+							UpdatedSince: lastUpdatedAt,
+						}
+						if !forwarderTenantID.IsEmpty() {
+							req.ForwarderNetId = uint32(forwarderTenantID.NetID)
+							req.ForwarderTenantId = forwarderTenantID.ID
+						}
+						res, err := client.ListHomeNetworkPolicies(ctx, req)
+						if err != nil {
+							return err
+						}
+						page = res.Policies
+					}
+					if len(page) == 0 {
+						break
+					}
+					policies = append(policies, page...)
+					lastUpdatedAt = page[len(page)-1].GetUpdatedAt()
+				}
+			} else {
+				offset := uint32(0)
+				for {
+					res, err := client.ListEffectivePolicies(ctx, &routingpb.ListEffectivePoliciesRequest{
+						HomeNetworkNetId:    uint32(homeNetworkTenantID.NetID),
+						HomeNetworkTenantId: homeNetworkTenantID.ID,
+						Offset:              offset,
 					})
 					if err != nil {
 						return err
 					}
-					policies = res.Policies
-				} else {
-					req := &routingpb.ListHomeNetworkPoliciesRequest{
-						UpdatedSince: lastUpdatedAt,
+					policies = append(policies, res.Policies...)
+					offset += uint32(len(res.Policies))
+					if len(res.Policies) == 0 || offset >= res.Total {
+						break
 					}
-					if !forwarderTenantID.IsEmpty() {
-						req.ForwarderNetId = uint32(forwarderTenantID.NetID)
-						req.ForwarderTenantId = forwarderTenantID.ID
-					}
-					res, err := client.ListHomeNetworkPolicies(ctx, req)
-					if err != nil {
-						return err
-					}
-					policies = res.Policies
 				}
-				if len(policies) == 0 {
-					break
-				}
-				column.WritePolicies(tabout, defaults, policies...)
-				lastUpdatedAt = policies[len(policies)-1].GetUpdatedAt()
 			}
+			column.WritePolicies(tabout, defaults, policies...)
 			return nil
 		},
 	}
@@ -108,7 +141,7 @@ may use their infrastructure.`,
     $ pbctl policy set --forwarder-net-id 000013 --home-network-net-id 000009 \
       --set-uplink JM --set-downlink JM`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := routingpb.NewPolicyManagerClient(conn)
+			client := routingpb.NewPolicyManagerClient(cpConn)
 			forwarderTenantID := pbflag.GetTenantID(cmd.Flags(), "forwarder")
 			uplink, downlink := pbflag.GetRoutingPolicy(cmd.Flags())
 			policy := &packetbroker.RoutingPolicy{
@@ -152,7 +185,7 @@ may use their infrastructure.`,
     $ pbctl policy get --forwarder-net-id 000013 --home-network-net-id 000009`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
-				client = routingpb.NewPolicyManagerClient(conn)
+				client = routingpb.NewPolicyManagerClient(cpConn)
 				res    *routingpb.GetPolicyResponse
 				err    error
 			)
@@ -194,7 +227,7 @@ may use their infrastructure.`,
   Delete policy between The Things Network (NetID 000013) and Senet (000009):
     $ pbctl policy delete --forwarder-net-id 000013 --home-network-net-id 000009`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := routingpb.NewPolicyManagerClient(conn)
+			client := routingpb.NewPolicyManagerClient(cpConn)
 			forwarderTenantID := pbflag.GetTenantID(cmd.Flags(), "forwarder")
 			policy := &packetbroker.RoutingPolicy{
 				ForwarderNetId:    uint32(forwarderTenantID.NetID),
@@ -238,7 +271,7 @@ func init() {
 	policyCmd.PersistentFlags().AddFlagSet(policySourceFlags())
 	rootCmd.AddCommand(policyCmd)
 
-	policyListCmd.Flags().Bool("defaults", false, "list all default policies")
+	policyListCmd.Flags().AddFlagSet(policyTargetFlags())
 	policyCmd.AddCommand(policyListCmd)
 
 	policySetCmd.Flags().AddFlagSet(policyTargetFlags())
