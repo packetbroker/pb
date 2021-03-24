@@ -30,8 +30,8 @@ var (
 	}
 	catalogHomeNetworksCmd = &cobra.Command{
 		Use:          "home-networks",
-		Aliases:      []string{"home-networks", "hns"},
-		Short:        "Show Home Networks",
+		Aliases:      []string{"home-network", "hns"},
+		Short:        "Show listed Home Networks",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			offset := uint32(0)

@@ -18,6 +18,16 @@ const (
 	maxDevAddrBlocks = 3
 )
 
+// YesNo prints the boolean as Yes or No.
+type YesNo bool
+
+func (yn YesNo) String() string {
+	if yn {
+		return "Yes"
+	}
+	return "No"
+}
+
 // DevAddrBlocks prints DevAddr blocks as column field.
 type DevAddrBlocks []*packetbroker.DevAddrBlock
 

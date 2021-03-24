@@ -27,7 +27,7 @@ var (
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			offset := uint32(0)
-			fmt.Fprintln(tabout, "NetID\tName\tDevAddr Blocks\t")
+			fmt.Fprintln(tabout, "NetID\tName\tDevAddr Blocks\tListed\t")
 			for {
 				res, err := iampb.NewNetworkRegistryClient(conn).ListNetworks(ctx, &iampb.ListNetworksRequest{
 					Offset: offset,
@@ -36,10 +36,11 @@ var (
 					return err
 				}
 				for _, t := range res.Networks {
-					fmt.Fprintf(tabout, "%s\t%s\t%s\t\n",
+					fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t\n",
 						packetbroker.NetID(t.GetNetId()),
 						t.GetName(),
 						column.DevAddrBlocks(t.GetDevAddrBlocks()),
+						column.YesNo(t.GetListed()),
 					)
 				}
 				offset += uint32(len(res.Networks))
@@ -57,8 +58,9 @@ var (
   Create:
     $ pbadmin network create --net-id 000013
 
-  Create with name:
-    $ pbadmin network create --net-id 000013 --name "The Things Network"
+  Create with name and listed in the catalog:
+    $ pbadmin network create --net-id 000013 --name "The Things Network" \
+      --listed
 
   Define DevAddr blocks to named clusters:
     $ pbadmin network create --net-id 000013 \
@@ -67,12 +69,14 @@ var (
 			netID := pbflag.GetNetID(cmd.Flags(), "")
 			name, _ := cmd.Flags().GetString("name")
 			devAddrBlocks := pbflag.GetDevAddrBlocks(cmd.Flags())
+			listed, _ := cmd.Flags().GetBool("listed")
 			res, err := iampb.NewNetworkRegistryClient(conn).CreateNetwork(ctx, &iampb.CreateNetworkRequest{
 				Network: &packetbroker.Network{
 					NetId:         uint32(netID),
 					Name:          name,
 					DevAddrBlocks: devAddrBlocks,
 					// TODO: Contact info (https://github.com/packetbroker/pb/issues/5)
+					Listed: listed,
 				},
 			})
 			if err != nil {
@@ -126,6 +130,10 @@ var (
 					Value: devAddrBlocks,
 				}
 			}
+			if cmd.Flags().Lookup("listed").Changed {
+				listed, _ := cmd.Flags().GetBool("listed")
+				req.Listed = wrapperspb.Bool(listed)
+			}
 			_, err := iampb.NewNetworkRegistryClient(conn).UpdateNetwork(ctx, req)
 			return err
 		},
@@ -151,6 +159,7 @@ var (
 func networkSettingsFlags() *flag.FlagSet {
 	flags := new(flag.FlagSet)
 	flags.String("name", "", "network name")
+	flags.Bool("listed", false, "list network in catalog")
 	flags.AddFlagSet(pbflag.DevAddrBlocks())
 	return flags
 }
