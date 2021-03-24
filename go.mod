@@ -16,19 +16,17 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
-	go.packetbroker.org/api/iam v1.1.2
-	go.packetbroker.org/api/iam/v2 v2.0.3
-	go.packetbroker.org/api/routing v1.1.3
-	go.packetbroker.org/api/v3 v3.3.2
+	go.packetbroker.org/api/iam v1.2.1
+	go.packetbroker.org/api/iam/v2 v2.1.0
+	go.packetbroker.org/api/routing v1.2.0
+	go.packetbroker.org/api/v3 v3.4.1
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.16.0
-	golang.org/x/lint v0.0.0-20200302205851-738671d3881b
+	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5
 	golang.org/x/oauth2 v0.0.0-20210311163135-5366d9dc1934
-	golang.org/x/sys v0.0.0-20210309074719-68d13333faf2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20210311153111-e2979279ddde // indirect
 	google.golang.org/grpc v1.36.0
-	google.golang.org/protobuf v1.25.0
+	google.golang.org/protobuf v1.26.0
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	mvdan.cc/gofumpt v0.0.0-20200709182408-4fd085cb6d5f
 )

@@ -28,7 +28,7 @@ var (
 		RunE: func(cmd *cobra.Command, args []string) error {
 			netID := pbflag.GetNetID(cmd.Flags(), "")
 			offset := uint32(0)
-			fmt.Fprintln(tabout, "NetID\tTenant ID\tName\tDevAddr Blocks\t")
+			fmt.Fprintln(tabout, "NetID\tTenant ID\tName\tDevAddr Blocks\tListed\t")
 			for {
 				res, err := iampb.NewTenantRegistryClient(conn).ListTenants(ctx, &iampb.ListTenantsRequest{
 					NetId:  uint32(netID),
@@ -38,11 +38,12 @@ var (
 					return err
 				}
 				for _, t := range res.Tenants {
-					fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t\n",
+					fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t%s\t\n",
 						packetbroker.NetID(t.GetNetId()),
 						t.GetTenantId(),
 						t.GetName(),
 						column.DevAddrBlocks(t.GetDevAddrBlocks()),
+						column.YesNo(t.GetListed()),
 					)
 				}
 				offset += uint32(len(res.Tenants))
@@ -60,9 +61,9 @@ var (
   Create:
     $ pbadmin network tenant create --net-id 000013 --tenant-id tti
 
-  Create with name:
+  Create with name and listed in the catalog:
     $ pbadmin network tenant create --net-id 000013 --tenant-id tti \
-      --name "The Things Industries"
+      --name "The Things Industries" --listed
 
   Define DevAddr blocks to named clusters:
     $ pbadmin network tenant create --net-id 000013 --tenant-id tti \
@@ -71,6 +72,7 @@ var (
 			tenantID := pbflag.GetTenantID(cmd.Flags(), "")
 			name, _ := cmd.Flags().GetString("name")
 			devAddrBlocks := pbflag.GetDevAddrBlocks(cmd.Flags())
+			listed, _ := cmd.Flags().GetBool("listed")
 			res, err := iampb.NewTenantRegistryClient(conn).CreateTenant(ctx, &iampb.CreateTenantRequest{
 				Tenant: &packetbroker.Tenant{
 					NetId:         uint32(tenantID.NetID),
@@ -78,6 +80,7 @@ var (
 					Name:          name,
 					DevAddrBlocks: devAddrBlocks,
 					// TODO: Contact info (https://github.com/packetbroker/pb/issues/5)
+					Listed: listed,
 				},
 			})
 			if err != nil {
@@ -134,6 +137,10 @@ var (
 					Value: devAddrBlocks,
 				}
 			}
+			if cmd.Flags().Lookup("listed").Changed {
+				listed, _ := cmd.Flags().GetBool("listed")
+				req.Listed = wrapperspb.Bool(listed)
+			}
 			_, err := iampb.NewTenantRegistryClient(conn).UpdateTenant(ctx, req)
 			return err
 		},
@@ -161,6 +168,7 @@ func tenantSettingsFlags() *flag.FlagSet {
 	flags := new(flag.FlagSet)
 	flags.String("name", "", "tenant name")
 	flags.AddFlagSet(pbflag.DevAddrBlocks())
+	flags.Bool("listed", false, "list tenant in catalog")
 	return flags
 }
 
