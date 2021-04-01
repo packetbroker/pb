@@ -180,22 +180,7 @@ type Rights []packetbroker.Right
 func (r Rights) String() string {
 	rights := make([]string, 0, len(r))
 	for _, v := range r {
-		switch v {
-		case packetbroker.Right_READ_NETWORK:
-			rights = append(rights, "r:network")
-		case packetbroker.Right_READ_NETWORK_CONTACT:
-			rights = append(rights, "r:network:contact")
-		case packetbroker.Right_READ_TENANT:
-			rights = append(rights, "r:tenant")
-		case packetbroker.Right_READ_TENANT_CONTACT:
-			rights = append(rights, "r:tenant:contact")
-		case packetbroker.Right_READ_ROUTING_POLICY:
-			rights = append(rights, "r:routing_policy")
-		case packetbroker.Right_READ_ROUTE_TABLE:
-			rights = append(rights, "r:route_table")
-		case packetbroker.Right_READ_TARGET_AUTH:
-			rights = append(rights, "r:target_auth")
-		}
+		rights = append(rights, v.String())
 	}
 	sort.Strings(rights)
 	return strings.Join(rights, ",")

@@ -92,13 +92,13 @@ the API key in a secure place, as it cannot be retrieved after create.`,
     $ pbadmin network apikey create --net-id 000013 --tenant-id tti --cluster-id eu1
 
   Create API key for a network with rights to read networks and tenants:
-    $ pbadmin network apikey create --net-id 000013 --rights r:network,r:tenant
+    $ pbadmin network apikey create --net-id 000013 --rights READ_NETWORK
 
 Rights:
-  r:network          Read networks
-  r:network:contact  Read network contact information
-  r:tenant           Read tenants
-  r:tenant:contact   Read tenant contact information`,
+  READ_NETWORK          Read networks
+  READ_NETWORK_CONTACT  Read network contact information
+  READ_TENANT           Read tenants
+  READ_TENANT_CONTACT   Read tenant contact information`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			endpoint := pbflag.GetEndpoint(cmd.Flags(), "")
 			res, err := iampbv2.NewNetworkAPIKeyVaultClient(conn).CreateAPIKey(ctx, &iampbv2.CreateNetworkAPIKeyRequest{
