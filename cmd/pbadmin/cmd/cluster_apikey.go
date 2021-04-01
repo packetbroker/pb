@@ -74,7 +74,8 @@ Rights:
   r:tenant           Read tenants
   r:tenant:contact   Read tenant contact information
   r:routing_policy   Read routing policies
-  r:route_table      Read route table`,
+  r:route_table      Read route table
+  r:target_auth      Read target authentication information`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			endpoint := pbflag.GetEndpoint(cmd.Flags(), "")
 			res, err := iampbv2.NewClusterAPIKeyVaultClient(conn).CreateAPIKey(ctx, &iampbv2.CreateClusterAPIKeyRequest{

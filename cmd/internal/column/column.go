@@ -28,6 +28,20 @@ func (yn YesNo) String() string {
 	return "No"
 }
 
+// Target prints the target as column field.
+type Target packetbroker.Target
+
+func (t *Target) String() string {
+	if t == nil {
+		return ""
+	}
+	s := t.Protocol.String()
+	if t.Address != "" {
+		s += fmt.Sprintf(" (%s)", t.Address)
+	}
+	return s
+}
+
 // DevAddrBlocks prints DevAddr blocks as column field.
 type DevAddrBlocks []*packetbroker.DevAddrBlock
 
@@ -95,6 +109,24 @@ func WriteDevAddrBlocks(w io.Writer, blocks []*packetbroker.DevAddrBlock) error 
 	return nil
 }
 
+func writeTarget(w io.Writer, target *packetbroker.Target) error {
+	if target == nil {
+		return nil
+	}
+	var auth string
+	switch a := target.Authorization.(type) {
+	case *packetbroker.Target_BasicAuth_:
+		auth = fmt.Sprintf("Basic %s:%s", a.BasicAuth.Username, a.BasicAuth.Password)
+	case *packetbroker.Target_CustomAuth_:
+		auth = a.CustomAuth.Value
+	}
+	return WriteKV(w,
+		"Target Protocol", target.Protocol.String(),
+		"Target Address", target.Address,
+		"Target Authorization", auth,
+	)
+}
+
 // WriteNetwork writes the Network.
 func WriteNetwork(w io.Writer, network *packetbroker.Network) error {
 	if err := WriteKV(w,
@@ -103,8 +135,11 @@ func WriteNetwork(w io.Writer, network *packetbroker.Network) error {
 	); err != nil {
 		return err
 	}
+	if err := writeTarget(w, network.GetTarget()); err != nil {
+		return err
+	}
 	fmt.Fprintln(w, "\nDevAddr Blocks:")
-	return WriteDevAddrBlocks(w, network.DevAddrBlocks)
+	return WriteDevAddrBlocks(w, network.GetDevAddrBlocks())
 }
 
 // WriteTenant writes the Tenant.
@@ -116,8 +151,11 @@ func WriteTenant(w io.Writer, tenant *packetbroker.Tenant) error {
 	); err != nil {
 		return err
 	}
+	if err := writeTarget(w, tenant.GetTarget()); err != nil {
+		return err
+	}
 	fmt.Fprintln(w, "\nDevAddr Blocks:")
-	return WriteDevAddrBlocks(w, tenant.DevAddrBlocks)
+	return WriteDevAddrBlocks(w, tenant.GetDevAddrBlocks())
 }
 
 // TimeSince formats the timestamp as duration since then, in seconds.
@@ -155,6 +193,8 @@ func (r Rights) String() string {
 			rights = append(rights, "r:routing_policy")
 		case packetbroker.Right_READ_ROUTE_TABLE:
 			rights = append(rights, "r:route_table")
+		case packetbroker.Right_READ_TARGET_AUTH:
+			rights = append(rights, "r:target_auth")
 		}
 	}
 	sort.Strings(rights)

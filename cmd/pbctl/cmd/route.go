@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	routingpb "go.packetbroker.org/api/routing"
 	packetbroker "go.packetbroker.org/api/v3"
+	"go.packetbroker.org/pb/cmd/internal/column"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -83,15 +84,16 @@ var routeCmd = &cobra.Command{
 			routes = append(routes, res.Routes...)
 		}
 		sort.Sort(sortRoutesByPrefix(routes))
-		fmt.Fprintln(tabout, "DevAddr Prefix\tNetID\tTenant ID\tCluster ID\t")
+		fmt.Fprintln(tabout, "DevAddr Prefix\tNetID\tTenant ID\tCluster ID\tTarget\t")
 		for _, p := range routes {
 			fmt.Fprintf(tabout,
-				"%08X/%d\t%s\t%s\t%s\t\n",
+				"%08X/%d\t%s\t%s\t%s\t%s\t\n",
 				p.GetPrefix().GetValue(),
 				p.GetPrefix().GetLength(),
 				packetbroker.NetID(p.GetNetId()),
 				p.GetTenantId(),
 				p.GetHomeNetworkClusterId(),
+				(*column.Target)(p.Target),
 			)
 		}
 		return nil
