@@ -75,7 +75,7 @@ var (
 			name, _ := cmd.Flags().GetString("name")
 			devAddrBlocks := pbflag.GetDevAddrBlocks(cmd.Flags())
 			listed, _ := cmd.Flags().GetBool("listed")
-			target, err := target(cmd.Flags())
+			target, err := target(cmd.Flags(), "target")
 			if err != nil {
 				return err
 			}
@@ -123,11 +123,7 @@ var (
 
   Define DevAddr blocks to named clusters:
     $ pbadmin network update --net-id 000013 \
-      --dev-addr-blocks 26011000/20=eu1,26012000=eu2
-
-  Configure a LoRaWAN Backend Interfaces 1.1.0 target with HTTP basic auth:
-    $ pbadmin network update --net-id 000013 --target-protocol TS002_V1_1_0 \
-      --target-address https://user:pass@example.com`,
+      --dev-addr-blocks 26011000/20=eu1,26012000=eu2`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			netID := pbflag.GetNetID(cmd.Flags(), "")
 			req := &iampb.UpdateNetworkRequest{
@@ -148,16 +144,35 @@ var (
 				listed, _ := cmd.Flags().GetBool("listed")
 				req.Listed = wrapperspb.Bool(listed)
 			}
-			if cmd.Flags().Lookup("target-protocol").Changed {
-				target, err := target(cmd.Flags())
-				if err != nil {
-					return err
-				}
-				req.Target = &iampb.TargetValue{
-					Value: target,
-				}
-			}
 			_, err := iampb.NewNetworkRegistryClient(conn).UpdateNetwork(ctx, req)
+			return err
+		},
+	}
+	networkUpdateTargetCmd = &cobra.Command{
+		Use:   "target",
+		Short: "Update a network target",
+		Example: `
+  Configure a LoRaWAN Backend Interfaces 1.0 target with HTTP basic auth:
+    $ pbadmin network update target --net-id 000013 --protocol TS002_V1_0 \
+      --address https://user:pass@example.com
+
+  Configure a LoRaWAN Backend Interfaces 1.0 target with TLS:
+    $ pbadmin network update target --net-id 000013 --protocol TS002_V1_0 \
+      --address https://example.com --root-cas-file ca.pem \
+      --tls-cert-file key.pem --tls-key-file key.pem`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			netID := pbflag.GetNetID(cmd.Flags(), "")
+			req := &iampb.UpdateNetworkRequest{
+				NetId: uint32(netID),
+			}
+			target, err := target(cmd.Flags(), "")
+			if err != nil {
+				return err
+			}
+			req.Target = &iampb.TargetValue{
+				Value: target,
+			}
+			_, err = iampb.NewNetworkRegistryClient(conn).UpdateNetwork(ctx, req)
 			return err
 		},
 	}
@@ -194,7 +209,7 @@ func init() {
 
 	networkCreateCmd.Flags().AddFlagSet(pbflag.NetID(""))
 	networkCreateCmd.Flags().AddFlagSet(networkSettingsFlags())
-	networkCreateCmd.Flags().AddFlagSet(targetFlags())
+	networkCreateCmd.Flags().AddFlagSet(targetFlags("target"))
 	networkCmd.AddCommand(networkCreateCmd)
 
 	networkGetCmd.Flags().AddFlagSet(pbflag.NetID(""))
@@ -202,7 +217,9 @@ func init() {
 
 	networkUpdateCmd.Flags().AddFlagSet(pbflag.NetID(""))
 	networkUpdateCmd.Flags().AddFlagSet(networkSettingsFlags())
-	networkUpdateCmd.Flags().AddFlagSet(targetFlags())
+	networkUpdateTargetCmd.Flags().AddFlagSet(pbflag.NetID(""))
+	networkUpdateTargetCmd.Flags().AddFlagSet(targetFlags(""))
+	networkUpdateCmd.AddCommand(networkUpdateTargetCmd)
 	networkCmd.AddCommand(networkUpdateCmd)
 
 	networkDeleteCmd.Flags().AddFlagSet(pbflag.NetID(""))
