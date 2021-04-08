@@ -186,19 +186,25 @@ func (p *targetProtocol) Type() string {
 }
 
 // TargetProtocol returns flags for a target protocol.
-func TargetProtocol() *flag.FlagSet {
+func TargetProtocol(prefix string) *flag.FlagSet {
+	if prefix != "" {
+		prefix = prefix + "-"
+	}
 	names := make([]string, 0, len(packetbroker.TargetProtocol_value))
 	for k := range packetbroker.TargetProtocol_value {
 		names = append(names, k)
 	}
 	flags := new(flag.FlagSet)
-	flags.Var(new(targetProtocol), "target-protocol", fmt.Sprintf("target protocol (%s)", strings.Join(names, ",")))
+	flags.Var(new(targetProtocol), prefix+"protocol", fmt.Sprintf("target protocol (%s)", strings.Join(names, ",")))
 	return flags
 }
 
 // GetTargetProtocol returns the target protocol from the flags.
-func GetTargetProtocol(flags *flag.FlagSet) *packetbroker.TargetProtocol {
-	return flags.Lookup("target-protocol").Value.(*targetProtocol).TargetProtocol
+func GetTargetProtocol(flags *flag.FlagSet, prefix string) *packetbroker.TargetProtocol {
+	if prefix != "" {
+		prefix = prefix + "-"
+	}
+	return flags.Lookup(prefix + "protocol").Value.(*targetProtocol).TargetProtocol
 }
 
 type apiKeyRightsValue []packetbroker.Right
