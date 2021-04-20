@@ -28,7 +28,7 @@ var (
 		RunE: func(cmd *cobra.Command, args []string) error {
 			netID := pbflag.GetNetID(cmd.Flags(), "")
 			offset := uint32(0)
-			fmt.Fprintln(tabout, "NetID\tTenant ID\tName\tDevAddr Blocks\tListed\t")
+			fmt.Fprintln(tabout, "NetID\tTenant ID\tName\tDevAddr Blocks\tListed\tTarget\t")
 			for {
 				res, err := iampb.NewTenantRegistryClient(conn).ListTenants(ctx, &iampb.ListTenantsRequest{
 					NetId:  uint32(netID),
@@ -38,12 +38,13 @@ var (
 					return err
 				}
 				for _, t := range res.Tenants {
-					fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t%s\t\n",
+					fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t%s\t%s\t\n",
 						packetbroker.NetID(t.GetNetId()),
 						t.GetTenantId(),
 						t.GetName(),
 						column.DevAddrBlocks(t.GetDevAddrBlocks()),
 						column.YesNo(t.GetListed()),
+						(*column.Target)(t.GetTarget()),
 					)
 				}
 				offset += uint32(len(res.Tenants))
@@ -67,12 +68,21 @@ var (
 
   Define DevAddr blocks to named clusters:
     $ pbadmin network tenant create --net-id 000013 --tenant-id tti \
-      --dev-addr-blocks 26011000/20=eu1,26012000=eu2`,
+      --dev-addr-blocks 26011000/20=eu1,26012000=eu2
+
+  Configure a LoRaWAN Backend Interfaces 1.1.0 target with HTTP basic auth:
+    $ pbadmin network tenant create --net-id 000013 --tenant-id tti \
+      --target-protocol TS002_V1_1_0 \
+      --target-address https://user:pass@example.com`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			tenantID := pbflag.GetTenantID(cmd.Flags(), "")
 			name, _ := cmd.Flags().GetString("name")
 			devAddrBlocks := pbflag.GetDevAddrBlocks(cmd.Flags())
 			listed, _ := cmd.Flags().GetBool("listed")
+			target, err := target(cmd.Flags(), "target")
+			if err != nil {
+				return err
+			}
 			res, err := iampb.NewTenantRegistryClient(conn).CreateTenant(ctx, &iampb.CreateTenantRequest{
 				Tenant: &packetbroker.Tenant{
 					NetId:         uint32(tenantID.NetID),
@@ -81,6 +91,7 @@ var (
 					DevAddrBlocks: devAddrBlocks,
 					// TODO: Contact info (https://github.com/packetbroker/pb/issues/5)
 					Listed: listed,
+					Target: target,
 				},
 			})
 			if err != nil {
@@ -145,6 +156,35 @@ var (
 			return err
 		},
 	}
+	networkTenantUpdateTargetCmd = &cobra.Command{
+		Use:   "target",
+		Short: "Update a tenant target",
+		Example: `
+  Configure a LoRaWAN Backend Interfaces 1.0 target with HTTP basic auth:
+    $ pbadmin network tenant update target --net-id 000013 --tenant-id tti \
+      --protocol TS002_V1_0 --address https://user:pass@example.com
+
+  Configure a LoRaWAN Backend Interfaces 1.0 target with TLS:
+    $ pbadmin network tenant update target --net-id 000013 --tenant-id tti \
+      --protocol TS002_V1_0 --address https://example.com \
+      --root-cas-file ca.pem --tls-cert-file key.pem --tls-key-file key.pem`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			tenantID := pbflag.GetTenantID(cmd.Flags(), "")
+			req := &iampb.UpdateTenantRequest{
+				NetId:    uint32(tenantID.NetID),
+				TenantId: tenantID.ID,
+			}
+			target, err := target(cmd.Flags(), "")
+			if err != nil {
+				return err
+			}
+			req.Target = &iampb.TargetValue{
+				Value: target,
+			}
+			_, err = iampb.NewTenantRegistryClient(conn).UpdateTenant(ctx, req)
+			return err
+		},
+	}
 	networkTenantDeleteCmd = &cobra.Command{
 		Use:          "delete",
 		Aliases:      []string{"rm"},
@@ -180,6 +220,7 @@ func init() {
 
 	networkTenantCreateCmd.Flags().AddFlagSet(pbflag.TenantID(""))
 	networkTenantCreateCmd.Flags().AddFlagSet(tenantSettingsFlags())
+	networkTenantCreateCmd.Flags().AddFlagSet(targetFlags("target"))
 	networkTenantCmd.AddCommand(networkTenantCreateCmd)
 
 	networkTenantGetCmd.Flags().AddFlagSet(pbflag.TenantID(""))
@@ -187,6 +228,9 @@ func init() {
 
 	networkTenantUpdateCmd.Flags().AddFlagSet(pbflag.TenantID(""))
 	networkTenantUpdateCmd.Flags().AddFlagSet(tenantSettingsFlags())
+	networkTenantUpdateTargetCmd.Flags().AddFlagSet(pbflag.TenantID(""))
+	networkTenantUpdateTargetCmd.Flags().AddFlagSet(targetFlags(""))
+	networkTenantUpdateCmd.AddCommand(networkTenantUpdateTargetCmd)
 	networkTenantCmd.AddCommand(networkTenantUpdateCmd)
 
 	networkTenantDeleteCmd.Flags().AddFlagSet(pbflag.TenantID(""))

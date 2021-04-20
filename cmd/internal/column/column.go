@@ -3,6 +3,11 @@
 package column
 
 import (
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/asn1"
+	"errors"
 	"fmt"
 	"io"
 	"sort"
@@ -26,6 +31,28 @@ func (yn YesNo) String() string {
 		return "Yes"
 	}
 	return "No"
+}
+
+// Target prints the target as column field.
+type Target packetbroker.Target
+
+func (t *Target) String() string {
+	if t == nil {
+		return ""
+	}
+	s := t.Protocol.String()
+	if t.Address != "" {
+		s += fmt.Sprintf(": %s", t.Address)
+	}
+	switch t.Authorization.(type) {
+	case *packetbroker.Target_BasicAuth_:
+		s += " (with HTTP basic auth)"
+	case *packetbroker.Target_CustomAuth_:
+		s += " (with HTTP custom auth)"
+	case *packetbroker.Target_TlsClientAuth:
+		s += " (with TLS client auth)"
+	}
+	return s
 }
 
 // DevAddrBlocks prints DevAddr blocks as column field.
@@ -95,6 +122,82 @@ func WriteDevAddrBlocks(w io.Writer, blocks []*packetbroker.DevAddrBlock) error 
 	return nil
 }
 
+func x509SubjectFromPair(certPEMBlock, keyPEMBlock []byte) (string, error) {
+	cert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
+	if err != nil {
+		return "", err
+	}
+	x509Cert, err := x509.ParseCertificate(cert.Certificate[0])
+	if err != nil {
+		return "", err
+	}
+	return x509Cert.Subject.String(), nil
+}
+
+func x509Subject(raw []byte) (string, error) {
+	var subject pkix.RDNSequence
+	if rest, err := asn1.Unmarshal(raw, &subject); err != nil {
+		return "", err
+	} else if len(rest) != 0 {
+		return "", errors.New("trailing data after X.509 subject")
+	}
+	var res pkix.Name
+	res.FillFromRDNSequence(&subject)
+	return res.String(), nil
+}
+
+func writeTarget(w io.Writer, target *packetbroker.Target) error {
+	if target == nil {
+		return nil
+	}
+
+	var rootCAs []string
+	if cas := target.RootCas; len(cas) > 0 {
+		certPool := x509.NewCertPool()
+		certPool.AppendCertsFromPEM(cas)
+		rawSubjects := certPool.Subjects()
+		rootCAs = make([]string, len(rawSubjects))
+		for i, raw := range rawSubjects {
+			subject, err := x509Subject(raw)
+			if err != nil {
+				rootCAs[i] = err.Error()
+			} else {
+				rootCAs[i] = subject
+			}
+		}
+	}
+
+	var auth string
+	switch a := target.Authorization.(type) {
+	case *packetbroker.Target_BasicAuth_:
+		auth = fmt.Sprintf("Basic %s:%s", a.BasicAuth.Username, a.BasicAuth.Password)
+	case *packetbroker.Target_CustomAuth_:
+		auth = a.CustomAuth.Value
+	case *packetbroker.Target_TlsClientAuth:
+		var err error
+		auth, err = x509SubjectFromPair(a.TlsClientAuth.Cert, a.TlsClientAuth.Key)
+		if err != nil {
+			auth = err.Error()
+		}
+	}
+
+	if err := WriteKV(w,
+		"Target Protocol", target.Protocol.String(),
+		"Target Address", target.Address,
+		"Target Authorization", auth,
+	); err != nil {
+		return err
+	}
+	for i, r := range rootCAs {
+		if err := WriteKV(w,
+			fmt.Sprintf("Target Root CA #%d", i+1), r,
+		); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // WriteNetwork writes the Network.
 func WriteNetwork(w io.Writer, network *packetbroker.Network) error {
 	if err := WriteKV(w,
@@ -103,8 +206,11 @@ func WriteNetwork(w io.Writer, network *packetbroker.Network) error {
 	); err != nil {
 		return err
 	}
+	if err := writeTarget(w, network.GetTarget()); err != nil {
+		return err
+	}
 	fmt.Fprintln(w, "\nDevAddr Blocks:")
-	return WriteDevAddrBlocks(w, network.DevAddrBlocks)
+	return WriteDevAddrBlocks(w, network.GetDevAddrBlocks())
 }
 
 // WriteTenant writes the Tenant.
@@ -116,8 +222,11 @@ func WriteTenant(w io.Writer, tenant *packetbroker.Tenant) error {
 	); err != nil {
 		return err
 	}
+	if err := writeTarget(w, tenant.GetTarget()); err != nil {
+		return err
+	}
 	fmt.Fprintln(w, "\nDevAddr Blocks:")
-	return WriteDevAddrBlocks(w, tenant.DevAddrBlocks)
+	return WriteDevAddrBlocks(w, tenant.GetDevAddrBlocks())
 }
 
 // TimeSince formats the timestamp as duration since then, in seconds.
@@ -142,20 +251,7 @@ type Rights []packetbroker.Right
 func (r Rights) String() string {
 	rights := make([]string, 0, len(r))
 	for _, v := range r {
-		switch v {
-		case packetbroker.Right_READ_NETWORK:
-			rights = append(rights, "r:network")
-		case packetbroker.Right_READ_NETWORK_CONTACT:
-			rights = append(rights, "r:network:contact")
-		case packetbroker.Right_READ_TENANT:
-			rights = append(rights, "r:tenant")
-		case packetbroker.Right_READ_TENANT_CONTACT:
-			rights = append(rights, "r:tenant:contact")
-		case packetbroker.Right_READ_ROUTING_POLICY:
-			rights = append(rights, "r:routing_policy")
-		case packetbroker.Right_READ_ROUTE_TABLE:
-			rights = append(rights, "r:route_table")
-		}
+		rights = append(rights, v.String())
 	}
 	sort.Strings(rights)
 	return strings.Join(rights, ",")

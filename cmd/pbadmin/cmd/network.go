@@ -27,7 +27,7 @@ var (
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			offset := uint32(0)
-			fmt.Fprintln(tabout, "NetID\tName\tDevAddr Blocks\tListed\t")
+			fmt.Fprintln(tabout, "NetID\tName\tDevAddr Blocks\tListed\tTarget\t")
 			for {
 				res, err := iampb.NewNetworkRegistryClient(conn).ListNetworks(ctx, &iampb.ListNetworksRequest{
 					Offset: offset,
@@ -36,11 +36,12 @@ var (
 					return err
 				}
 				for _, t := range res.Networks {
-					fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t\n",
+					fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t%s\t\n",
 						packetbroker.NetID(t.GetNetId()),
 						t.GetName(),
 						column.DevAddrBlocks(t.GetDevAddrBlocks()),
 						column.YesNo(t.GetListed()),
+						(*column.Target)(t.GetTarget()),
 					)
 				}
 				offset += uint32(len(res.Networks))
@@ -64,12 +65,20 @@ var (
 
   Define DevAddr blocks to named clusters:
     $ pbadmin network create --net-id 000013 \
-      --dev-addr-blocks 26011000/20=eu1,26012000=eu2`,
+      --dev-addr-blocks 26011000/20=eu1,26012000=eu2
+
+  Configure a LoRaWAN Backend Interfaces 1.1.0 target with HTTP basic auth:
+    $ pbadmin network create --net-id 000013 --target-protocol TS002_V1_1_0 \
+      --target-address https://user:pass@example.com`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			netID := pbflag.GetNetID(cmd.Flags(), "")
 			name, _ := cmd.Flags().GetString("name")
 			devAddrBlocks := pbflag.GetDevAddrBlocks(cmd.Flags())
 			listed, _ := cmd.Flags().GetBool("listed")
+			target, err := target(cmd.Flags(), "target")
+			if err != nil {
+				return err
+			}
 			res, err := iampb.NewNetworkRegistryClient(conn).CreateNetwork(ctx, &iampb.CreateNetworkRequest{
 				Network: &packetbroker.Network{
 					NetId:         uint32(netID),
@@ -77,6 +86,7 @@ var (
 					DevAddrBlocks: devAddrBlocks,
 					// TODO: Contact info (https://github.com/packetbroker/pb/issues/5)
 					Listed: listed,
+					Target: target,
 				},
 			})
 			if err != nil {
@@ -109,10 +119,10 @@ var (
 		Short:   "Update a network",
 		Example: `
   Update name:
-    $ pbadmin network create --net-id 000013 --name "The Things Network"
+    $ pbadmin network update --net-id 000013 --name "The Things Network"
 
   Define DevAddr blocks to named clusters:
-    $ pbadmin network create --net-id 000013 \
+    $ pbadmin network update --net-id 000013 \
       --dev-addr-blocks 26011000/20=eu1,26012000=eu2`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			netID := pbflag.GetNetID(cmd.Flags(), "")
@@ -135,6 +145,34 @@ var (
 				req.Listed = wrapperspb.Bool(listed)
 			}
 			_, err := iampb.NewNetworkRegistryClient(conn).UpdateNetwork(ctx, req)
+			return err
+		},
+	}
+	networkUpdateTargetCmd = &cobra.Command{
+		Use:   "target",
+		Short: "Update a network target",
+		Example: `
+  Configure a LoRaWAN Backend Interfaces 1.0 target with HTTP basic auth:
+    $ pbadmin network update target --net-id 000013 --protocol TS002_V1_0 \
+      --address https://user:pass@example.com
+
+  Configure a LoRaWAN Backend Interfaces 1.0 target with TLS:
+    $ pbadmin network update target --net-id 000013 --protocol TS002_V1_0 \
+      --address https://example.com --root-cas-file ca.pem \
+      --tls-cert-file key.pem --tls-key-file key.pem`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			netID := pbflag.GetNetID(cmd.Flags(), "")
+			req := &iampb.UpdateNetworkRequest{
+				NetId: uint32(netID),
+			}
+			target, err := target(cmd.Flags(), "")
+			if err != nil {
+				return err
+			}
+			req.Target = &iampb.TargetValue{
+				Value: target,
+			}
+			_, err = iampb.NewNetworkRegistryClient(conn).UpdateNetwork(ctx, req)
 			return err
 		},
 	}
@@ -171,6 +209,7 @@ func init() {
 
 	networkCreateCmd.Flags().AddFlagSet(pbflag.NetID(""))
 	networkCreateCmd.Flags().AddFlagSet(networkSettingsFlags())
+	networkCreateCmd.Flags().AddFlagSet(targetFlags("target"))
 	networkCmd.AddCommand(networkCreateCmd)
 
 	networkGetCmd.Flags().AddFlagSet(pbflag.NetID(""))
@@ -178,6 +217,9 @@ func init() {
 
 	networkUpdateCmd.Flags().AddFlagSet(pbflag.NetID(""))
 	networkUpdateCmd.Flags().AddFlagSet(networkSettingsFlags())
+	networkUpdateTargetCmd.Flags().AddFlagSet(pbflag.NetID(""))
+	networkUpdateTargetCmd.Flags().AddFlagSet(targetFlags(""))
+	networkUpdateCmd.AddCommand(networkUpdateTargetCmd)
 	networkCmd.AddCommand(networkUpdateCmd)
 
 	networkDeleteCmd.Flags().AddFlagSet(pbflag.NetID(""))

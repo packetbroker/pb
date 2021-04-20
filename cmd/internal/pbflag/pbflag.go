@@ -155,25 +155,64 @@ func GetDevAddrBlocks(flags *flag.FlagSet) []*packetbroker.DevAddrBlock {
 	return []*packetbroker.DevAddrBlock(*blocks)
 }
 
+type targetProtocol struct {
+	*packetbroker.TargetProtocol
+}
+
+func (p targetProtocol) String() string {
+	if p.TargetProtocol == nil {
+		return ""
+	}
+	return packetbroker.TargetProtocol_name[int32(*p.TargetProtocol)]
+}
+
+func (p *targetProtocol) Set(s string) error {
+	if s == "" {
+		*p = targetProtocol{}
+		return nil
+	}
+	i, ok := packetbroker.TargetProtocol_value[s]
+	if !ok {
+		return fmt.Errorf("pbflag: invalid protocol: %s", s)
+	}
+	*p = targetProtocol{
+		TargetProtocol: (*packetbroker.TargetProtocol)(&i),
+	}
+	return nil
+}
+
+func (p *targetProtocol) Type() string {
+	return "targetProtocol"
+}
+
+// TargetProtocol returns flags for a target protocol.
+func TargetProtocol(prefix string) *flag.FlagSet {
+	if prefix != "" {
+		prefix = prefix + "-"
+	}
+	names := make([]string, 0, len(packetbroker.TargetProtocol_value))
+	for k := range packetbroker.TargetProtocol_value {
+		names = append(names, k)
+	}
+	flags := new(flag.FlagSet)
+	flags.Var(new(targetProtocol), prefix+"protocol", fmt.Sprintf("target protocol (%s)", strings.Join(names, ",")))
+	return flags
+}
+
+// GetTargetProtocol returns the target protocol from the flags.
+func GetTargetProtocol(flags *flag.FlagSet, prefix string) *packetbroker.TargetProtocol {
+	if prefix != "" {
+		prefix = prefix + "-"
+	}
+	return flags.Lookup(prefix + "protocol").Value.(*targetProtocol).TargetProtocol
+}
+
 type apiKeyRightsValue []packetbroker.Right
 
 func (p apiKeyRightsValue) String() string {
 	rights := make([]string, 0, len(p))
 	for _, v := range p {
-		switch v {
-		case packetbroker.Right_READ_NETWORK:
-			rights = append(rights, "r:network")
-		case packetbroker.Right_READ_NETWORK_CONTACT:
-			rights = append(rights, "r:network:contact")
-		case packetbroker.Right_READ_TENANT:
-			rights = append(rights, "r:tenant")
-		case packetbroker.Right_READ_TENANT_CONTACT:
-			rights = append(rights, "r:tenant:contact")
-		case packetbroker.Right_READ_ROUTING_POLICY:
-			rights = append(rights, "r:routing_policy")
-		case packetbroker.Right_READ_ROUTE_TABLE:
-			rights = append(rights, "r:route_table")
-		}
+		rights = append(rights, v.String())
 	}
 	return strings.Join(rights, ",")
 }
@@ -186,22 +225,11 @@ func (p *apiKeyRightsValue) Set(s string) error {
 	rights := strings.Split(s, ",")
 	res := make([]packetbroker.Right, len(rights))
 	for i, r := range rights {
-		switch r {
-		case "r:network":
-			res[i] = packetbroker.Right_READ_NETWORK
-		case "r:network:contact":
-			res[i] = packetbroker.Right_READ_NETWORK_CONTACT
-		case "r:tenant":
-			res[i] = packetbroker.Right_READ_TENANT
-		case "r:tenant:contact":
-			res[i] = packetbroker.Right_READ_TENANT_CONTACT
-		case "r:routing_policy":
-			res[i] = packetbroker.Right_READ_ROUTING_POLICY
-		case "r:route_table":
-			res[i] = packetbroker.Right_READ_ROUTE_TABLE
-		default:
+		v, ok := packetbroker.Right_value[r]
+		if !ok {
 			return fmt.Errorf("pbflag: invalid right: %s", r)
 		}
+		res[i] = packetbroker.Right(v)
 	}
 	*p = res
 	return nil

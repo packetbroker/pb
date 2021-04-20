@@ -66,15 +66,16 @@ the API key in a secure place, as it cannot be retrieved after create.`,
     $ pbadmin cluster apikey create --cluster-id eu1
 
   Create API key with rights to read networks and tenants:
-    $ pbadmin cluster apikey create --cluster-id eu1 --rights r:network,r:tenant
+    $ pbadmin cluster apikey create --cluster-id eu1 --rights READ_NETWORK
 
 Rights:
-  r:network          Read networks
-  r:network:contact  Read network contact information
-  r:tenant           Read tenants
-  r:tenant:contact   Read tenant contact information
-  r:routing_policy   Read routing policies
-  r:route_table      Read route table`,
+  READ_NETWORK          Read networks
+  READ_NETWORK_CONTACT  Read network contact information
+  READ_TENANT           Read tenants
+  READ_TENANT_CONTACT   Read tenant contact information
+  READ_ROUTING_POLICY   Read routing policies
+  READ_ROUTE_TABLE      Read route table
+  READ_TARGET_AUTH      Read target authentication information`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			endpoint := pbflag.GetEndpoint(cmd.Flags(), "")
 			res, err := iampbv2.NewClusterAPIKeyVaultClient(conn).CreateAPIKey(ctx, &iampbv2.CreateClusterAPIKeyRequest{
