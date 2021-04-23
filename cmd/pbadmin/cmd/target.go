@@ -3,7 +3,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/url"
@@ -30,7 +29,7 @@ func targetFlags(prefix string) *flag.FlagSet {
 func target(flags *flag.FlagSet, prefix string) (*packetbroker.Target, error) {
 	protocol := pbflag.GetTargetProtocol(flags, prefix)
 	if protocol == nil {
-		return nil, errors.New("protocol is required")
+		return nil, nil
 	}
 	res := &packetbroker.Target{
 		Protocol: *protocol,
