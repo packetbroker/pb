@@ -19,8 +19,6 @@ type BasicAuthRealm int
 const (
 	// BasicAuthIAM is the IAM realm.
 	BasicAuthIAM BasicAuthRealm = iota
-	// BasicAuthControlPlane is the Control Plane realm.
-	BasicAuthControlPlane
 )
 
 // BasicAuthRealmConfig defines the Basic authentication realm configuration.
@@ -33,10 +31,6 @@ var basicAuthRealms = map[BasicAuthRealm]BasicAuthRealmConfig{
 	BasicAuthIAM: {
 		ConfigKey: "iam",
 		Name:      "IAM",
-	},
-	BasicAuthControlPlane: {
-		ConfigKey: "controlplane",
-		Name:      "Control Plane",
 	},
 }
 
