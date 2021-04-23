@@ -13,6 +13,7 @@ import (
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
+	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	routingpb "go.packetbroker.org/api/routing"
 	packetbroker "go.packetbroker.org/api/v3"
@@ -99,9 +100,9 @@ var rootCmd = &cobra.Command{
 			homeNetwork = pbflag.GetEndpoint(cmd.Flags(), "home-network")
 		)
 		if homeNetwork.IsEmpty() {
-			return asForwarder(forwarder)
+			return asForwarder(cmd.Flags(), forwarder)
 		}
-		return asHomeNetwork(forwarder, homeNetwork)
+		return asHomeNetwork(cmd.Flags(), forwarder, homeNetwork)
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		logger.Sync()
@@ -109,7 +110,7 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func asForwarder(forwarder packetbroker.Endpoint) error {
+func asForwarder(flags *flag.FlagSet, forwarder packetbroker.Endpoint) error {
 	client := routingpb.NewForwarderDataClient(conn)
 	for {
 		select {
@@ -117,27 +118,44 @@ func asForwarder(forwarder packetbroker.Endpoint) error {
 			return nil
 		default:
 		}
-		msg := new(packetbroker.UplinkMessage)
+
+		msg := pbflag.NewForwarderMessage(flags)
 		if err := protojson.Decode(decoder, msg); err != nil {
 			if !errors.Is(err, io.EOF) && status.Code(err) != codes.Canceled {
 				return err
 			}
 			return nil
 		}
-		res, err := client.Publish(ctx, &routingpb.PublishUplinkMessageRequest{
-			ForwarderNetId:     uint32(forwarder.NetID),
-			ForwarderClusterId: forwarder.ClusterID,
-			ForwarderTenantId:  forwarder.TenantID.ID,
-			Message:            msg,
-		})
-		if err != nil {
-			return err
+
+		switch msg := msg.(type) {
+		case *packetbroker.UplinkMessage:
+			res, err := client.Publish(ctx, &routingpb.PublishUplinkMessageRequest{
+				ForwarderNetId:     uint32(forwarder.NetID),
+				ForwarderClusterId: forwarder.ClusterID,
+				ForwarderTenantId:  forwarder.TenantID.ID,
+				Message:            msg,
+			})
+			if err != nil {
+				return err
+			}
+			logger.Info("Published uplink message", zap.String("id", res.Id))
+
+		case *packetbroker.DownlinkMessageDeliveryStateChange:
+			msg.ForwarderNetId = uint32(forwarder.NetID)
+			msg.ForwarderClusterId = forwarder.ClusterID
+			msg.ForwarderTenantId = forwarder.TenantID.ID
+			_, err := client.ReportDownlinkMessageDeliveryState(ctx, &routingpb.DownlinkMessageDeliveryStateChangeRequest{
+				StateChange: msg,
+			})
+			if err != nil {
+				return err
+			}
+			logger.Info("Published uplink message delivery state change")
 		}
-		logger.Info("Published uplink message", zap.String("id", res.Id))
 	}
 }
 
-func asHomeNetwork(forwarder, homeNetwork packetbroker.Endpoint) error {
+func asHomeNetwork(flags *flag.FlagSet, forwarder, homeNetwork packetbroker.Endpoint) error {
 	client := routingpb.NewHomeNetworkDataClient(conn)
 	for {
 		select {
@@ -145,26 +163,46 @@ func asHomeNetwork(forwarder, homeNetwork packetbroker.Endpoint) error {
 			return nil
 		default:
 		}
-		msg := new(packetbroker.DownlinkMessage)
+
+		msg := pbflag.NewHomeNetworkMessage(flags)
 		if err := protojson.Decode(decoder, msg); err != nil {
 			if !errors.Is(err, io.EOF) && status.Code(err) != codes.Canceled {
 				return err
 			}
 			return nil
 		}
-		res, err := client.Publish(ctx, &routingpb.PublishDownlinkMessageRequest{
-			HomeNetworkNetId:     uint32(homeNetwork.NetID),
-			HomeNetworkClusterId: homeNetwork.ClusterID,
-			HomeNetworkTenantId:  homeNetwork.TenantID.ID,
-			ForwarderNetId:       uint32(forwarder.NetID),
-			ForwarderClusterId:   forwarder.ClusterID,
-			ForwarderTenantId:    forwarder.TenantID.ID,
-			Message:              msg,
-		})
-		if err != nil {
-			return err
+
+		switch msg := msg.(type) {
+		case *packetbroker.DownlinkMessage:
+			res, err := client.Publish(ctx, &routingpb.PublishDownlinkMessageRequest{
+				HomeNetworkNetId:     uint32(homeNetwork.NetID),
+				HomeNetworkClusterId: homeNetwork.ClusterID,
+				HomeNetworkTenantId:  homeNetwork.TenantID.ID,
+				ForwarderNetId:       uint32(forwarder.NetID),
+				ForwarderClusterId:   forwarder.ClusterID,
+				ForwarderTenantId:    forwarder.TenantID.ID,
+				Message:              msg,
+			})
+			if err != nil {
+				return err
+			}
+			logger.Info("Published downlink message", zap.String("id", res.Id))
+
+		case *packetbroker.UplinkMessageDeliveryStateChange:
+			msg.HomeNetworkNetId = uint32(homeNetwork.NetID)
+			msg.HomeNetworkClusterId = homeNetwork.ClusterID
+			msg.HomeNetworkTenantId = homeNetwork.TenantID.ID
+			msg.ForwarderNetId = uint32(forwarder.NetID)
+			msg.ForwarderClusterId = forwarder.ClusterID
+			msg.ForwarderTenantId = forwarder.TenantID.ID
+			_, err := client.ReportUplinkMessageDeliveryState(ctx, &routingpb.UplinkMessageDeliveryStateChangeRequest{
+				StateChange: msg,
+			})
+			if err != nil {
+				return err
+			}
+			logger.Info("Published uplink message delivery state change")
 		}
-		logger.Info("Published downlink message", zap.String("id", res.Id))
 	}
 }
 
@@ -187,6 +225,7 @@ func init() {
 
 	rootCmd.Flags().AddFlagSet(pbflag.Endpoint("forwarder"))
 	rootCmd.Flags().AddFlagSet(pbflag.Endpoint("home-network"))
+	rootCmd.Flags().AddFlagSet(pbflag.MessageType())
 }
 
 func initConfig() {

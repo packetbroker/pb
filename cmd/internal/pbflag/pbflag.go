@@ -8,6 +8,7 @@ import (
 
 	flag "github.com/spf13/pflag"
 	packetbroker "go.packetbroker.org/api/v3"
+	"google.golang.org/protobuf/proto"
 )
 
 type netIDValue packetbroker.NetID
@@ -153,6 +154,72 @@ func DevAddrBlocks() *flag.FlagSet {
 func GetDevAddrBlocks(flags *flag.FlagSet) []*packetbroker.DevAddrBlock {
 	blocks := flags.Lookup("dev-addr-blocks").Value.(*devAddrBlocksValue)
 	return []*packetbroker.DevAddrBlock(*blocks)
+}
+
+type messageType int
+
+const (
+	message messageType = iota
+	messageDeliveryState
+)
+
+func (c messageType) String() string {
+	switch c {
+	case message:
+		return "message"
+	case messageDeliveryState:
+		return "message-delivery-state"
+	default:
+		return "unknown"
+	}
+}
+
+func (c *messageType) Set(s string) error {
+	switch s {
+	case "message":
+		*c = message
+	case "message-delivery-state":
+		*c = messageDeliveryState
+	default:
+		return fmt.Errorf("pbflag: invalid message type: %s", s)
+	}
+	return nil
+}
+
+func (c *messageType) Type() string {
+	return "messageType"
+}
+
+// MessageType returns flags for the message type.
+func MessageType() *flag.FlagSet {
+	flags := new(flag.FlagSet)
+	v := messageType(message)
+	flags.Var(&v, "message-type", "message type (message, message-delivery-state)")
+	return flags
+}
+
+// NewForwarderMessage returns a new message based on the specified type.
+func NewForwarderMessage(flags *flag.FlagSet) proto.Message {
+	switch *flags.Lookup("message-type").Value.(*messageType) {
+	case message:
+		return new(packetbroker.UplinkMessage)
+	case messageDeliveryState:
+		return new(packetbroker.DownlinkMessageDeliveryStateChange)
+	default:
+		return nil
+	}
+}
+
+// NewHomeNetworkMessage returns a new message based on the specified type.
+func NewHomeNetworkMessage(flags *flag.FlagSet) proto.Message {
+	switch *flags.Lookup("message-type").Value.(*messageType) {
+	case message:
+		return new(packetbroker.DownlinkMessage)
+	case messageDeliveryState:
+		return new(packetbroker.UplinkMessageDeliveryStateChange)
+	default:
+		return nil
+	}
 }
 
 type targetProtocol struct {
