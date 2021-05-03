@@ -34,11 +34,17 @@ var (
 		Short:        "Show listed Forwarders and Home Networks",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			offset := uint32(0)
+			var (
+				offset          = uint32(0)
+				idContains, _   = cmd.Flags().GetString("id-contains")
+				nameContains, _ = cmd.Flags().GetString("name-contains")
+			)
 			fmt.Fprintln(tabout, "NetID\tTenant ID\tName\tDevAddr Blocks\t")
 			for {
 				res, err := iampb.NewCatalogClient(iamConn).ListNetworks(ctx, &iampb.ListNetworksRequest{
-					Offset: offset,
+					Offset:           offset,
+					TenantIdContains: idContains,
+					NameContains:     nameContains,
 				})
 				if err != nil {
 					return err
@@ -73,11 +79,17 @@ var (
 		Short:        "Show listed Home Networks",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			offset := uint32(0)
+			var (
+				offset          = uint32(0)
+				idContains, _   = cmd.Flags().GetString("id-contains")
+				nameContains, _ = cmd.Flags().GetString("name-contains")
+			)
 			fmt.Fprintln(tabout, "NetID\tTenant ID\tName\tDevAddr Blocks\t")
 			for {
 				res, err := iampb.NewCatalogClient(iamConn).ListHomeNetworks(ctx, &iampb.ListNetworksRequest{
-					Offset: offset,
+					Offset:           offset,
+					TenantIdContains: idContains,
+					NameContains:     nameContains,
 				})
 				if err != nil {
 					return err
@@ -111,6 +123,11 @@ var (
 func init() {
 	rootCmd.AddCommand(catalogCmd)
 
+	catalogNetworksCmd.Flags().String("id-contains", "", "filter tenants by ID")
+	catalogNetworksCmd.Flags().String("name-contains", "", "filter networks or tenants by name")
 	catalogCmd.AddCommand(catalogNetworksCmd)
+
+	catalogHomeNetworksCmd.Flags().String("id-contains", "", "filter tenants by ID")
+	catalogHomeNetworksCmd.Flags().String("name-contains", "", "filter networks or tenants by name")
 	catalogCmd.AddCommand(catalogHomeNetworksCmd)
 }

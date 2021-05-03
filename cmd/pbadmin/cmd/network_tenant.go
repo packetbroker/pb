@@ -26,13 +26,19 @@ var (
 		Short:        "List tenants",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			netID := pbflag.GetNetID(cmd.Flags(), "")
-			offset := uint32(0)
+			var (
+				netID           = pbflag.GetNetID(cmd.Flags(), "")
+				offset          = uint32(0)
+				idContains, _   = cmd.Flags().GetString("id-contains")
+				nameContains, _ = cmd.Flags().GetString("name-contains")
+			)
 			fmt.Fprintln(tabout, "NetID\tTenant ID\tName\tDevAddr Blocks\tListed\tTarget\t")
 			for {
 				res, err := iampb.NewTenantRegistryClient(conn).ListTenants(ctx, &iampb.ListTenantsRequest{
-					NetId:  uint32(netID),
-					Offset: offset,
+					NetId:            uint32(netID),
+					Offset:           offset,
+					TenantIdContains: idContains,
+					NameContains:     nameContains,
 				})
 				if err != nil {
 					return err
@@ -216,6 +222,8 @@ func init() {
 	networkCmd.AddCommand(networkTenantCmd)
 
 	networkTenantListCmd.Flags().AddFlagSet(pbflag.NetID(""))
+	networkTenantListCmd.Flags().String("id-contains", "", "filter tenants by ID")
+	networkTenantListCmd.Flags().String("name-contains", "", "filter tenants by name")
 	networkTenantCmd.AddCommand(networkTenantListCmd)
 
 	networkTenantCreateCmd.Flags().AddFlagSet(pbflag.TenantID(""))

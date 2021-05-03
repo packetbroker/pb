@@ -26,11 +26,15 @@ var (
 		Short:        "List networks",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			offset := uint32(0)
+			var (
+				offset          = uint32(0)
+				nameContains, _ = cmd.Flags().GetString("name-contains")
+			)
 			fmt.Fprintln(tabout, "NetID\tName\tDevAddr Blocks\tListed\tTarget\t")
 			for {
 				res, err := iampb.NewNetworkRegistryClient(conn).ListNetworks(ctx, &iampb.ListNetworksRequest{
-					Offset: offset,
+					Offset:       offset,
+					NameContains: nameContains,
 				})
 				if err != nil {
 					return err
@@ -205,6 +209,7 @@ func networkSettingsFlags() *flag.FlagSet {
 func init() {
 	rootCmd.AddCommand(networkCmd)
 
+	networkListCmd.Flags().String("name-contains", "", "filter networks by name")
 	networkCmd.AddCommand(networkListCmd)
 
 	networkCreateCmd.Flags().AddFlagSet(pbflag.NetID(""))

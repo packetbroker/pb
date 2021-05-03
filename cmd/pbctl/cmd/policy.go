@@ -261,16 +261,20 @@ may use their infrastructure.`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
-				tenantID = pbflag.GetTenantID(cmd.Flags(), "")
-				offset   = uint32(0)
+				tenantID        = pbflag.GetTenantID(cmd.Flags(), "")
+				offset          = uint32(0)
+				idContains, _   = cmd.Flags().GetString("id-contains")
+				nameContains, _ = cmd.Flags().GetString("name-contains")
 			)
 			fmt.Fprintln(tabout, "NetID\tTenant ID\tName\tDevAddr Blocks\t")
 			for {
 				res, err := routingpb.NewPolicyManagerClient(cpConn).ListNetworksWithPolicy(ctx,
 					&routingpb.ListNetworksWithPolicyRequest{
-						NetId:    uint32(tenantID.NetID),
-						TenantId: tenantID.ID,
-						Offset:   offset,
+						NetId:            uint32(tenantID.NetID),
+						TenantId:         tenantID.ID,
+						Offset:           offset,
+						TenantIdContains: idContains,
+						NameContains:     nameContains,
 					},
 				)
 				if err != nil {
@@ -319,6 +323,8 @@ func init() {
 	policyCmd.PersistentFlags().AddFlagSet(policySourceFlags())
 	rootCmd.AddCommand(policyCmd)
 
+	policyListCmd.Flags().String("id-contains", "", "filter tenants by ID")
+	policyListCmd.Flags().String("name-contains", "", "filter networks or tenants by name")
 	policyListCmd.Flags().AddFlagSet(policyTargetFlags())
 	policyCmd.AddCommand(policyListCmd)
 
