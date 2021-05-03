@@ -3,6 +3,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	routingpb "go.packetbroker.org/api/routing"
@@ -252,6 +254,52 @@ may use their infrastructure.`,
 			return nil
 		},
 	}
+	policyNetworksCmd = &cobra.Command{
+		Use:          "networks",
+		Aliases:      []string{"network", "ns"},
+		Short:        "Show Forwarders and Home Networks with which a policy has been defined",
+		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var (
+				tenantID = pbflag.GetTenantID(cmd.Flags(), "")
+				offset   = uint32(0)
+			)
+			fmt.Fprintln(tabout, "NetID\tTenant ID\tName\tDevAddr Blocks\t")
+			for {
+				res, err := routingpb.NewPolicyManagerClient(cpConn).ListNetworksWithPolicy(ctx,
+					&routingpb.ListNetworksWithPolicyRequest{
+						NetId:    uint32(tenantID.NetID),
+						TenantId: tenantID.ID,
+						Offset:   offset,
+					},
+				)
+				if err != nil {
+					return err
+				}
+				for _, hn := range res.Networks {
+					var row homeNetwork
+					if nwk := hn.GetNetwork(); nwk != nil {
+						row.network = nwk
+						row.tenantID = "-"
+					} else if tnt := hn.GetTenant(); tnt != nil {
+						row.network = tnt
+						row.tenantID = tnt.GetTenantId()
+					}
+					fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t\n",
+						packetbroker.NetID(row.GetNetId()),
+						row.tenantID,
+						row.GetName(),
+						column.DevAddrBlocks(row.GetDevAddrBlocks()),
+					)
+				}
+				offset += uint32(len(res.Networks))
+				if len(res.Networks) == 0 || offset >= res.Total {
+					break
+				}
+			}
+			return nil
+		},
+	}
 )
 
 func policySourceFlags() *flag.FlagSet {
@@ -283,4 +331,7 @@ func init() {
 
 	policyDeleteCmd.Flags().AddFlagSet(policyTargetFlags())
 	policyCmd.AddCommand(policyDeleteCmd)
+
+	policyNetworksCmd.Flags().AddFlagSet(pbflag.TenantID(""))
+	policyCmd.AddCommand(policyNetworksCmd)
 }
