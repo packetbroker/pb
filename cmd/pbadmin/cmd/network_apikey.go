@@ -11,6 +11,7 @@ import (
 	packetbroker "go.packetbroker.org/api/v3"
 	"go.packetbroker.org/pb/cmd/internal/column"
 	pbflag "go.packetbroker.org/pb/cmd/internal/pbflag"
+	"golang.org/x/term"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
@@ -101,12 +102,21 @@ Rights:
   READ_TENANT_CONTACT   Read tenant contact information`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			endpoint := pbflag.GetEndpoint(cmd.Flags(), "")
-			res, err := iampbv2.NewNetworkAPIKeyVaultClient(conn).CreateAPIKey(ctx, &iampbv2.CreateNetworkAPIKeyRequest{
+			req := &iampbv2.CreateNetworkAPIKeyRequest{
 				NetId:     uint32(endpoint.NetID),
 				TenantId:  endpoint.TenantID.ID,
 				ClusterId: endpoint.ClusterID,
 				Rights:    pbflag.GetAPIKeyRights(cmd.Flags()),
-			})
+			}
+			if promptKey, _ := cmd.Flags().GetBool("prompt-key"); promptKey {
+				fmt.Fprint(os.Stdout, "Secret key: ")
+				keyBuf, err := term.ReadPassword(int(os.Stdin.Fd()))
+				if err != nil {
+					return err
+				}
+				req.Key = string(keyBuf)
+			}
+			res, err := iampbv2.NewNetworkAPIKeyVaultClient(conn).CreateAPIKey(ctx, req)
 			if err != nil {
 				return err
 			}
@@ -147,6 +157,7 @@ func init() {
 
 	networkAPIKeyCreateCmd.Flags().AddFlagSet(pbflag.Endpoint(""))
 	networkAPIKeyCreateCmd.Flags().AddFlagSet(pbflag.APIKeyRights())
+	networkAPIKeyCreateCmd.Flags().Bool("prompt-key", false, "prompt custom secret key value")
 	networkAPIKeyCmd.AddCommand(networkAPIKeyCreateCmd)
 
 	networkAPIKeyDeleteCmd.Flags().String("key-id", "", "API key ID")

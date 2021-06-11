@@ -11,6 +11,7 @@ import (
 	iampbv2 "go.packetbroker.org/api/iam/v2"
 	"go.packetbroker.org/pb/cmd/internal/column"
 	pbflag "go.packetbroker.org/pb/cmd/internal/pbflag"
+	"golang.org/x/term"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
@@ -78,10 +79,19 @@ Rights:
   READ_TARGET_AUTH      Read target authentication information`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			endpoint := pbflag.GetEndpoint(cmd.Flags(), "")
-			res, err := iampbv2.NewClusterAPIKeyVaultClient(conn).CreateAPIKey(ctx, &iampbv2.CreateClusterAPIKeyRequest{
+			req := &iampbv2.CreateClusterAPIKeyRequest{
 				ClusterId: endpoint.ClusterID,
 				Rights:    pbflag.GetAPIKeyRights(cmd.Flags()),
-			})
+			}
+			if promptKey, _ := cmd.Flags().GetBool("prompt-key"); promptKey {
+				fmt.Fprint(os.Stdout, "Secret key: ")
+				keyBuf, err := term.ReadPassword(int(os.Stdin.Fd()))
+				if err != nil {
+					return err
+				}
+				req.Key = string(keyBuf)
+			}
+			res, err := iampbv2.NewClusterAPIKeyVaultClient(conn).CreateAPIKey(ctx, req)
 			if err != nil {
 				return err
 			}
@@ -120,6 +130,7 @@ func init() {
 
 	clusterAPIKeyCreateCmd.Flags().AddFlagSet(pbflag.Endpoint(""))
 	clusterAPIKeyCreateCmd.Flags().AddFlagSet(pbflag.APIKeyRights())
+	clusterAPIKeyCreateCmd.Flags().Bool("prompt-key", false, "prompt custom secret key value")
 	clusterAPIKeyCmd.AddCommand(clusterAPIKeyCreateCmd)
 
 	clusterAPIKeyDeleteCmd.Flags().String("key-id", "", "API key ID")
