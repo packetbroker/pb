@@ -62,16 +62,7 @@ func DialContext(ctx context.Context, logger *zap.Logger, config *Config, defaul
 		return nil, err
 	}
 
-	var securityOpt grpc.DialOption
-	if config.Insecure {
-		securityOpt = grpc.WithInsecure()
-	} else {
-		securityOpt = grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(nil, ""))
-	}
-
-	return grpc.DialContext(ctx, address,
-		securityOpt,
-		grpc.WithPerRPCCredentials(config.Credentials),
+	dialOpts := []grpc.DialOption{
 		grpc.WithBlock(),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
 			Time:                5 * time.Minute,
@@ -90,5 +81,17 @@ func DialContext(ctx context.Context, logger *zap.Logger, config *Config, defaul
 		grpc.WithChainUnaryInterceptor(
 			grpc_zap.UnaryClientInterceptor(logger),
 		),
-	)
+	}
+
+	if config.Insecure {
+		dialOpts = append(dialOpts, grpc.WithInsecure())
+	} else {
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(nil, "")))
+	}
+
+	if config.Credentials != nil {
+		dialOpts = append(dialOpts, grpc.WithPerRPCCredentials(config.Credentials))
+	}
+
+	return grpc.DialContext(ctx, address, dialOpts...)
 }

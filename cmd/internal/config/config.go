@@ -123,12 +123,21 @@ func OAuth2Client(ctx context.Context, service string, scopes ...string) (*clien
 // Basic authentication is preferred with the given realm.
 // If Basic authentication is not configured, OAuth 2.0 Client Credentials are used.
 func AutomaticClient(ctx context.Context, service string, basicAuthRealm BasicAuthRealm, oauthScopes ...string) (*client.Config, error) {
-	config, err := BasicAuthClient(service, basicAuthRealm)
-	if err == nil {
-		return config, nil
+	for _, initFn := range []func() (*client.Config, error){
+		func() (*client.Config, error) {
+			return BasicAuthClient(service, basicAuthRealm)
+		},
+		func() (*client.Config, error) {
+			return OAuth2Client(ctx, service, oauthScopes...)
+		},
+	} {
+		config, err := initFn()
+		if err == nil {
+			return config, nil
+		}
+		if !errors.Is(err, errNoCredentials) {
+			return nil, err
+		}
 	}
-	if errors.Is(err, errNoCredentials) {
-		return OAuth2Client(ctx, service, oauthScopes...)
-	}
-	return nil, err
+	return initClient(service)
 }
