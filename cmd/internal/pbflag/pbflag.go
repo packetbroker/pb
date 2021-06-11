@@ -398,3 +398,38 @@ func GetRoutingPolicy(flags *flag.FlagSet) (*packetbroker.RoutingPolicy_Uplink, 
 	return (*packetbroker.RoutingPolicy_Uplink)(flags.Lookup("set-uplink").Value.(*uplinkPolicyValue)),
 		(*packetbroker.RoutingPolicy_Downlink)(flags.Lookup("set-downlink").Value.(*downlinkPolicyValue))
 }
+
+type apiKeyState packetbroker.APIKeyState
+
+func (p apiKeyState) String() string {
+	return packetbroker.APIKeyState_name[int32(p)]
+}
+
+func (p *apiKeyState) Set(s string) error {
+	i, ok := packetbroker.APIKeyState_value[s]
+	if !ok {
+		return fmt.Errorf("pbflag: invalid API key state: %s", s)
+	}
+	*p = apiKeyState(i)
+	return nil
+}
+
+func (p *apiKeyState) Type() string {
+	return "apiKeyState"
+}
+
+// APIKeyState returns flags for an API key state.
+func APIKeyState(name string) *flag.FlagSet {
+	names := make([]string, 0, len(packetbroker.APIKeyState_value))
+	for k := range packetbroker.APIKeyState_value {
+		names = append(names, k)
+	}
+	flags := new(flag.FlagSet)
+	flags.Var(new(apiKeyState), name, fmt.Sprintf("API key state (%s)", strings.Join(names, ",")))
+	return flags
+}
+
+// GetAPIKeyState returns the API key state from the flags.
+func GetAPIKeyState(flags *flag.FlagSet, name string) packetbroker.APIKeyState {
+	return packetbroker.APIKeyState(*flags.Lookup(name).Value.(*apiKeyState))
+}

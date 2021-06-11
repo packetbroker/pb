@@ -43,12 +43,13 @@ var (
 			if err != nil {
 				return err
 			}
-			fmt.Fprintln(tabout, "Key ID\tClusterID\tRights\tLast Used\t")
+			fmt.Fprintln(tabout, "Key ID\tClusterID\tRights\tState\tLast Used\t")
 			for _, t := range res.Keys {
-				fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t\n",
+				fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t%s\t\n",
 					t.GetKeyId(),
 					t.GetClusterId(),
 					column.Rights(t.GetRights()),
+					t.GetState(),
 					(*column.TimeSince)(t.GetAuthenticatedAt()),
 				)
 			}
@@ -101,7 +102,25 @@ Rights:
 				"Secret Key", res.Key.GetKey(),
 				"Cluster ID", res.Key.GetClusterId(),
 				"Rights", column.Rights(res.Key.GetRights()),
+				"State", res.Key.GetState(),
 			)
+		},
+	}
+	clusterAPIKeyUpdateStateCmd = &cobra.Command{
+		Use:          "update-state",
+		Short:        "Update the API key state",
+		SilenceUsage: true,
+		Example: `
+  Update the API key state to APPROVED:
+    $ pbadmin cluster apikey update-state --key-id C5232IFFX4UKEELB --state APPROVED`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			keyID, _ := cmd.Flags().GetString("key-id")
+			state := pbflag.GetAPIKeyState(cmd.Flags(), "state")
+			_, err := iampbv2.NewClusterAPIKeyVaultClient(conn).UpdateAPIKeyState(ctx, &iampbv2.UpdateAPIKeyStateRequest{
+				KeyId: keyID,
+				State: state,
+			})
+			return err
 		},
 	}
 	clusterAPIKeyDeleteCmd = &cobra.Command{
@@ -132,6 +151,10 @@ func init() {
 	clusterAPIKeyCreateCmd.Flags().AddFlagSet(pbflag.APIKeyRights())
 	clusterAPIKeyCreateCmd.Flags().Bool("prompt-key", false, "prompt custom secret key value")
 	clusterAPIKeyCmd.AddCommand(clusterAPIKeyCreateCmd)
+
+	clusterAPIKeyUpdateStateCmd.Flags().String("key-id", "", "API key ID")
+	clusterAPIKeyUpdateStateCmd.Flags().AddFlagSet(pbflag.APIKeyState("state"))
+	clusterAPIKeyCmd.AddCommand(clusterAPIKeyUpdateStateCmd)
 
 	clusterAPIKeyDeleteCmd.Flags().String("key-id", "", "API key ID")
 	clusterAPIKeyCmd.AddCommand(clusterAPIKeyDeleteCmd)

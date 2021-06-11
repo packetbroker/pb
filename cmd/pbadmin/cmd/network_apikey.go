@@ -58,14 +58,15 @@ var (
 			if err != nil {
 				return err
 			}
-			fmt.Fprintln(tabout, "Key ID\tNetID\tTenant ID\tCluster ID\tRights\tLast Used\t")
+			fmt.Fprintln(tabout, "Key ID\tNetID\tTenant ID\tCluster ID\tRights\tState\tLast Used\t")
 			for _, t := range res.Keys {
-				fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t%s\t%s\t\n",
+				fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n",
 					t.GetKeyId(),
 					packetbroker.NetID(t.GetNetId()),
 					t.GetTenantId(),
 					t.GetClusterId(),
 					column.Rights(t.GetRights()),
+					t.GetState(),
 					(*column.TimeSince)(t.GetAuthenticatedAt()),
 				)
 			}
@@ -128,7 +129,25 @@ Rights:
 				"Tenant ID", res.Key.GetTenantId(),
 				"Cluster ID", res.Key.GetClusterId(),
 				"Rights", column.Rights(res.Key.GetRights()),
+				"State", res.Key.GetState(),
 			)
+		},
+	}
+	networkAPIKeyUpdateStateCmd = &cobra.Command{
+		Use:          "update-state",
+		Short:        "Update the API key state",
+		SilenceUsage: true,
+		Example: `
+  Update the API key state to APPROVED:
+    $ pbadmin network apikey update-state --key-id C5232IFFX4UKEELB --state APPROVED`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			keyID, _ := cmd.Flags().GetString("key-id")
+			state := pbflag.GetAPIKeyState(cmd.Flags(), "state")
+			_, err := iampbv2.NewNetworkAPIKeyVaultClient(conn).UpdateAPIKeyState(ctx, &iampbv2.UpdateAPIKeyStateRequest{
+				KeyId: keyID,
+				State: state,
+			})
+			return err
 		},
 	}
 	networkAPIKeyDeleteCmd = &cobra.Command{
@@ -159,6 +178,10 @@ func init() {
 	networkAPIKeyCreateCmd.Flags().AddFlagSet(pbflag.APIKeyRights())
 	networkAPIKeyCreateCmd.Flags().Bool("prompt-key", false, "prompt custom secret key value")
 	networkAPIKeyCmd.AddCommand(networkAPIKeyCreateCmd)
+
+	networkAPIKeyUpdateStateCmd.Flags().String("key-id", "", "API key ID")
+	networkAPIKeyUpdateStateCmd.Flags().AddFlagSet(pbflag.APIKeyState("state"))
+	networkAPIKeyCmd.AddCommand(networkAPIKeyUpdateStateCmd)
 
 	networkAPIKeyDeleteCmd.Flags().String("key-id", "", "API key ID")
 	networkAPIKeyCmd.AddCommand(networkAPIKeyDeleteCmd)
