@@ -198,16 +198,14 @@ func initConfig() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		viper.AddConfigPath(home)
 		viper.AddConfigPath(".")
+		viper.AddConfigPath(home)
 		viper.SetConfigName(".pb")
+		viper.SetConfigType("yaml")
 	}
 
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("pb")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
-
-	if err := viper.ReadInConfig(); err != nil {
-		fmt.Fprintln(os.Stderr, "Read config file:", err)
-	}
+	viper.ReadInConfig()
 }

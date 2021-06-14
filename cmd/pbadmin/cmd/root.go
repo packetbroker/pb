@@ -66,7 +66,7 @@ func init() {
 	rootCmd.PersistentFlags().AddFlagSet(config.BasicAuthClientFlags(config.BasicAuthIAM))
 	rootCmd.PersistentFlags().AddFlagSet(config.OAuth2ClientFlags())
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.pb.yaml, .pb.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is .pb.yaml, $HOME/.pb.yaml)")
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "debug mode")
 }
 
@@ -79,16 +79,14 @@ func initConfig() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		viper.AddConfigPath(home)
 		viper.AddConfigPath(".")
+		viper.AddConfigPath(home)
 		viper.SetConfigName(".pb")
+		viper.SetConfigType("yaml")
 	}
 
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("pb")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
-
-	if err := viper.ReadInConfig(); err != nil {
-		fmt.Fprintln(os.Stderr, "Read config file:", err)
-	}
+	viper.ReadInConfig()
 }
