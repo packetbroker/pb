@@ -84,6 +84,8 @@ var (
 			tenantID := pbflag.GetTenantID(cmd.Flags(), "")
 			name, _ := cmd.Flags().GetString("name")
 			devAddrBlocks := pbflag.GetDevAddrBlocks(cmd.Flags())
+			adminContact := pbflag.GetContactInfo(cmd.Flags(), "admin")
+			techContact := pbflag.GetContactInfo(cmd.Flags(), "tech")
 			listed, _ := cmd.Flags().GetBool("listed")
 			target, err := target(cmd.Flags(), "target")
 			if err != nil {
@@ -91,13 +93,14 @@ var (
 			}
 			res, err := iampb.NewTenantRegistryClient(conn).CreateTenant(ctx, &iampb.CreateTenantRequest{
 				Tenant: &packetbroker.Tenant{
-					NetId:         uint32(tenantID.NetID),
-					TenantId:      tenantID.ID,
-					Name:          name,
-					DevAddrBlocks: devAddrBlocks,
-					// TODO: Contact info (https://github.com/packetbroker/pb/issues/5)
-					Listed: listed,
-					Target: target,
+					NetId:                 uint32(tenantID.NetID),
+					TenantId:              tenantID.ID,
+					Name:                  name,
+					DevAddrBlocks:         devAddrBlocks,
+					AdministrativeContact: adminContact,
+					TechnicalContact:      techContact,
+					Listed:                listed,
+					Target:                target,
 				},
 			})
 			if err != nil {
@@ -142,7 +145,6 @@ var (
 			req := &iampb.UpdateTenantRequest{
 				NetId:    uint32(tenantID.NetID),
 				TenantId: tenantID.ID,
-				// TODO: Contact info (https://github.com/packetbroker/pb/issues/5)
 			}
 			if cmd.Flags().Lookup("name").Changed {
 				name, _ := cmd.Flags().GetString("name")
@@ -152,6 +154,16 @@ var (
 				devAddrBlocks := pbflag.GetDevAddrBlocks(cmd.Flags())
 				req.DevAddrBlocks = &iampb.DevAddrBlocksValue{
 					Value: devAddrBlocks,
+				}
+			}
+			if adminContact := pbflag.GetContactInfo(cmd.Flags(), "admin"); adminContact != nil {
+				req.AdministrativeContact = &iampb.ContactInfoValue{
+					Value: adminContact,
+				}
+			}
+			if techContact := pbflag.GetContactInfo(cmd.Flags(), "tech"); techContact != nil {
+				req.TechnicalContact = &iampb.ContactInfoValue{
+					Value: techContact,
 				}
 			}
 			if cmd.Flags().Lookup("listed").Changed {
@@ -229,6 +241,8 @@ func init() {
 	networkTenantCreateCmd.Flags().AddFlagSet(pbflag.TenantID(""))
 	networkTenantCreateCmd.Flags().AddFlagSet(tenantSettingsFlags())
 	networkTenantCreateCmd.Flags().AddFlagSet(targetFlags("target"))
+	networkTenantCreateCmd.Flags().AddFlagSet(pbflag.ContactInfo("admin"))
+	networkTenantCreateCmd.Flags().AddFlagSet(pbflag.ContactInfo("tech"))
 	networkTenantCmd.AddCommand(networkTenantCreateCmd)
 
 	networkTenantGetCmd.Flags().AddFlagSet(pbflag.TenantID(""))
@@ -236,6 +250,8 @@ func init() {
 
 	networkTenantUpdateCmd.Flags().AddFlagSet(pbflag.TenantID(""))
 	networkTenantUpdateCmd.Flags().AddFlagSet(tenantSettingsFlags())
+	networkTenantUpdateCmd.Flags().AddFlagSet(pbflag.ContactInfo("admin"))
+	networkTenantUpdateCmd.Flags().AddFlagSet(pbflag.ContactInfo("tech"))
 	networkTenantUpdateTargetCmd.Flags().AddFlagSet(pbflag.TenantID(""))
 	networkTenantUpdateTargetCmd.Flags().AddFlagSet(targetFlags(""))
 	networkTenantUpdateCmd.AddCommand(networkTenantUpdateTargetCmd)

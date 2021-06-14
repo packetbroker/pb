@@ -81,6 +81,8 @@ var (
 			netID := pbflag.GetNetID(cmd.Flags(), "")
 			name, _ := cmd.Flags().GetString("name")
 			devAddrBlocks := pbflag.GetDevAddrBlocks(cmd.Flags())
+			adminContact := pbflag.GetContactInfo(cmd.Flags(), "admin")
+			techContact := pbflag.GetContactInfo(cmd.Flags(), "tech")
 			listed, _ := cmd.Flags().GetBool("listed")
 			target, err := target(cmd.Flags(), "target")
 			if err != nil {
@@ -88,12 +90,13 @@ var (
 			}
 			res, err := iampb.NewNetworkRegistryClient(conn).CreateNetwork(ctx, &iampb.CreateNetworkRequest{
 				Network: &packetbroker.Network{
-					NetId:         uint32(netID),
-					Name:          name,
-					DevAddrBlocks: devAddrBlocks,
-					// TODO: Contact info (https://github.com/packetbroker/pb/issues/5)
-					Listed: listed,
-					Target: target,
+					NetId:                 uint32(netID),
+					Name:                  name,
+					DevAddrBlocks:         devAddrBlocks,
+					AdministrativeContact: adminContact,
+					TechnicalContact:      techContact,
+					Listed:                listed,
+					Target:                target,
 				},
 			})
 			if err != nil {
@@ -135,7 +138,6 @@ var (
 			netID := pbflag.GetNetID(cmd.Flags(), "")
 			req := &iampb.UpdateNetworkRequest{
 				NetId: uint32(netID),
-				// TODO: Contact info (https://github.com/packetbroker/pb/issues/5)
 			}
 			if cmd.Flags().Lookup("name").Changed {
 				name, _ := cmd.Flags().GetString("name")
@@ -145,6 +147,16 @@ var (
 				devAddrBlocks := pbflag.GetDevAddrBlocks(cmd.Flags())
 				req.DevAddrBlocks = &iampb.DevAddrBlocksValue{
 					Value: devAddrBlocks,
+				}
+			}
+			if adminContact := pbflag.GetContactInfo(cmd.Flags(), "admin"); adminContact != nil {
+				req.AdministrativeContact = &iampb.ContactInfoValue{
+					Value: adminContact,
+				}
+			}
+			if techContact := pbflag.GetContactInfo(cmd.Flags(), "tech"); techContact != nil {
+				req.TechnicalContact = &iampb.ContactInfoValue{
+					Value: techContact,
 				}
 			}
 			if cmd.Flags().Lookup("listed").Changed {
@@ -284,6 +296,8 @@ func init() {
 	networkCreateCmd.Flags().AddFlagSet(pbflag.NetID(""))
 	networkCreateCmd.Flags().AddFlagSet(networkSettingsFlags())
 	networkCreateCmd.Flags().AddFlagSet(targetFlags("target"))
+	networkCreateCmd.Flags().AddFlagSet(pbflag.ContactInfo("admin"))
+	networkCreateCmd.Flags().AddFlagSet(pbflag.ContactInfo("tech"))
 	networkCmd.AddCommand(networkCreateCmd)
 
 	networkGetCmd.Flags().AddFlagSet(pbflag.NetID(""))
@@ -291,6 +305,8 @@ func init() {
 
 	networkUpdateCmd.Flags().AddFlagSet(pbflag.NetID(""))
 	networkUpdateCmd.Flags().AddFlagSet(networkSettingsFlags())
+	networkUpdateCmd.Flags().AddFlagSet(pbflag.ContactInfo("admin"))
+	networkUpdateCmd.Flags().AddFlagSet(pbflag.ContactInfo("tech"))
 	networkUpdateTargetCmd.Flags().AddFlagSet(pbflag.NetID(""))
 	networkUpdateTargetCmd.Flags().AddFlagSet(targetFlags(""))
 	networkUpdateCmd.AddCommand(networkUpdateTargetCmd)

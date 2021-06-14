@@ -101,6 +101,30 @@ func HasEndpoint(flags *flag.FlagSet, actor string) (hasNetID, hasTenantID, hasC
 	return
 }
 
+// ContactInfo returns flags for contact information.
+func ContactInfo(actor string) *flag.FlagSet {
+	flags := new(flag.FlagSet)
+	flags.String(actorf(actor, "name"), "", "name")
+	flags.String(actorf(actor, "email"), "", "email address")
+	flags.String(actorf(actor, "url"), "", "url")
+	return flags
+}
+
+// GetContactInfo returns the contact information from flags.
+func GetContactInfo(flags *flag.FlagSet, actor string) *packetbroker.ContactInfo {
+	name, _ := flags.GetString(actorf(actor, "name"))
+	email, _ := flags.GetString(actorf(actor, "email"))
+	url, _ := flags.GetString(actorf(actor, "url"))
+	if name == "" && email == "" && url == "" {
+		return nil
+	}
+	return &packetbroker.ContactInfo{
+		Name:  name,
+		Email: email,
+		Url:   url,
+	}
+}
+
 type devAddrBlocksValue []*packetbroker.DevAddrBlock
 
 func (f *devAddrBlocksValue) String() string {
