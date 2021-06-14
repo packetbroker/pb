@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	iampbv2 "go.packetbroker.org/api/iam/v2"
 	packetbroker "go.packetbroker.org/api/v3"
 	"go.packetbroker.org/pb/cmd/internal/column"
@@ -121,7 +122,16 @@ Rights:
 			if err != nil {
 				return err
 			}
-			fmt.Fprintln(os.Stderr, "Store the API key now in a secure place, as it cannot be retrieved later.")
+			if save, _ := cmd.Flags().GetBool("save"); save {
+				viper.Set("client-id", res.Key.GetKeyId())
+				viper.Set("client-secret", res.Key.GetKey())
+				if err := viper.SafeWriteConfig(); err != nil {
+					return err
+				}
+				fmt.Fprintln(os.Stderr, "Saved to API key to .pb.yaml")
+			} else {
+				fmt.Fprintln(os.Stderr, "Store the API key now in a secure place, as it cannot be retrieved later.")
+			}
 			return column.WriteKV(tabout,
 				"Key ID", res.Key.GetKeyId(),
 				"Secret Key", res.Key.GetKey(),
@@ -177,6 +187,7 @@ func init() {
 	networkAPIKeyCreateCmd.Flags().AddFlagSet(pbflag.Endpoint(""))
 	networkAPIKeyCreateCmd.Flags().AddFlagSet(pbflag.APIKeyRights())
 	networkAPIKeyCreateCmd.Flags().Bool("prompt-key", false, "prompt custom secret key value")
+	networkAPIKeyCreateCmd.Flags().Bool("save", false, "save the API key to configuration")
 	networkAPIKeyCmd.AddCommand(networkAPIKeyCreateCmd)
 
 	networkAPIKeyUpdateStateCmd.Flags().String("key-id", "", "API key ID")
