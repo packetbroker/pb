@@ -122,6 +122,17 @@ func WriteDevAddrBlocks(w io.Writer, blocks []*packetbroker.DevAddrBlock) error 
 	return nil
 }
 
+func writeContactInfo(w io.Writer, name string, contactInfo *packetbroker.ContactInfo) error {
+	if contactInfo == nil {
+		return nil
+	}
+	return WriteKV(w,
+		fmt.Sprintf("%s Name", name), contactInfo.Name,
+		fmt.Sprintf("%s Email", name), contactInfo.Email,
+		fmt.Sprintf("%s URL", name), contactInfo.Url,
+	)
+}
+
 func x509SubjectFromPair(certPEMBlock, keyPEMBlock []byte) (string, error) {
 	cert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
 	if err != nil {
@@ -206,6 +217,12 @@ func WriteNetwork(w io.Writer, network *packetbroker.Network) error {
 	); err != nil {
 		return err
 	}
+	if err := writeContactInfo(w, "Administrator", network.GetAdministrativeContact()); err != nil {
+		return err
+	}
+	if err := writeContactInfo(w, "Technical", network.GetAdministrativeContact()); err != nil {
+		return err
+	}
 	if err := writeTarget(w, network.GetTarget()); err != nil {
 		return err
 	}
@@ -220,6 +237,12 @@ func WriteTenant(w io.Writer, tenant *packetbroker.Tenant) error {
 		"Tenant ID", tenant.GetTenantId(),
 		"Name", tenant.GetName(),
 	); err != nil {
+		return err
+	}
+	if err := writeContactInfo(w, "Administrator", tenant.GetAdministrativeContact()); err != nil {
+		return err
+	}
+	if err := writeContactInfo(w, "Technical", tenant.GetAdministrativeContact()); err != nil {
 		return err
 	}
 	if err := writeTarget(w, tenant.GetTarget()); err != nil {
