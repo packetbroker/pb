@@ -228,8 +228,6 @@ command-line interfaces.`,
 Rights:
   READ_NETWORK          Read networks
   READ_NETWORK_CONTACT  Read network contact information
-  READ_TENANT           Read tenants
-  READ_TENANT_CONTACT   Read tenant contact information
 
 Router addresses:
   apac.packetbroker.io  Asia Pacific

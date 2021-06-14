@@ -99,9 +99,7 @@ the API key in a secure place, as it cannot be retrieved after create.`,
 
 Rights:
   READ_NETWORK          Read networks
-  READ_NETWORK_CONTACT  Read network contact information
-  READ_TENANT           Read tenants
-  READ_TENANT_CONTACT   Read tenant contact information`,
+  READ_NETWORK_CONTACT  Read network contact information`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			endpoint := pbflag.GetEndpoint(cmd.Flags(), "")
 			req := &iampbv2.CreateNetworkAPIKeyRequest{
