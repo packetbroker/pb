@@ -4,10 +4,13 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	iampb "go.packetbroker.org/api/iam"
+	iampbv2 "go.packetbroker.org/api/iam/v2"
 	packetbroker "go.packetbroker.org/api/v3"
 	"go.packetbroker.org/pb/cmd/internal/column"
 	"go.packetbroker.org/pb/cmd/internal/pbflag"
@@ -196,6 +199,74 @@ var (
 			return err
 		},
 	}
+	networkInitCmd = &cobra.Command{
+		Use:   "init",
+		Short: "Initialize network configuration",
+		Long: `Initialize network configuration
+
+This stores the router address and a newly requested network API key in a local
+configuration file (.pb.yaml). This configuration can be used by Packet Broker
+command-line interfaces.`,
+		SilenceUsage: true,
+		Example: `
+  Initialize configuration for a network:
+    $ pbadmin network init --net-id 000013 \
+        --router-address eu.packetbroker.io
+
+  Initialize configuration for a tenant:
+    $ pbadmin network init --net-id 000013 --tenant-id ttn \
+        --router-address eu.packetbroker.io
+
+  Initialize configuration for a named cluster in a tenant:
+    $ pbadmin network init --net-id 000013 --tenant-id ttn --cluster-id eu1 \
+        --router-address eu.packetbroker.io
+
+  Initialize configuration for network with rights to read networks:
+    $ pbadmin network init --net-id 000013 --rights READ_NETWORK \
+        --router-address eu.packetbroker.io
+
+Rights:
+  READ_NETWORK          Read networks
+  READ_NETWORK_CONTACT  Read network contact information
+  READ_TENANT           Read tenants
+  READ_TENANT_CONTACT   Read tenant contact information
+
+Router addresses:
+  apac.packetbroker.io  Asia Pacific
+  eu.packetbroker.io    Europe, Middle East and Africa
+  nam.packetbroker.io   Americas`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			endpoint := pbflag.GetEndpoint(cmd.Flags(), "")
+			req := &iampbv2.CreateNetworkAPIKeyRequest{
+				NetId:     uint32(endpoint.NetID),
+				TenantId:  endpoint.TenantID.ID,
+				ClusterId: endpoint.ClusterID,
+				Rights:    pbflag.GetAPIKeyRights(cmd.Flags()),
+			}
+			res, err := iampbv2.NewNetworkAPIKeyVaultClient(conn).CreateAPIKey(ctx, req)
+			if err != nil {
+				return err
+			}
+			routerAddress, _ := cmd.Flags().GetString("router-address")
+			viper.Set("router-address", routerAddress)
+			viper.Set("client-id", res.Key.GetKeyId())
+			viper.Set("client-secret", res.Key.GetKey())
+			if err := viper.WriteConfigAs(".pb.yaml"); err != nil {
+				return err
+			}
+			fmt.Fprintln(os.Stderr, "Saved configuration to .pb.yaml")
+			return column.WriteKV(tabout,
+				"NetID", endpoint.NetID,
+				"Tenant ID", endpoint.ID,
+				"Cluster ID", endpoint.ClusterID,
+				"Router Address", routerAddress,
+				"API Key ID", res.Key.GetKeyId(),
+				"API Secret Key", res.Key.GetKey(),
+				"API Key Rights", column.Rights(res.Key.GetRights()),
+				"API Key State", res.Key.GetState(),
+			)
+		},
+	}
 )
 
 func networkSettingsFlags() *flag.FlagSet {
@@ -229,4 +300,9 @@ func init() {
 
 	networkDeleteCmd.Flags().AddFlagSet(pbflag.NetID(""))
 	networkCmd.AddCommand(networkDeleteCmd)
+
+	networkInitCmd.Flags().AddFlagSet(pbflag.Endpoint(""))
+	networkInitCmd.Flags().AddFlagSet(pbflag.APIKeyRights())
+	networkInitCmd.Flags().String("router-address", "", "Packet Broker router address")
+	networkCmd.AddCommand(networkInitCmd)
 }

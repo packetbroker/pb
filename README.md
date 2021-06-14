@@ -39,6 +39,25 @@ $ go get go.packetbroker.org/pb/cmd/pbsub
 
 ### Configuration
 
+#### Network Operators
+
+If you are a network operator, you need the NetID and (optionally) the tenant ID to create a new API key. This API key is used to authenticate with Packet Broker and configure your LoRaWAN network server.
+
+The NetID (and tenant ID) must already exist. Please contact [join@packetbroker.net](mailto:join@packetbroker.net) to make sure the network (and tenant) are created by an administrator.
+
+To initialize configuration for your network with NetID `000013` and tenant `tenant-a`, with the router located in Europe and with rights to read other networks:
+
+```bash
+$ pbadmin network init --net-id 000013 --tenant-id tenant-a \
+    --router-address eu.packetbroker.io --rights READ_NETWORK
+```
+
+>Run `$ pbadmin network init --help` with additional options and examples.
+
+Please copy the `API Key ID` that is printed. Your Packet Broker administrator needs to approve the API key before it can be used.
+
+#### Manual Configuration
+
 Create a configuration file `$HOME/.pb.yaml` or `.pb.yaml` in the working directory:
 
 ```yaml
@@ -49,10 +68,12 @@ router-address: "eu.packetbroker.io:443"
 client-id: "KZUCD5XAYT6EJ5BH"
 client-secret: "E67X5675UCQFTTJMUD73URQOLPA5VT4GBFLPCMUHZWK52ML5"
 
-# Uncomment if using pbadmin with full administrative access:
+# Uncomment if you are a Packet Broker IAM user (administrators only):
 #iam-username: "admin"
 #iam-password: "admin"
 ```
+
+>If you do not have an API key yet, learn below how to request one.
 
 ### Command-Line Interface
 
