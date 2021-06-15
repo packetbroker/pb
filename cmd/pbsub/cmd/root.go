@@ -17,6 +17,7 @@ import (
 	routingpb "go.packetbroker.org/api/routing"
 	packetbroker "go.packetbroker.org/api/v3"
 	"go.packetbroker.org/pb/cmd/internal/config"
+	"go.packetbroker.org/pb/cmd/internal/gen"
 	"go.packetbroker.org/pb/cmd/internal/logging"
 	"go.packetbroker.org/pb/cmd/internal/pbflag"
 	"go.packetbroker.org/pb/cmd/internal/protojson"
@@ -187,6 +188,8 @@ func init() {
 	rootCmd.Flags().AddFlagSet(pbflag.Endpoint("forwarder"))
 	rootCmd.Flags().AddFlagSet(pbflag.Endpoint("home-network"))
 	rootCmd.Flags().String("group", "", "subscription group")
+
+	rootCmd.AddCommand(gen.Cmd)
 }
 
 func initConfig() {
