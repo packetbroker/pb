@@ -325,3 +325,42 @@ func WritePolicies(w io.Writer, defaults bool, policies ...*packetbroker.Routing
 	}
 	return nil
 }
+
+// WriteVisibilities writes the gateway visibilities as a table.
+func WriteVisibilities(w io.Writer, defaults bool, visibilities ...*packetbroker.GatewayVisibility) error {
+	fmt.Fprint(w, "Forwarder\t\t")
+	if !defaults {
+		fmt.Fprint(w, "Home Network\t\t")
+	}
+	fmt.Fprintln(w, "Lo\tAp\tAc\tFt\tCi\tSt\tFp\tPr\t")
+
+	for _, v := range visibilities {
+		fmt.Fprintf(w, "%s\t%s\t",
+			packetbroker.NetID(v.GetForwarderNetId()),
+			v.GetForwarderTenantId(),
+		)
+		if !defaults {
+			fmt.Fprintf(w, "%s\t%s\t",
+				packetbroker.NetID(v.GetHomeNetworkNetId()),
+				v.GetHomeNetworkTenantId(),
+			)
+		}
+		for _, b := range []bool{
+			v.GetLocation(),
+			v.GetAntennaPlacement(),
+			v.GetAntennaCount(),
+			v.GetFineTimestamps(),
+			v.GetContactInfo(),
+			v.GetStatus(),
+			v.GetFrequencyPlan(),
+			v.GetPacketRates(),
+		} {
+			if b {
+				fmt.Fprint(w, "x")
+			}
+			fmt.Fprint(w, "\t")
+		}
+		fmt.Fprintln(w)
+	}
+	return nil
+}
