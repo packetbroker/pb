@@ -60,10 +60,12 @@ func (r sortRoutesByPrefix) Swap(i, j int) {
 }
 
 var routeCmd = &cobra.Command{
-	Use:          "route",
-	Aliases:      []string{"routes", "ro"},
-	Short:        "List Packet Broker routes",
-	SilenceUsage: true,
+	Use:               "route",
+	Aliases:           []string{"routes", "ro"},
+	Short:             "List Packet Broker routes",
+	SilenceUsage:      true,
+	PersistentPreRunE: prerunConnect,
+	PersistentPostRun: postrunConnect,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var (
 			client        = routingpb.NewRoutesClient(cpConn)

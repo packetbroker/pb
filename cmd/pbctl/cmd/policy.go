@@ -16,9 +16,11 @@ import (
 
 var (
 	policyCmd = &cobra.Command{
-		Use:     "policy",
-		Aliases: []string{"policies", "po"},
-		Short:   "Manage Packet Broker routing policies",
+		Use:               "policy",
+		Aliases:           []string{"policies", "po"},
+		Short:             "Manage Packet Broker routing policies",
+		PersistentPreRunE: prerunConnect,
+		PersistentPostRun: postrunConnect,
 	}
 	policyListCmd = &cobra.Command{
 		Use:     "list",

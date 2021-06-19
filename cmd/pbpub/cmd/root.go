@@ -82,7 +82,7 @@ var rootCmd = &cobra.Command{
         --forwarder-net-id 000013 \
         --forwarder-tenant-id community \
         --forwarder-cluster-id eu2 < downlink.json`,
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+	PreRunE: func(cmd *cobra.Command, args []string) error {
 		logger = logging.GetLogger(debug)
 		clientConf, err := config.OAuth2Client(ctx, "router", "networks")
 		if err != nil {
@@ -105,7 +105,7 @@ var rootCmd = &cobra.Command{
 		}
 		return asHomeNetwork(cmd.Flags(), forwarder, homeNetwork)
 	},
-	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+	PostRun: func(cmd *cobra.Command, args []string) {
 		logger.Sync()
 		conn.Close()
 	},

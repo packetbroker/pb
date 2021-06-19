@@ -4,7 +4,6 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -32,10 +31,9 @@ var (
 	cfgFile string
 	debug   bool
 
-	ctx     = context.Background()
-	logger  *zap.Logger
-	conn    *grpc.ClientConn
-	decoder *json.Decoder
+	ctx    = context.Background()
+	logger *zap.Logger
+	conn   *grpc.ClientConn
 )
 
 var rootCmd = &cobra.Command{
@@ -71,7 +69,7 @@ var rootCmd = &cobra.Command{
     Subscribe as named cluster in tenant:
       $ pbsub --home-network-net-id 000013 --home-network-tenant-id community \
         --home-network-cluster-id eu1`,
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+	PreRunE: func(cmd *cobra.Command, args []string) error {
 		logger = logging.GetLogger(debug)
 		clientConf, err := config.OAuth2Client(ctx, "router", "networks")
 		if err != nil {
@@ -81,7 +79,6 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		decoder = json.NewDecoder(os.Stdin)
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -95,7 +92,7 @@ var rootCmd = &cobra.Command{
 		}
 		return asHomeNetwork(homeNetwork, group)
 	},
-	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+	PostRun: func(cmd *cobra.Command, args []string) {
 		logger.Sync()
 		conn.Close()
 	},
