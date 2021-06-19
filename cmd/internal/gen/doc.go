@@ -20,7 +20,7 @@ slug: %s
 
 var hugoDocCmd = &cobra.Command{
 	Use:   "hugodoc",
-	Short: "Generate documentation",
+	Short: "Generate documentation for Hugo",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.VisitParents(func(c *cobra.Command) {
 			c.DisableAutoGenTag = true
@@ -34,7 +34,9 @@ var hugoDocCmd = &cobra.Command{
 		prepender := func(filename string) string {
 			name := filepath.Base(filename)
 			base := strings.TrimSuffix(name, path.Ext(name))
-			return fmt.Sprintf(hugoDocFrontmatterTemplate, strings.Replace(base, "_", " ", -1), base)
+			title := strings.Replace(base, "_", " ", -1)
+			fmt.Printf(`Write "%s" to %s`+"\n", title, filename)
+			return fmt.Sprintf(hugoDocFrontmatterTemplate, title, base)
 		}
 
 		linkHandler := func(name string) string {
