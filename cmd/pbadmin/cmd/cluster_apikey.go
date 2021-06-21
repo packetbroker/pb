@@ -64,11 +64,9 @@ var (
 The secret API key is returned only when creating the API key. You should store
 the API key in a secure place, as it cannot be retrieved after create.`,
 		Example: `
-  Create API key:
-    $ pbadmin cluster apikey create --cluster-id eu1
-
-  Create API key with rights to read networks and tenants:
-    $ pbadmin cluster apikey create --cluster-id eu1 --rights READ_NETWORK
+  Create API key for a Packet Broker Router cluster:
+    $ pbadmin cluster apikey create --cluster-id eu1 \
+      --rights READ_ROUTING_POLICY,READ_ROUTE_TABLE,READ_TARGET_AUTH
 
 Rights:
   READ_NETWORK          Read networks
