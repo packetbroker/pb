@@ -50,8 +50,8 @@
           {
             "index": 0,
             "location": {
-              "latitude": 4.8521,
-              "longitude": 52.5464,
+              "latitude": 52.5464,
+              "longitude": 4.8521,
               "altitude": 15.6,
               "accuracy": 3
             },

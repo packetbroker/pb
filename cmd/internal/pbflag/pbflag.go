@@ -423,6 +423,67 @@ func GetRoutingPolicy(flags *flag.FlagSet) (*packetbroker.RoutingPolicy_Uplink, 
 		(*packetbroker.RoutingPolicy_Downlink)(flags.Lookup("set-downlink").Value.(*downlinkPolicyValue))
 }
 
+type gatewayVisibilityValue packetbroker.GatewayVisibility
+
+func (v *gatewayVisibilityValue) String() string {
+	var res string
+	if v.Location {
+		res += "Lo"
+	}
+	if v.AntennaPlacement {
+		res += "Ap"
+	}
+	if v.AntennaCount {
+		res += "Ac"
+	}
+	if v.FineTimestamps {
+		res += "Ft"
+	}
+	if v.ContactInfo {
+		res += "Ci"
+	}
+	if v.Status {
+		res += "St"
+	}
+	if v.FrequencyPlan {
+		res += "Fp"
+	}
+	if v.PacketRates {
+		res += "Pr"
+	}
+	return res
+}
+
+func (v *gatewayVisibilityValue) Set(s string) error {
+	*v = gatewayVisibilityValue(packetbroker.GatewayVisibility{
+		Location:         strings.Contains(s, "Lo"),
+		AntennaPlacement: strings.Contains(s, "Ap"),
+		AntennaCount:     strings.Contains(s, "Ac"),
+		FineTimestamps:   strings.Contains(s, "Ft"),
+		ContactInfo:      strings.Contains(s, "Ci"),
+		Status:           strings.Contains(s, "St"),
+		FrequencyPlan:    strings.Contains(s, "Fp"),
+		PacketRates:      strings.Contains(s, "Pr"),
+	})
+	return nil
+}
+
+func (v *gatewayVisibilityValue) Type() string {
+	return "gatewayVisibilityValue"
+}
+
+// GatewayVisibility returns flags for gateway visibility.
+func GatewayVisibility() *flag.FlagSet {
+	flags := new(flag.FlagSet)
+	flags.Var(new(gatewayVisibilityValue), "set", "gateway visibility, use symbols Lo, Ap, Ac, Ft, Ci, St, Fp, Pr")
+	return flags
+}
+
+// GetGatewayVisibility returns the gateway visibility from the flags.
+func GetGatewayVisibility(flags *flag.FlagSet) *packetbroker.GatewayVisibility {
+	return (*packetbroker.GatewayVisibility)(flags.Lookup("set").Value.(*gatewayVisibilityValue))
+}
+
 type apiKeyState packetbroker.APIKeyState
 
 func (p apiKeyState) String() string {
