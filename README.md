@@ -12,6 +12,7 @@ Manage network API keys | IAM | `pbadmin` | administrator | network
 Manage cluster API keys | IAM | `pbadmin` | administrator |
 List networks and tenants | IAM | `pbadmin` | | cluster, network
 Manage routing policies | Control Plane | `pbctl` | | network, tenant
+Manage gateway visibilities | Control Plane | `pbctl` | | network, tenant
 List routes | Control Plane | `pbctl` | | cluster, network, tenant
 List routing policies | Control Plane | `pbctl` | | cluster, network, tenant
 Publish and subscribe | Data Plane | `pbpub`, `pbsub` | | network, tenant
@@ -192,6 +193,16 @@ To enable only device activation and MAC commands in both directions of Forwarde
 $ pbctl policy set --forwarder-net-id 000042 --forwarder-tenant-id tenant-a \
     --home-network-net-id C00123 --home-network-tenant-id tenant-b \
     --set-uplink JM --set-downlink --JM
+```
+
+### Manage Gateway Visibilities
+
+As a Forwarder, you can configure a default gateway visibility for all Home Networks and gateway visibilities per Home Network with `pbctl`. This works similar to configuring routing policies.
+
+For commands, usage and examples:
+
+```bash
+$ pbctl gateway-visibility --help
 ```
 
 ### Publish and Subscribe Traffic
