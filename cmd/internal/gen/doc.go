@@ -27,9 +27,6 @@ var hugoDocCmd = &cobra.Command{
 		})
 
 		out, _ := cmd.Flags().GetString("out")
-		if out == "" {
-			out = "."
-		}
 
 		prepender := func(filename string) string {
 			name := filepath.Base(filename)
