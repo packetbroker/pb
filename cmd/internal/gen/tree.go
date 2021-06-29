@@ -23,6 +23,9 @@ func commandTree(cmd *cobra.Command) (res command) {
 	}
 	res.SubCommands = make(map[string]command, len(cmd.Commands()))
 	for _, cmd := range cmd.Commands() {
+		if !cmd.IsAvailableCommand() || cmd.IsAdditionalHelpTopicCommand() {
+			continue
+		}
 		res.SubCommands[cmd.Name()] = commandTree(cmd)
 	}
 	return
