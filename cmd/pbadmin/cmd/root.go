@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.packetbroker.org/pb/cmd/internal/config"
+	"go.packetbroker.org/pb/cmd/internal/gen"
 	"go.packetbroker.org/pb/cmd/internal/logging"
 	"go.packetbroker.org/pb/pkg/client"
 	"go.uber.org/zap"
@@ -68,6 +69,8 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is .pb.yaml, $HOME/.pb.yaml)")
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "debug mode")
+
+	rootCmd.AddCommand(gen.Cmd)
 }
 
 func initConfig() {

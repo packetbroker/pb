@@ -24,9 +24,11 @@ type homeNetwork struct {
 
 var (
 	catalogCmd = &cobra.Command{
-		Use:     "catalog",
-		Aliases: []string{"cat"},
-		Short:   "Packet Broker catalog",
+		Use:               "catalog",
+		Aliases:           []string{"cat"},
+		Short:             "Packet Broker catalog",
+		PersistentPreRunE: prerunConnect,
+		PersistentPostRun: postrunConnect,
 	}
 	catalogNetworksCmd = &cobra.Command{
 		Use:          "networks",
