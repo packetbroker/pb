@@ -4,6 +4,7 @@ package pbflag
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	flag "github.com/spf13/pflag"
@@ -285,6 +286,7 @@ func TargetProtocol(prefix string) *flag.FlagSet {
 	for k := range packetbroker.TargetProtocol_value {
 		names = append(names, k)
 	}
+	sort.Strings(names)
 	flags := new(flag.FlagSet)
 	flags.Var(new(targetProtocol), prefix+"protocol", fmt.Sprintf("target protocol (%s)", strings.Join(names, ",")))
 	return flags
@@ -333,7 +335,12 @@ func (p *apiKeyRightsValue) Type() string {
 // APIKeyRights returns flags for API key rights.
 func APIKeyRights() *flag.FlagSet {
 	flags := new(flag.FlagSet)
-	flags.Var(new(apiKeyRightsValue), "rights", "API key rights")
+	names := make([]string, 0, len(packetbroker.Right_value))
+	for k := range packetbroker.Right_value {
+		names = append(names, k)
+	}
+	sort.Strings(names)
+	flags.Var(new(apiKeyRightsValue), "rights", fmt.Sprintf("API key rights (%s)", strings.Join(names, ",")))
 	return flags
 }
 
@@ -509,6 +516,7 @@ func APIKeyState(name string) *flag.FlagSet {
 	for k := range packetbroker.APIKeyState_value {
 		names = append(names, k)
 	}
+	sort.Strings(names)
 	flags := new(flag.FlagSet)
 	flags.Var(new(apiKeyState), name, fmt.Sprintf("API key state (%s)", strings.Join(names, ",")))
 	return flags
