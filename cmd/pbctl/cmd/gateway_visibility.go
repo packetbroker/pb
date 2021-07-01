@@ -13,9 +13,11 @@ import (
 
 var (
 	gatewayVisibilityCmd = &cobra.Command{
-		Use:     "gateway-visibility",
-		Aliases: []string{"gwvis"},
-		Short:   "Manage Packet Broker gateway visibilities",
+		Use:               "gateway-visibility",
+		Aliases:           []string{"gwvis"},
+		Short:             "Manage Packet Broker gateway visibilities",
+		PersistentPreRunE: prerunConnect,
+		PersistentPostRun: postrunConnect,
 	}
 	gatewayVisibilitySetCmd = &cobra.Command{
 		Use:   "set",
