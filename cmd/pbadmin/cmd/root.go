@@ -30,30 +30,32 @@ var (
 	tabout = tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
 )
 
+func prerunConnect(cmd *cobra.Command, args []string) error {
+	clientConf, err := config.AutomaticClient(ctx, "iam", config.BasicAuthIAM, "networks")
+	if err != nil {
+		return err
+	}
+	conn, err = client.DialContext(ctx, logger, clientConf, 443)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func postrunConnect(cmd *cobra.Command, args []string) {
+	conn.Close()
+}
+
 var rootCmd = &cobra.Command{
 	Use:   "pbadmin",
 	Short: "pbadmin can be used to manage networks, tenants and API keys.",
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		logger = logging.GetLogger(debug)
-		clientConf, err := config.AutomaticClient(ctx, "iam", config.BasicAuthIAM, "networks")
-		if err != nil {
-			return err
-		}
-		conn, err = client.DialContext(ctx, logger, clientConf, 443)
-		if err != nil {
-			return err
-		}
-		return nil
-	},
-	PersistentPostRun: func(cmd *cobra.Command, args []string) {
-		logger.Sync()
-		tabout.Flush()
-		conn.Close()
-	},
 }
 
 // Execute runs pbadmin.
 func Execute() {
+	logger = logging.GetLogger(debug)
+	defer logger.Sync()
+	defer tabout.Flush()
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

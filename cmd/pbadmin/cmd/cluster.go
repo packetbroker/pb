@@ -5,9 +5,11 @@ package cmd
 import "github.com/spf13/cobra"
 
 var clusterCmd = &cobra.Command{
-	Use:     "cluster",
-	Aliases: []string{"cluster", "c"},
-	Short:   "Manage Packet Broker clusters",
+	Use:               "cluster",
+	Aliases:           []string{"cluster", "c"},
+	Short:             "Manage Packet Broker clusters",
+	PersistentPreRunE: prerunConnect,
+	PersistentPostRun: postrunConnect,
 }
 
 func init() {

@@ -19,9 +19,11 @@ import (
 
 var (
 	networkCmd = &cobra.Command{
-		Use:     "network",
-		Aliases: []string{"networks", "nwk", "nwks", "n"},
-		Short:   "Manage Packet Broker networks",
+		Use:               "network",
+		Aliases:           []string{"networks", "nwk", "nwks", "n"},
+		Short:             "Manage Packet Broker networks",
+		PersistentPreRunE: prerunConnect,
+		PersistentPostRun: postrunConnect,
 	}
 	networkListCmd = &cobra.Command{
 		Use:          "list",
