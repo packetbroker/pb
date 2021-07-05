@@ -98,8 +98,14 @@ the API key in a secure place, as it cannot be retrieved after create.`,
     $ pbadmin network apikey create --net-id 000013 --rights READ_NETWORK
 
 Rights:
-  READ_NETWORK          Read networks
-  READ_NETWORK_CONTACT  Read network contact information`,
+  READ_NETWORK              Read networks
+  READ_NETWORK_CONTACT      Read network contact information
+  READ_ROUTING_POLICY       Read routing policies
+  WRITE_ROUTING_POLICY      Write routing policies
+  READ_GATEWAY_VISIBILITY   Read gateway visibilities
+  WRITE_GATEWAY_VISIBILITY  Write gateway visibilities
+  READ_TRAFFIC              Read traffic
+  WRITE_TRAFFIC             Write traffic`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			endpoint := pbflag.GetEndpoint(cmd.Flags(), "")
 			req := &iampbv2.CreateNetworkAPIKeyRequest{

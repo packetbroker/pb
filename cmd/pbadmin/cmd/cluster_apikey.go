@@ -71,8 +71,8 @@ the API key in a secure place, as it cannot be retrieved after create.`,
 Rights:
   READ_NETWORK          Read networks
   READ_NETWORK_CONTACT  Read network contact information
-  READ_ROUTING_POLICY   Read routing policies
   READ_ROUTE_TABLE      Read route table
+  READ_ROUTING_POLICY   Read routing policies
   READ_TARGET_AUTH      Read target authentication information`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			endpoint := pbflag.GetEndpoint(cmd.Flags(), "")
