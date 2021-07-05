@@ -10,7 +10,6 @@ import (
 	routingpb "go.packetbroker.org/api/routing"
 	packetbroker "go.packetbroker.org/api/v3"
 	"go.packetbroker.org/pb/cmd/internal/column"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type sortRoutesByEndpoint []*packetbroker.DevAddrPrefixRoute
@@ -68,22 +67,24 @@ var routeCmd = &cobra.Command{
 	PersistentPostRun: postrunConnect,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var (
-			client        = routingpb.NewRoutesClient(cpConn)
-			lastCreatedAt *timestamppb.Timestamp
-			routes        []*packetbroker.DevAddrPrefixRoute
+			client = routingpb.NewRoutesClient(cpConn)
+			offset = uint32(0)
+			routes []*packetbroker.DevAddrPrefixRoute
 		)
 		for {
 			res, err := client.ListRoutes(ctx, &routingpb.ListRoutesRequest{
-				CreatedSince: lastCreatedAt,
+				Start: &routingpb.ListRoutesRequest_Offset{
+					Offset: offset,
+				},
 			})
 			if err != nil {
 				return err
 			}
-			if len(res.Routes) == 0 {
+			routes = append(routes, res.Routes...)
+			offset += uint32(len(res.Routes))
+			if len(res.Routes) == 0 || offset >= res.Total {
 				break
 			}
-			lastCreatedAt = res.Routes[len(res.Routes)-1].GetCreatedAt()
-			routes = append(routes, res.Routes...)
 		}
 		sort.Sort(sortRoutesByPrefix(routes))
 		fmt.Fprintln(tabout, "DevAddr Prefix\tNetID\tTenant ID\tCluster ID\tTarget\t")
