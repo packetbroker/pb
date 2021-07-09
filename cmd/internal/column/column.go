@@ -294,10 +294,15 @@ func WritePolicies(w io.Writer, defaults bool, policies ...*packetbroker.Routing
 			p.GetForwarderTenantId(),
 		)
 		if !defaults {
-			fmt.Fprintf(w, "%s\t%s\t",
-				packetbroker.NetID(p.GetHomeNetworkNetId()),
-				p.GetHomeNetworkTenantId(),
-			)
+			netID, tenantID := p.GetHomeNetworkNetId(), p.GetHomeNetworkTenantId()
+			if netID == 0 && tenantID == "" {
+				fmt.Fprint(w, "\t\t")
+			} else {
+				fmt.Fprintf(w, "%s\t%s\t",
+					packetbroker.NetID(p.GetHomeNetworkNetId()),
+					p.GetHomeNetworkTenantId(),
+				)
+			}
 		}
 		for _, b := range []bool{
 			p.GetUplink().GetJoinRequest(),
