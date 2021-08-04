@@ -157,12 +157,12 @@ var (
 				}
 			}
 			if adminContact := pbflag.GetContactInfo(cmd.Flags(), "admin"); adminContact != nil {
-				req.AdministrativeContact = &iampb.ContactInfoValue{
+				req.AdministrativeContact = &packetbroker.ContactInfoValue{
 					Value: adminContact,
 				}
 			}
 			if techContact := pbflag.GetContactInfo(cmd.Flags(), "tech"); techContact != nil {
-				req.TechnicalContact = &iampb.ContactInfoValue{
+				req.TechnicalContact = &packetbroker.ContactInfoValue{
 					Value: techContact,
 				}
 			}

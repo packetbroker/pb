@@ -9,11 +9,11 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.8.1
-	go.packetbroker.org/api/iam v1.5.5
-	go.packetbroker.org/api/iam/v2 v2.6.4
-	go.packetbroker.org/api/mapping/v2 v2.1.3
-	go.packetbroker.org/api/routing v1.7.1
-	go.packetbroker.org/api/v3 v3.9.2
+	go.packetbroker.org/api/iam v1.5.16
+	go.packetbroker.org/api/iam/v2 v2.6.15
+	go.packetbroker.org/api/mapping/v2 v2.1.14
+	go.packetbroker.org/api/routing v1.8.7
+	go.packetbroker.org/api/v3 v3.10.7
 	go.uber.org/atomic v1.8.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.18.1
