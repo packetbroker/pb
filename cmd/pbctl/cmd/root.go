@@ -32,7 +32,7 @@ var (
 )
 
 func prerunConnect(cmd *cobra.Command, args []string) error {
-	iamClientConf, err := config.OAuth2Client(ctx, "iam", "")
+	iamClientConf, err := config.OAuth2Client(ctx, "iam", "networks")
 	if err != nil {
 		return err
 	}

@@ -10,7 +10,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.8.1
 	go.packetbroker.org/api/iam v1.5.16
-	go.packetbroker.org/api/iam/v2 v2.6.15
+	go.packetbroker.org/api/iam/v2 v2.6.16
 	go.packetbroker.org/api/mapping/v2 v2.1.14
 	go.packetbroker.org/api/routing v1.8.7
 	go.packetbroker.org/api/v3 v3.10.7

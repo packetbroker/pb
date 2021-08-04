@@ -9,6 +9,7 @@ import (
 	iampb "go.packetbroker.org/api/iam/v2"
 	packetbroker "go.packetbroker.org/api/v3"
 	"go.packetbroker.org/pb/cmd/internal/column"
+	"go.packetbroker.org/pb/cmd/internal/pbflag"
 )
 
 type network interface {
@@ -33,20 +34,29 @@ var (
 	catalogNetworksCmd = &cobra.Command{
 		Use:          "networks",
 		Aliases:      []string{"network", "ns"},
-		Short:        "Show listed Forwarders and Home Networks",
+		Short:        "Show Forwarders and Home Networks",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
 				offset          = uint32(0)
 				idContains, _   = cmd.Flags().GetString("id-contains")
 				nameContains, _ = cmd.Flags().GetString("name-contains")
+				policyTenantID  = pbflag.GetTenantID(cmd.Flags(), "policy")
 			)
+			var policyRef *iampb.ListNetworksRequest_PolicyReference
+			if !policyTenantID.IsEmpty() {
+				policyRef = &iampb.ListNetworksRequest_PolicyReference{
+					NetId:    uint32(policyTenantID.NetID),
+					TenantId: policyTenantID.ID,
+				}
+			}
 			fmt.Fprintln(tabout, "NetID\tTenant ID\tName\tDevAddr Blocks\t")
 			for {
 				res, err := iampb.NewCatalogClient(iamConn).ListNetworks(ctx, &iampb.ListNetworksRequest{
 					Offset:           offset,
 					TenantIdContains: idContains,
 					NameContains:     nameContains,
+					PolicyReference:  policyRef,
 				})
 				if err != nil {
 					return err
@@ -78,20 +88,29 @@ var (
 	catalogHomeNetworksCmd = &cobra.Command{
 		Use:          "home-networks",
 		Aliases:      []string{"home-network", "hns"},
-		Short:        "Show listed Home Networks",
+		Short:        "Show Home Networks",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
 				offset          = uint32(0)
 				idContains, _   = cmd.Flags().GetString("id-contains")
 				nameContains, _ = cmd.Flags().GetString("name-contains")
+				policyTenantID  = pbflag.GetTenantID(cmd.Flags(), "policy")
 			)
+			var policyRef *iampb.ListNetworksRequest_PolicyReference
+			if !policyTenantID.IsEmpty() {
+				policyRef = &iampb.ListNetworksRequest_PolicyReference{
+					NetId:    uint32(policyTenantID.NetID),
+					TenantId: policyTenantID.ID,
+				}
+			}
 			fmt.Fprintln(tabout, "NetID\tTenant ID\tName\tDevAddr Blocks\t")
 			for {
 				res, err := iampb.NewCatalogClient(iamConn).ListHomeNetworks(ctx, &iampb.ListNetworksRequest{
 					Offset:           offset,
 					TenantIdContains: idContains,
 					NameContains:     nameContains,
+					PolicyReference:  policyRef,
 				})
 				if err != nil {
 					return err
@@ -127,9 +146,11 @@ func init() {
 
 	catalogNetworksCmd.Flags().String("id-contains", "", "filter tenants by ID")
 	catalogNetworksCmd.Flags().String("name-contains", "", "filter networks or tenants by name")
+	catalogNetworksCmd.Flags().AddFlagSet(pbflag.TenantID("policy"))
 	catalogCmd.AddCommand(catalogNetworksCmd)
 
 	catalogHomeNetworksCmd.Flags().String("id-contains", "", "filter tenants by ID")
 	catalogHomeNetworksCmd.Flags().String("name-contains", "", "filter networks or tenants by name")
+	catalogHomeNetworksCmd.Flags().AddFlagSet(pbflag.TenantID("policy"))
 	catalogCmd.AddCommand(catalogHomeNetworksCmd)
 }
