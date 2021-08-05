@@ -333,14 +333,15 @@ func (p *apiKeyRightsValue) Type() string {
 }
 
 // APIKeyRights returns flags for API key rights.
-func APIKeyRights() *flag.FlagSet {
+func APIKeyRights(defaultRights ...packetbroker.Right) *flag.FlagSet {
 	flags := new(flag.FlagSet)
 	names := make([]string, 0, len(packetbroker.Right_value))
 	for k := range packetbroker.Right_value {
 		names = append(names, k)
 	}
 	sort.Strings(names)
-	flags.Var(new(apiKeyRightsValue), "rights", fmt.Sprintf("API key rights (%s)", strings.Join(names, ",")))
+	value := apiKeyRightsValue(defaultRights)
+	flags.Var(&value, "rights", fmt.Sprintf("API key rights (%s)", strings.Join(names, ",")))
 	return flags
 }
 

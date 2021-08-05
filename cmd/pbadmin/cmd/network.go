@@ -240,8 +240,14 @@ command-line interfaces.`,
         --router-address eu.packetbroker.io
 
 Rights:
-  READ_NETWORK          Read networks
-  READ_NETWORK_CONTACT  Read network contact information
+  READ_NETWORK              Read networks
+  READ_NETWORK_CONTACT      Read network contact information
+  READ_ROUTING_POLICY       Read routing policies
+  WRITE_ROUTING_POLICY      Write routing policies
+  READ_GATEWAY_VISIBILITY   Read gateway visibilities
+  WRITE_GATEWAY_VISIBILITY  Write gateway visibilities
+  READ_TRAFFIC              Read traffic
+  WRITE_TRAFFIC             Write traffic
 
 Router addresses:
   apac.packetbroker.io  Asia Pacific
@@ -318,7 +324,14 @@ func init() {
 	networkCmd.AddCommand(networkDeleteCmd)
 
 	networkInitCmd.Flags().AddFlagSet(pbflag.Endpoint(""))
-	networkInitCmd.Flags().AddFlagSet(pbflag.APIKeyRights())
+	networkInitCmd.Flags().AddFlagSet(pbflag.APIKeyRights(
+		packetbroker.Right_READ_ROUTING_POLICY,
+		packetbroker.Right_WRITE_ROUTING_POLICY,
+		packetbroker.Right_READ_GATEWAY_VISIBILITY,
+		packetbroker.Right_WRITE_GATEWAY_VISIBILITY,
+		packetbroker.Right_READ_TRAFFIC,
+		packetbroker.Right_WRITE_TRAFFIC,
+	))
 	networkInitCmd.Flags().String("router-address", "", "Packet Broker router address")
 	networkCmd.AddCommand(networkInitCmd)
 }
