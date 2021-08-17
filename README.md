@@ -50,7 +50,7 @@ To initialize configuration for your network with NetID `000013` and tenant `ten
 
 ```bash
 $ pbadmin network init --net-id 000013 --tenant-id tenant-a \
-    --router-address eu.packetbroker.io --rights READ_NETWORK
+    --router-address eu.packetbroker.io
 ```
 
 >Run `$ pbadmin network init --help` with additional options and examples.
