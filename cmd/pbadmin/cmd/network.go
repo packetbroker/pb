@@ -325,6 +325,7 @@ func init() {
 
 	networkInitCmd.Flags().AddFlagSet(pbflag.Endpoint(""))
 	networkInitCmd.Flags().AddFlagSet(pbflag.APIKeyRights(
+		packetbroker.Right_READ_NETWORK,
 		packetbroker.Right_READ_ROUTING_POLICY,
 		packetbroker.Right_WRITE_ROUTING_POLICY,
 		packetbroker.Right_READ_GATEWAY_VISIBILITY,
