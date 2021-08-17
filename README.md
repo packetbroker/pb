@@ -1,6 +1,6 @@
 # Packet Broker Clients
 
-Packet Broker Clients are command-line utilities for working with [Packet Broker](https://www.packetbroker.org).
+Packet Broker Clients are command-line utilities for working with [Packet Broker](https://www.packetbroker.net).
 
 ## Services
 
