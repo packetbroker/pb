@@ -1,6 +1,6 @@
 // Copyright © 2020 The Things Industries B.V.
 
-// +build tools
+//go:build tools
 
 package main
 
