@@ -12,7 +12,7 @@ import (
 )
 
 // DefaultTokenURL is the default Packet Broker IAM token URL.
-const DefaultTokenURL = "https://iam.packetbroker.org/token"
+const DefaultTokenURL = "https://iam.packetbroker.net/token"
 
 type clientCredentials struct {
 	tokenSource oauth2.TokenSource
