@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -114,8 +115,12 @@ func OAuth2Client(ctx context.Context, service string, scopes ...string) (*clien
 	if clientID == "" || clientSecret == "" {
 		return nil, errNoCredentials
 	}
+	audience := res.Address
+	if host, _, err := net.SplitHostPort(audience); err == nil {
+		audience = host
+	}
 	allowInsecure := viper.GetBool("insecure")
-	res.Credentials = client.OAuth2(ctx, tokenURL, clientID, clientSecret, scopes, allowInsecure)
+	res.Credentials = client.OAuth2(ctx, tokenURL, clientID, clientSecret, audience, scopes, allowInsecure)
 	return res, nil
 }
 

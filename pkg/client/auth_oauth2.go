@@ -5,6 +5,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
@@ -16,9 +17,7 @@ const DefaultTokenURL = "https://iam.packetbroker.net/token"
 
 type clientCredentials struct {
 	tokenSource oauth2.TokenSource
-	accessToken,
-	refreshToken string
-	insecure bool
+	insecure    bool
 }
 
 func (c *clientCredentials) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
@@ -40,13 +39,16 @@ func (c *clientCredentials) RequireTransportSecurity() bool {
 
 // OAuth2 returns per RPC client credentials using the OAuth Client Credentials flow.
 // The token is being refreshed in the background.
-func OAuth2(ctx context.Context, tokenURL, clientID, clientSecret string, scopes []string, insecure bool) credentials.PerRPCCredentials {
+func OAuth2(ctx context.Context, tokenURL, clientID, clientSecret, audience string, scopes []string, insecure bool) credentials.PerRPCCredentials {
 	config := clientcredentials.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 		Scopes:       scopes,
 		AuthStyle:    oauth2.AuthStyleInParams,
 		TokenURL:     tokenURL,
+		EndpointParams: url.Values{
+			"audience": []string{audience},
+		},
 	}
 	return &clientCredentials{
 		// TODO: Cache tokens on disk (https://github.com/packetbroker/pb/issues/6)
