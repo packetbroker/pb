@@ -50,6 +50,11 @@ func GetNetID(flags *flag.FlagSet, actor string) packetbroker.NetID {
 	return packetbroker.NetID(*flags.Lookup(actorf(actor, "net-id")).Value.(*netIDValue))
 }
 
+// NetIDChanged returns true if the NetID flag was explicitly set during Parse() and false otherwise.
+func NetIDChanged(flags *flag.FlagSet, actor string) bool {
+	return flags.Changed(actorf(actor, "net-id"))
+}
+
 // TenantID returns flags for a TenantID.
 func TenantID(actor string) *flag.FlagSet {
 	flags := new(flag.FlagSet)

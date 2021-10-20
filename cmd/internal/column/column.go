@@ -44,13 +44,18 @@ func (t *Target) String() string {
 	if t.Address != "" {
 		s += fmt.Sprintf(": %s", t.Address)
 	}
-	switch t.Authorization.(type) {
+	switch t.DefaultAuthentication.(type) {
+	case *packetbroker.Target_PbTokenAuth:
+		s += " (with PB token auth)"
 	case *packetbroker.Target_BasicAuth_:
 		s += " (with HTTP basic auth)"
 	case *packetbroker.Target_CustomAuth_:
 		s += " (with HTTP custom auth)"
 	case *packetbroker.Target_TlsClientAuth:
 		s += " (with TLS client auth)"
+	}
+	if l := len(t.OriginNetIdAuthentication); l > 0 {
+		s += fmt.Sprintf(" (+%d with custom origin)", l)
 	}
 	return s
 }
@@ -162,6 +167,51 @@ func writeTarget(w io.Writer, target *packetbroker.Target) error {
 		return nil
 	}
 
+	targetAuth := func(auth *packetbroker.Target_Authentication) string {
+		switch a := auth.GetValue().(type) {
+		case *packetbroker.Target_Authentication_PbTokenAuth:
+			return "Packet Broker token"
+		case *packetbroker.Target_Authentication_BasicAuth:
+			return fmt.Sprintf("Basic %s:%s", a.BasicAuth.Username, a.BasicAuth.Password)
+		case *packetbroker.Target_Authentication_CustomAuth:
+			return a.CustomAuth.Value
+		case *packetbroker.Target_Authentication_TlsClientAuth:
+			sub, err := x509SubjectFromPair(a.TlsClientAuth.Cert, a.TlsClientAuth.Key)
+			if err != nil {
+				return err.Error()
+			}
+			return sub
+		default:
+			return ""
+		}
+	}
+
+	var auth string
+	switch a := target.DefaultAuthentication.(type) {
+	case *packetbroker.Target_PbTokenAuth:
+		auth = targetAuth(&packetbroker.Target_Authentication{
+			Value: &packetbroker.Target_Authentication_PbTokenAuth{},
+		})
+	case *packetbroker.Target_BasicAuth_:
+		auth = targetAuth(&packetbroker.Target_Authentication{
+			Value: &packetbroker.Target_Authentication_BasicAuth{
+				BasicAuth: a.BasicAuth,
+			},
+		})
+	case *packetbroker.Target_CustomAuth_:
+		auth = targetAuth(&packetbroker.Target_Authentication{
+			Value: &packetbroker.Target_Authentication_CustomAuth{
+				CustomAuth: a.CustomAuth,
+			},
+		})
+	case *packetbroker.Target_TlsClientAuth:
+		auth = targetAuth(&packetbroker.Target_Authentication{
+			Value: &packetbroker.Target_Authentication_TlsClientAuth{
+				TlsClientAuth: a.TlsClientAuth,
+			},
+		})
+	}
+
 	var rootCAs []string
 	if cas := target.RootCas; len(cas) > 0 {
 		certPool := x509.NewCertPool()
@@ -178,33 +228,26 @@ func writeTarget(w io.Writer, target *packetbroker.Target) error {
 		}
 	}
 
-	var auth string
-	switch a := target.Authorization.(type) {
-	case *packetbroker.Target_BasicAuth_:
-		auth = fmt.Sprintf("Basic %s:%s", a.BasicAuth.Username, a.BasicAuth.Password)
-	case *packetbroker.Target_CustomAuth_:
-		auth = a.CustomAuth.Value
-	case *packetbroker.Target_TlsClientAuth:
-		var err error
-		auth, err = x509SubjectFromPair(a.TlsClientAuth.Cert, a.TlsClientAuth.Key)
-		if err != nil {
-			auth = err.Error()
-		}
-	}
-
-	if err := WriteKV(w,
+	WriteKV(w,
 		"Target Protocol", target.Protocol.String(),
 		"Target Address", target.Address,
-		"Target Authorization", auth,
-	); err != nil {
-		return err
-	}
+		"Target fNS Path", target.FNsPath,
+		"Target sNS Path", target.SNsPath,
+		"Target hNS Path", target.HNsPath,
+	)
 	for i, r := range rootCAs {
-		if err := WriteKV(w,
+		WriteKV(w,
 			fmt.Sprintf("Target Root CA #%d", i+1), r,
-		); err != nil {
-			return err
-		}
+		)
+	}
+	WriteKV(w,
+		"Target Authorization", auth,
+	)
+	// TODO: Sort by NetID.
+	for netID, auth := range target.OriginNetIdAuthentication {
+		WriteKV(w,
+			fmt.Sprintf("Target Authorization %s", packetbroker.NetID(netID)), targetAuth(auth),
+		)
 	}
 	return nil
 }

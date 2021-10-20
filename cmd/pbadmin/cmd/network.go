@@ -76,9 +76,12 @@ var (
     $ pbadmin network create --net-id 000013 \
       --dev-addr-blocks 26011000/20=eu1,26012000=eu2
 
-  Configure a LoRaWAN Backend Interfaces 1.1.0 target with HTTP basic auth:
-    $ pbadmin network create --net-id 000013 --target-protocol TS002_V1_1_0 \
-      --target-address https://user:pass@example.com`,
+  Configure a LoRaWAN Backend Interfaces 1.1 target with HTTP basic auth:
+    $ pbadmin network create --net-id 000013 --target-protocol TS002_V1_1 \
+      --target-address https://user:pass@example.com
+
+  See for more target configuration options:
+    $ pbadmin network update target --help`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			netID := pbflag.GetNetID(cmd.Flags(), "")
 			name, _ := cmd.Flags().GetString("name")
@@ -86,8 +89,8 @@ var (
 			adminContact := pbflag.GetContactInfo(cmd.Flags(), "admin")
 			techContact := pbflag.GetContactInfo(cmd.Flags(), "tech")
 			listed, _ := cmd.Flags().GetBool("listed")
-			target, err := target(cmd.Flags(), "target")
-			if err != nil {
+			var target *packetbroker.Target
+			if err := mergeTarget(cmd.Flags(), "target", &target); err != nil {
 				return err
 			}
 			res, err := iampb.NewNetworkRegistryClient(conn).CreateNetwork(ctx, &iampb.CreateNetworkRequest{
@@ -173,27 +176,44 @@ var (
 		Use:   "target",
 		Short: "Update a network target",
 		Example: `
+  Configure a LoRaWAN Backend Interfaces 1.0 target with Packet Broker token
+  authentication:
+    $ pbadmin network update target --net-id 000013 \
+      --protocol TS002_V1_0 --address https://example.com --pb-token
+
   Configure a LoRaWAN Backend Interfaces 1.0 target with HTTP basic auth:
-    $ pbadmin network update target --net-id 000013 --protocol TS002_V1_0 \
-      --address https://user:pass@example.com
+    $ pbadmin network update target --net-id 000013 \
+      --protocol TS002_V1_0 --address https://user:pass@example.com
 
   Configure a LoRaWAN Backend Interfaces 1.0 target with TLS:
-    $ pbadmin network update target --net-id 000013 --protocol TS002_V1_0 \
-      --address https://example.com --root-cas-file ca.pem \
-      --tls-cert-file key.pem --tls-key-file key.pem`,
+    $ pbadmin network update target --net-id 000013 \
+      --protocol TS002_V1_0 --address https://example.com \
+      --root-cas-file ca.pem --tls-cert-file key.pem --tls-key-file key.pem
+
+  Configure a LoRaWAN Backend Interfaces 1.0 target with TLS and custom
+  originating NetID:
+    $ pbadmin network update target --net-id 000013 --origin-net-id 000013 \
+      --root-cas-file ca.pem --tls-cert-file key.pem --tls-key-file key.pem`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			netID := pbflag.GetNetID(cmd.Flags(), "")
-			req := &iampb.UpdateNetworkRequest{
+			client := iampb.NewNetworkRegistryClient(conn)
+			nwk, err := client.GetNetwork(ctx, &iampb.NetworkRequest{
 				NetId: uint32(netID),
-			}
-			target, err := target(cmd.Flags(), "")
+			})
 			if err != nil {
 				return err
 			}
-			req.Target = &iampb.TargetValue{
-				Value: target,
+			target := nwk.Network.Target
+			if err := mergeTarget(cmd.Flags(), "", &target); err != nil {
+				return err
 			}
-			_, err = iampb.NewNetworkRegistryClient(conn).UpdateNetwork(ctx, req)
+			req := &iampb.UpdateNetworkRequest{
+				NetId: uint32(netID),
+				Target: &iampb.TargetValue{
+					Value: target,
+				},
+			}
+			_, err = client.UpdateNetwork(ctx, req)
 			return err
 		},
 	}
