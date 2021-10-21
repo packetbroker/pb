@@ -19,8 +19,9 @@ import (
 )
 
 const (
-	sep              = ", "
-	maxDevAddrBlocks = 3
+	sep                = ", "
+	maxDevAddrBlocks   = 3
+	maxJoinEUIPrefixes = 2
 )
 
 // YesNo prints the boolean as Yes or No.
@@ -60,6 +61,22 @@ func (t *Target) String() string {
 	return s
 }
 
+// JoinServerFixedEndpoint prints the target as column field.
+type JoinServerFixedEndpoint packetbroker.JoinServerFixedEndpoint
+
+func (t *JoinServerFixedEndpoint) String() string {
+	if t == nil {
+		return ""
+	}
+	return (packetbroker.Endpoint{
+		TenantID: packetbroker.TenantID{
+			NetID: packetbroker.NetID(t.NetId),
+			ID:    t.TenantId,
+		},
+		ClusterID: t.ClusterId,
+	}).String()
+}
+
 // DevAddrBlocks prints DevAddr blocks as column field.
 type DevAddrBlocks []*packetbroker.DevAddrBlock
 
@@ -78,6 +95,25 @@ func (bs DevAddrBlocks) String() string {
 		res = append(res, s)
 	}
 	if more := len(bs) - maxDevAddrBlocks; more > 0 {
+		res = append(res, fmt.Sprintf("+%d", more))
+	}
+	return strings.Join(res, sep)
+}
+
+// JoinEUIPrefixes prints JoinEUI prefixes as column field.
+type JoinEUIPrefixes []*packetbroker.JoinEUIPrefix
+
+func (bs JoinEUIPrefixes) String() string {
+	res := make([]string, 0, maxJoinEUIPrefixes+1)
+	for i := 0; i < len(bs) && i < maxJoinEUIPrefixes; i++ {
+		var (
+			b = bs[i]
+			s string
+		)
+		s = fmt.Sprintf("%016X/%d", b.GetValue(), b.GetLength())
+		res = append(res, s)
+	}
+	if more := len(bs) - maxJoinEUIPrefixes; more > 0 {
 		res = append(res, fmt.Sprintf("+%d", more))
 	}
 	return strings.Join(res, sep)
@@ -120,6 +156,39 @@ func WriteDevAddrBlocks(w io.Writer, blocks []*packetbroker.DevAddrBlock) error 
 			b.GetPrefix().GetValue(),
 			b.GetPrefix().GetLength(),
 			b.GetHomeNetworkClusterId(),
+		); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+type sortJoinEUIsByPrefix []*packetbroker.JoinEUIPrefix
+
+func (r sortJoinEUIsByPrefix) Len() int {
+	return len(r)
+}
+
+func (r sortJoinEUIsByPrefix) Less(i, j int) bool {
+	if r[i].GetValue() < r[j].GetValue() {
+		return true
+	} else if r[i].GetValue() == r[j].GetValue() {
+		return r[i].GetLength() < r[j].GetLength()
+	}
+	return false
+}
+
+func (r sortJoinEUIsByPrefix) Swap(i, j int) {
+	r[i], r[j] = r[j], r[i]
+}
+
+// WriteJoinEUIPrefixes writes the JoinEUI prefixes as a table.
+func WriteJoinEUIPrefixes(w io.Writer, prefixes []*packetbroker.JoinEUIPrefix) error {
+	sort.Sort(sortJoinEUIsByPrefix(prefixes))
+	for _, b := range prefixes {
+		if _, err := fmt.Fprintf(w, "%08X/%d\t\n",
+			b.GetValue(),
+			b.GetLength(),
 		); err != nil {
 			return err
 		}
@@ -252,6 +321,34 @@ func writeTarget(w io.Writer, target *packetbroker.Target) error {
 	return nil
 }
 
+// WriteJoinServer writes the Join Server.
+func WriteJoinServer(w io.Writer, js *packetbroker.JoinServer) error {
+	WriteKV(w,
+		"ID", fmt.Sprintf("%d", js.Id),
+		"Name", js.GetName(),
+	)
+	if err := writeContactInfo(w, "Administrator", js.GetAdministrativeContact()); err != nil {
+		return err
+	}
+	if err := writeContactInfo(w, "Technical", js.GetTechnicalContact()); err != nil {
+		return err
+	}
+	switch resolver := js.Resolver.(type) {
+	case *packetbroker.JoinServer_Fixed:
+		WriteKV(w,
+			"Fixed NetID", packetbroker.NetID(resolver.Fixed.NetId),
+			"Fixed Tenant ID", resolver.Fixed.TenantId,
+			"Fixed Cluster ID", resolver.Fixed.ClusterId,
+		)
+	case *packetbroker.JoinServer_Lookup:
+		if err := writeTarget(w, resolver.Lookup); err != nil {
+			return err
+		}
+	}
+	fmt.Fprintln(w, "\nJoinEUI Prefixes:")
+	return WriteJoinEUIPrefixes(w, js.GetJoinEuiPrefixes())
+}
+
 // WriteNetwork writes the Network.
 func WriteNetwork(w io.Writer, network *packetbroker.Network) error {
 	if err := WriteKV(w,
@@ -263,7 +360,7 @@ func WriteNetwork(w io.Writer, network *packetbroker.Network) error {
 	if err := writeContactInfo(w, "Administrator", network.GetAdministrativeContact()); err != nil {
 		return err
 	}
-	if err := writeContactInfo(w, "Technical", network.GetAdministrativeContact()); err != nil {
+	if err := writeContactInfo(w, "Technical", network.GetTechnicalContact()); err != nil {
 		return err
 	}
 	if err := writeTarget(w, network.GetTarget()); err != nil {

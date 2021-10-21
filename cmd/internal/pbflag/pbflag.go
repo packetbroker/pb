@@ -109,6 +109,13 @@ func HasEndpoint(flags *flag.FlagSet, actor string) (hasNetID, hasTenantID, hasC
 	return
 }
 
+// EndpointFlagsChanged returns whether any of the endpoint flags are changed.
+func EndpointFlagsChanged(flags *flag.FlagSet, actor string) bool {
+	return flags.Changed(actorf(actor, "net-id")) ||
+		flags.Changed(actorf(actor, "tenant-id")) ||
+		flags.Changed(actorf(actor, "cluster-id"))
+}
+
 // ContactInfo returns flags for contact information.
 func ContactInfo(actor string) *flag.FlagSet {
 	flags := new(flag.FlagSet)
@@ -186,6 +193,51 @@ func DevAddrBlocks() *flag.FlagSet {
 func GetDevAddrBlocks(flags *flag.FlagSet) []*packetbroker.DevAddrBlock {
 	blocks := flags.Lookup("dev-addr-blocks").Value.(*devAddrBlocksValue)
 	return []*packetbroker.DevAddrBlock(*blocks)
+}
+
+type joinEUIPrefixesValue []*packetbroker.JoinEUIPrefix
+
+func (f *joinEUIPrefixesValue) String() string {
+	ss := make([]string, len(*f))
+	for i, b := range *f {
+		prefix, _ := b.MarshalText()
+		ss[i] = string(prefix)
+	}
+	return strings.Join(ss, ",")
+}
+
+func (f *joinEUIPrefixesValue) Set(s string) error {
+	if s == "" {
+		*f = []*packetbroker.JoinEUIPrefix{}
+		return nil
+	}
+	blocks := strings.Split(s, ",")
+	res := make([]*packetbroker.JoinEUIPrefix, len(blocks))
+	for i, b := range blocks {
+		res[i] = new(packetbroker.JoinEUIPrefix)
+		if err := res[i].UnmarshalText([]byte(b)); err != nil {
+			return err
+		}
+	}
+	*f = res
+	return nil
+}
+
+func (f *joinEUIPrefixesValue) Type() string {
+	return "joinEUIPrefixes"
+}
+
+// JoinEUIPrefixes returns flags for JoinEUI prefixes.
+func JoinEUIPrefixes() *flag.FlagSet {
+	flags := new(flag.FlagSet)
+	flags.Var(new(joinEUIPrefixesValue), "join-eui-prefixes", "JoinEUI prefixes")
+	return flags
+}
+
+// GetJoinEUIPrefixes returns the JoinEUI prefixes from the flags.
+func GetJoinEUIPrefixes(flags *flag.FlagSet) []*packetbroker.JoinEUIPrefix {
+	blocks := flags.Lookup("join-eui-prefixes").Value.(*joinEUIPrefixesValue)
+	return []*packetbroker.JoinEUIPrefix(*blocks)
 }
 
 type messageType int
