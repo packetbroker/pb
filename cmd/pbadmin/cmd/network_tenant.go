@@ -88,7 +88,7 @@ var (
 			techContact := pbflag.GetContactInfo(cmd.Flags(), "tech")
 			listed, _ := cmd.Flags().GetBool("listed")
 			var target *packetbroker.Target
-			if err := mergeTarget(cmd.Flags(), "target", &target); err != nil {
+			if err := pbflag.ApplyToTarget(cmd.Flags(), "target", &target); err != nil {
 				return err
 			}
 			res, err := iampb.NewTenantRegistryClient(conn).CreateTenant(ctx, &iampb.CreateTenantRequest{
@@ -208,7 +208,7 @@ var (
 				return err
 			}
 			target := tnt.Tenant.Target
-			if err := mergeTarget(cmd.Flags(), "", &target); err != nil {
+			if err := pbflag.ApplyToTarget(cmd.Flags(), "", &target); err != nil {
 				return err
 			}
 			req := &iampb.UpdateTenantRequest{
@@ -259,7 +259,7 @@ func init() {
 
 	networkTenantCreateCmd.Flags().AddFlagSet(pbflag.TenantID(""))
 	networkTenantCreateCmd.Flags().AddFlagSet(tenantSettingsFlags())
-	networkTenantCreateCmd.Flags().AddFlagSet(targetFlags("target"))
+	networkTenantCreateCmd.Flags().AddFlagSet(pbflag.Target("target"))
 	networkTenantCreateCmd.Flags().AddFlagSet(pbflag.ContactInfo("admin"))
 	networkTenantCreateCmd.Flags().AddFlagSet(pbflag.ContactInfo("tech"))
 	networkTenantCmd.AddCommand(networkTenantCreateCmd)
@@ -272,7 +272,7 @@ func init() {
 	networkTenantUpdateCmd.Flags().AddFlagSet(pbflag.ContactInfo("admin"))
 	networkTenantUpdateCmd.Flags().AddFlagSet(pbflag.ContactInfo("tech"))
 	networkTenantUpdateTargetCmd.Flags().AddFlagSet(pbflag.TenantID(""))
-	networkTenantUpdateTargetCmd.Flags().AddFlagSet(targetFlags(""))
+	networkTenantUpdateTargetCmd.Flags().AddFlagSet(pbflag.Target(""))
 	networkTenantUpdateCmd.AddCommand(networkTenantUpdateTargetCmd)
 	networkTenantCmd.AddCommand(networkTenantUpdateCmd)
 

@@ -4,6 +4,8 @@ package pbflag
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net/url"
 	"sort"
 	"strings"
 
@@ -283,26 +285,25 @@ func (p *targetProtocol) Type() string {
 }
 
 // TargetProtocol returns flags for a target protocol.
-func TargetProtocol(prefix string) *flag.FlagSet {
-	if prefix != "" {
-		prefix = prefix + "-"
-	}
+func TargetProtocol(actor string) *flag.FlagSet {
 	names := make([]string, 0, len(packetbroker.TargetProtocol_value))
 	for k := range packetbroker.TargetProtocol_value {
 		names = append(names, k)
 	}
 	sort.Strings(names)
 	flags := new(flag.FlagSet)
-	flags.Var(new(targetProtocol), prefix+"protocol", fmt.Sprintf("target protocol (%s)", strings.Join(names, ",")))
+	flags.Var(new(targetProtocol), actorf(actor, "protocol"), fmt.Sprintf("target protocol (%s)", strings.Join(names, ",")))
 	return flags
 }
 
+// TargetProtocolChanged returns whether the flag has been changed.
+func TargetProtocolChanged(flags *flag.FlagSet, actor string) bool {
+	return flags.Changed(actorf(actor, "protocol"))
+}
+
 // GetTargetProtocol returns the target protocol from the flags.
-func GetTargetProtocol(flags *flag.FlagSet, prefix string) *packetbroker.TargetProtocol {
-	if prefix != "" {
-		prefix = prefix + "-"
-	}
-	return flags.Lookup(prefix + "protocol").Value.(*targetProtocol).TargetProtocol
+func GetTargetProtocol(flags *flag.FlagSet, actor string) *packetbroker.TargetProtocol {
+	return flags.Lookup(actorf(actor, "protocol")).Value.(*targetProtocol).TargetProtocol
 }
 
 type apiKeyRightsValue []packetbroker.Right
@@ -531,4 +532,176 @@ func APIKeyState(name string) *flag.FlagSet {
 // GetAPIKeyState returns the API key state from the flags.
 func GetAPIKeyState(flags *flag.FlagSet, name string) packetbroker.APIKeyState {
 	return packetbroker.APIKeyState(*flags.Lookup(name).Value.(*apiKeyState))
+}
+
+// Target returns flags for a target.
+func Target(actor string) *flag.FlagSet {
+	flags := new(flag.FlagSet)
+	flags.AddFlagSet(TargetProtocol(actor))
+	flags.String(actorf(actor, "address"), "", "address (e.g. URL with HTTP basic authentication)")
+	flags.String(actorf(actor, "fns-path"), "", "path for Forwarding Network Server (fNS)")
+	flags.String(actorf(actor, "sns-path"), "", "path for Serving Network Server (sNS)")
+	flags.String(actorf(actor, "hns-path"), "", "path for Home Network Server (hNS)")
+	flags.Bool(actorf(actor, "pb-token"), false, "use Packet Broker token")
+	flags.String(actorf(actor, "authorization"), "", "custom authorization value (e.g. HTTP Authorization header value)")
+	flags.String(actorf(actor, "root-cas-file"), "", "path to PEM encoded root CAs")
+	flags.String(actorf(actor, "tls-cert-file"), "", "path to PEM encoded client certificate")
+	flags.String(actorf(actor, "tls-key-file"), "", "path to PEM encoded private key")
+	flags.AddFlagSet(NetID(actorf(actor, "origin")))
+	return flags
+}
+
+// TargetFlagsChanged returns whether any of the target values has been changed.
+func TargetFlagsChanged(flags *flag.FlagSet, actor string) bool {
+	return TargetProtocolChanged(flags, actor) ||
+		flags.Changed(actorf(actor, "address")) ||
+		flags.Changed(actorf(actor, "fns-path")) ||
+		flags.Changed(actorf(actor, "sns-path")) ||
+		flags.Changed(actorf(actor, "hns-path")) ||
+		flags.Changed(actorf(actor, "pb-token")) ||
+		flags.Changed(actorf(actor, "authorization")) ||
+		flags.Changed(actorf(actor, "root-cas-file")) ||
+		flags.Changed(actorf(actor, "tls-cert-file")) ||
+		flags.Changed(actorf(actor, "tls-key-file")) ||
+		NetIDChanged(flags, "origin")
+}
+
+// ApplyToTarget applies the values from the flags to the given target.
+func ApplyToTarget(flags *flag.FlagSet, actor string, target **packetbroker.Target) error {
+	protocol := GetTargetProtocol(flags, actor)
+	if *target == nil {
+		if protocol == nil {
+			return nil
+		}
+		*target = new(packetbroker.Target)
+	}
+	if protocol != nil {
+		(*target).Protocol = *protocol
+	}
+
+	switch (*target).Protocol {
+	case packetbroker.TargetProtocol_TS002_V1_0, packetbroker.TargetProtocol_TS002_V1_1:
+		var url *url.URL
+		if address, err := flags.GetString(actorf(actor, "address")); err == nil && address != "" {
+			url, err = url.Parse(address)
+			if err != nil {
+				return err
+			}
+		}
+
+		pbToken, _ := flags.GetBool(actorf(actor, "pb-token"))
+		authorization, _ := flags.GetString(actorf(actor, "authorization"))
+		tlsCertFile, _ := flags.GetString(actorf(actor, "tls-cert-file"))
+		tlsKeyFile, _ := flags.GetString(actorf(actor, "tls-key-file"))
+
+		var authentication *packetbroker.Target_Authentication
+		switch {
+		// Packet Broker token authentication.
+		case pbToken:
+			authentication = &packetbroker.Target_Authentication{
+				Value: &packetbroker.Target_Authentication_PbTokenAuth{
+					PbTokenAuth: &packetbroker.Target_PacketBrokerTokenAuth{},
+				},
+			}
+		// HTTP basic authentication.
+		case url != nil && url.User != nil:
+			password, _ := url.User.Password()
+			authentication = &packetbroker.Target_Authentication{
+				Value: &packetbroker.Target_Authentication_BasicAuth{
+					BasicAuth: &packetbroker.Target_BasicAuth{
+						Username: url.User.Username(),
+						Password: password,
+					},
+				},
+			}
+			url.User = nil
+		// Custom HTTP authorization value.
+		case authorization != "":
+			authentication = &packetbroker.Target_Authentication{
+				Value: &packetbroker.Target_Authentication_CustomAuth{
+					CustomAuth: &packetbroker.Target_CustomAuth{
+						Value: authorization,
+					},
+				},
+			}
+		// TLS client authentication.
+		case tlsCertFile != "" || tlsKeyFile != "":
+			tlsCert, err := ioutil.ReadFile(tlsCertFile)
+			if err != nil {
+				return err
+			}
+			tlsKey, err := ioutil.ReadFile(tlsKeyFile)
+			if err != nil {
+				return err
+			}
+			authentication = &packetbroker.Target_Authentication{
+				Value: &packetbroker.Target_Authentication_TlsClientAuth{
+					TlsClientAuth: &packetbroker.Target_TLSClientAuth{
+						Cert: tlsCert,
+						Key:  tlsKey,
+					},
+				},
+			}
+		}
+
+		if NetIDChanged(flags, actorf(actor, "origin")) {
+			netID := GetNetID(flags, actorf(actor, "origin"))
+			if (*target).OriginNetIdAuthentication == nil {
+				(*target).OriginNetIdAuthentication = make(map[uint32]*packetbroker.Target_Authentication)
+			}
+			if authentication == nil {
+				delete((*target).OriginNetIdAuthentication, uint32(netID))
+			} else {
+				(*target).OriginNetIdAuthentication[uint32(netID)] = authentication
+			}
+		} else if authentication != nil {
+			switch auth := authentication.GetValue().(type) {
+			case *packetbroker.Target_Authentication_PbTokenAuth:
+				(*target).DefaultAuthentication = &packetbroker.Target_PbTokenAuth{
+					PbTokenAuth: auth.PbTokenAuth,
+				}
+			case *packetbroker.Target_Authentication_BasicAuth:
+				(*target).DefaultAuthentication = &packetbroker.Target_BasicAuth_{
+					BasicAuth: auth.BasicAuth,
+				}
+			case *packetbroker.Target_Authentication_CustomAuth:
+				(*target).DefaultAuthentication = &packetbroker.Target_CustomAuth_{
+					CustomAuth: auth.CustomAuth,
+				}
+			case *packetbroker.Target_Authentication_TlsClientAuth:
+				(*target).DefaultAuthentication = &packetbroker.Target_TlsClientAuth{
+					TlsClientAuth: auth.TlsClientAuth,
+				}
+			}
+		}
+
+		if url != nil {
+			(*target).Address = url.String()
+		}
+		for _, p := range []struct {
+			target *string
+			flag   string
+		}{
+			{&(*target).FNsPath, actorf(actor, "fns-path")},
+			{&(*target).SNsPath, actorf(actor, "sns-path")},
+			{&(*target).HNsPath, actorf(actor, "hns-path")},
+		} {
+			if flags.Changed(p.flag) {
+				*p.target, _ = flags.GetString(p.flag)
+			}
+		}
+
+	default:
+		return fmt.Errorf("invalid protocol: %s", protocol)
+	}
+
+	if rootCAsFile, err := flags.GetString(actorf(actor, "root-cas-file")); err == nil && rootCAsFile != "" {
+		var err error
+		(*target).RootCas, err = ioutil.ReadFile(rootCAsFile)
+		if err != nil {
+			return fmt.Errorf("read root CAs file %q: %w", rootCAsFile, err)
+		}
+	}
+
+	return nil
 }

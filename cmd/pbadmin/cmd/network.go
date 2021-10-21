@@ -90,7 +90,7 @@ var (
 			techContact := pbflag.GetContactInfo(cmd.Flags(), "tech")
 			listed, _ := cmd.Flags().GetBool("listed")
 			var target *packetbroker.Target
-			if err := mergeTarget(cmd.Flags(), "target", &target); err != nil {
+			if err := pbflag.ApplyToTarget(cmd.Flags(), "target", &target); err != nil {
 				return err
 			}
 			res, err := iampb.NewNetworkRegistryClient(conn).CreateNetwork(ctx, &iampb.CreateNetworkRequest{
@@ -204,7 +204,7 @@ var (
 				return err
 			}
 			target := nwk.Network.Target
-			if err := mergeTarget(cmd.Flags(), "", &target); err != nil {
+			if err := pbflag.ApplyToTarget(cmd.Flags(), "", &target); err != nil {
 				return err
 			}
 			req := &iampb.UpdateNetworkRequest{
@@ -323,7 +323,7 @@ func init() {
 
 	networkCreateCmd.Flags().AddFlagSet(pbflag.NetID(""))
 	networkCreateCmd.Flags().AddFlagSet(networkSettingsFlags())
-	networkCreateCmd.Flags().AddFlagSet(targetFlags("target"))
+	networkCreateCmd.Flags().AddFlagSet(pbflag.Target("target"))
 	networkCreateCmd.Flags().AddFlagSet(pbflag.ContactInfo("admin"))
 	networkCreateCmd.Flags().AddFlagSet(pbflag.ContactInfo("tech"))
 	networkCmd.AddCommand(networkCreateCmd)
@@ -336,7 +336,7 @@ func init() {
 	networkUpdateCmd.Flags().AddFlagSet(pbflag.ContactInfo("admin"))
 	networkUpdateCmd.Flags().AddFlagSet(pbflag.ContactInfo("tech"))
 	networkUpdateTargetCmd.Flags().AddFlagSet(pbflag.NetID(""))
-	networkUpdateTargetCmd.Flags().AddFlagSet(targetFlags(""))
+	networkUpdateTargetCmd.Flags().AddFlagSet(pbflag.Target(""))
 	networkUpdateCmd.AddCommand(networkUpdateTargetCmd)
 	networkCmd.AddCommand(networkUpdateCmd)
 
@@ -353,6 +353,6 @@ func init() {
 		packetbroker.Right_READ_TRAFFIC,
 		packetbroker.Right_WRITE_TRAFFIC,
 	))
-	networkInitCmd.Flags().String("router-address", "", "Packet Broker router address")
+	networkInitCmd.Flags().String("router-address", "", "Packet Broker Router address")
 	networkCmd.AddCommand(networkInitCmd)
 }
