@@ -1,4 +1,4 @@
-// Copyright © 2020 The Things Industries B.V.
+// Copyright © 2021 The Things Industries B.V.
 
 package cmd
 
@@ -7,7 +7,7 @@ import (
 	"sort"
 
 	"github.com/spf13/cobra"
-	routingpb "go.packetbroker.org/api/routing"
+	routingpb "go.packetbroker.org/api/routing/v2"
 	packetbroker "go.packetbroker.org/api/v3"
 	"go.packetbroker.org/pb/cmd/internal/column"
 )
@@ -35,13 +35,13 @@ func (r sortRoutesByEndpoint) Swap(i, j int) {
 	r[i], r[j] = r[j], r[i]
 }
 
-type sortRoutesByPrefix []*packetbroker.DevAddrPrefixRoute
+type sortDevAddrRoutesByPrefix []*packetbroker.DevAddrPrefixRoute
 
-func (r sortRoutesByPrefix) Len() int {
+func (r sortDevAddrRoutesByPrefix) Len() int {
 	return len(r)
 }
 
-func (r sortRoutesByPrefix) Less(i, j int) bool {
+func (r sortDevAddrRoutesByPrefix) Less(i, j int) bool {
 	if r[i].GetPrefix().GetValue() < r[j].GetPrefix().GetValue() {
 		return true
 	} else if r[i].GetPrefix().GetValue() == r[j].GetPrefix().GetValue() {
@@ -54,7 +54,7 @@ func (r sortRoutesByPrefix) Less(i, j int) bool {
 	return false
 }
 
-func (r sortRoutesByPrefix) Swap(i, j int) {
+func (r sortDevAddrRoutesByPrefix) Swap(i, j int) {
 	r[i], r[j] = r[j], r[i]
 }
 
@@ -67,28 +67,26 @@ var routeCmd = &cobra.Command{
 	PersistentPostRun: postrunConnect,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var (
-			client = routingpb.NewRoutesClient(cpConn)
-			offset = uint32(0)
-			routes []*packetbroker.DevAddrPrefixRoute
+			client        = routingpb.NewRoutesClient(cpConn)
+			offset        = uint32(0)
+			devAddrRoutes []*packetbroker.DevAddrPrefixRoute
 		)
 		for {
-			res, err := client.ListRoutes(ctx, &routingpb.ListRoutesRequest{
-				Start: &routingpb.ListRoutesRequest_Offset{
-					Offset: offset,
-				},
+			res, err := client.ListUplinkRoutes(ctx, &routingpb.ListUplinkRoutesRequest{
+				Offset: offset,
 			})
 			if err != nil {
 				return err
 			}
-			routes = append(routes, res.Routes...)
+			devAddrRoutes = append(devAddrRoutes, res.Routes...)
 			offset += uint32(len(res.Routes))
 			if len(res.Routes) == 0 || offset >= res.Total {
 				break
 			}
 		}
-		sort.Sort(sortRoutesByPrefix(routes))
+		sort.Sort(sortDevAddrRoutesByPrefix(devAddrRoutes))
 		fmt.Fprintln(tabout, "DevAddr Prefix\tNetID\tTenant ID\tCluster ID\tTarget\t")
-		for _, p := range routes {
+		for _, p := range devAddrRoutes {
 			fmt.Fprintf(tabout,
 				"%08X/%d\t%s\t%s\t%s\t%s\t\n",
 				p.GetPrefix().GetValue(),
