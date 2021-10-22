@@ -19,8 +19,9 @@ import (
 )
 
 const (
-	sep              = ", "
-	maxDevAddrBlocks = 3
+	sep                = ", "
+	maxDevAddrBlocks   = 3
+	maxJoinEUIPrefixes = 2
 )
 
 // YesNo prints the boolean as Yes or No.
@@ -44,7 +45,9 @@ func (t *Target) String() string {
 	if t.Address != "" {
 		s += fmt.Sprintf(": %s", t.Address)
 	}
-	switch t.Authorization.(type) {
+	switch t.DefaultAuthentication.(type) {
+	case *packetbroker.Target_PbTokenAuth:
+		s += " (with PB token auth)"
 	case *packetbroker.Target_BasicAuth_:
 		s += " (with HTTP basic auth)"
 	case *packetbroker.Target_CustomAuth_:
@@ -52,7 +55,26 @@ func (t *Target) String() string {
 	case *packetbroker.Target_TlsClientAuth:
 		s += " (with TLS client auth)"
 	}
+	if l := len(t.OriginNetIdAuthentication); l > 0 {
+		s += fmt.Sprintf(" (+%d with custom origin)", l)
+	}
 	return s
+}
+
+// JoinServerFixedEndpoint prints the target as column field.
+type JoinServerFixedEndpoint packetbroker.JoinServerFixedEndpoint
+
+func (t *JoinServerFixedEndpoint) String() string {
+	if t == nil {
+		return ""
+	}
+	return (packetbroker.Endpoint{
+		TenantID: packetbroker.TenantID{
+			NetID: packetbroker.NetID(t.NetId),
+			ID:    t.TenantId,
+		},
+		ClusterID: t.ClusterId,
+	}).String()
 }
 
 // DevAddrBlocks prints DevAddr blocks as column field.
@@ -73,6 +95,25 @@ func (bs DevAddrBlocks) String() string {
 		res = append(res, s)
 	}
 	if more := len(bs) - maxDevAddrBlocks; more > 0 {
+		res = append(res, fmt.Sprintf("+%d", more))
+	}
+	return strings.Join(res, sep)
+}
+
+// JoinEUIPrefixes prints JoinEUI prefixes as column field.
+type JoinEUIPrefixes []*packetbroker.JoinEUIPrefix
+
+func (bs JoinEUIPrefixes) String() string {
+	res := make([]string, 0, maxJoinEUIPrefixes+1)
+	for i := 0; i < len(bs) && i < maxJoinEUIPrefixes; i++ {
+		var (
+			b = bs[i]
+			s string
+		)
+		s = fmt.Sprintf("%016X/%d", b.GetValue(), b.GetLength())
+		res = append(res, s)
+	}
+	if more := len(bs) - maxJoinEUIPrefixes; more > 0 {
 		res = append(res, fmt.Sprintf("+%d", more))
 	}
 	return strings.Join(res, sep)
@@ -122,6 +163,39 @@ func WriteDevAddrBlocks(w io.Writer, blocks []*packetbroker.DevAddrBlock) error 
 	return nil
 }
 
+type sortJoinEUIsByPrefix []*packetbroker.JoinEUIPrefix
+
+func (r sortJoinEUIsByPrefix) Len() int {
+	return len(r)
+}
+
+func (r sortJoinEUIsByPrefix) Less(i, j int) bool {
+	if r[i].GetValue() < r[j].GetValue() {
+		return true
+	} else if r[i].GetValue() == r[j].GetValue() {
+		return r[i].GetLength() < r[j].GetLength()
+	}
+	return false
+}
+
+func (r sortJoinEUIsByPrefix) Swap(i, j int) {
+	r[i], r[j] = r[j], r[i]
+}
+
+// WriteJoinEUIPrefixes writes the JoinEUI prefixes as a table.
+func WriteJoinEUIPrefixes(w io.Writer, prefixes []*packetbroker.JoinEUIPrefix) error {
+	sort.Sort(sortJoinEUIsByPrefix(prefixes))
+	for _, b := range prefixes {
+		if _, err := fmt.Fprintf(w, "%08X/%d\t\n",
+			b.GetValue(),
+			b.GetLength(),
+		); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func writeContactInfo(w io.Writer, name string, contactInfo *packetbroker.ContactInfo) error {
 	if contactInfo == nil {
 		return nil
@@ -162,6 +236,51 @@ func writeTarget(w io.Writer, target *packetbroker.Target) error {
 		return nil
 	}
 
+	targetAuth := func(auth *packetbroker.Target_Authentication) string {
+		switch a := auth.GetValue().(type) {
+		case *packetbroker.Target_Authentication_PbTokenAuth:
+			return "Packet Broker token"
+		case *packetbroker.Target_Authentication_BasicAuth:
+			return fmt.Sprintf("Basic %s:%s", a.BasicAuth.Username, a.BasicAuth.Password)
+		case *packetbroker.Target_Authentication_CustomAuth:
+			return a.CustomAuth.Value
+		case *packetbroker.Target_Authentication_TlsClientAuth:
+			sub, err := x509SubjectFromPair(a.TlsClientAuth.Cert, a.TlsClientAuth.Key)
+			if err != nil {
+				return err.Error()
+			}
+			return sub
+		default:
+			return ""
+		}
+	}
+
+	var auth string
+	switch a := target.DefaultAuthentication.(type) {
+	case *packetbroker.Target_PbTokenAuth:
+		auth = targetAuth(&packetbroker.Target_Authentication{
+			Value: &packetbroker.Target_Authentication_PbTokenAuth{},
+		})
+	case *packetbroker.Target_BasicAuth_:
+		auth = targetAuth(&packetbroker.Target_Authentication{
+			Value: &packetbroker.Target_Authentication_BasicAuth{
+				BasicAuth: a.BasicAuth,
+			},
+		})
+	case *packetbroker.Target_CustomAuth_:
+		auth = targetAuth(&packetbroker.Target_Authentication{
+			Value: &packetbroker.Target_Authentication_CustomAuth{
+				CustomAuth: a.CustomAuth,
+			},
+		})
+	case *packetbroker.Target_TlsClientAuth:
+		auth = targetAuth(&packetbroker.Target_Authentication{
+			Value: &packetbroker.Target_Authentication_TlsClientAuth{
+				TlsClientAuth: a.TlsClientAuth,
+			},
+		})
+	}
+
 	var rootCAs []string
 	if cas := target.RootCas; len(cas) > 0 {
 		certPool := x509.NewCertPool()
@@ -178,35 +297,56 @@ func writeTarget(w io.Writer, target *packetbroker.Target) error {
 		}
 	}
 
-	var auth string
-	switch a := target.Authorization.(type) {
-	case *packetbroker.Target_BasicAuth_:
-		auth = fmt.Sprintf("Basic %s:%s", a.BasicAuth.Username, a.BasicAuth.Password)
-	case *packetbroker.Target_CustomAuth_:
-		auth = a.CustomAuth.Value
-	case *packetbroker.Target_TlsClientAuth:
-		var err error
-		auth, err = x509SubjectFromPair(a.TlsClientAuth.Cert, a.TlsClientAuth.Key)
-		if err != nil {
-			auth = err.Error()
-		}
-	}
-
-	if err := WriteKV(w,
+	WriteKV(w,
 		"Target Protocol", target.Protocol.String(),
 		"Target Address", target.Address,
+		"Target fNS Path", target.FNsPath,
+		"Target sNS Path", target.SNsPath,
+		"Target hNS Path", target.HNsPath,
+	)
+	for i, r := range rootCAs {
+		WriteKV(w,
+			fmt.Sprintf("Target Root CA #%d", i+1), r,
+		)
+	}
+	WriteKV(w,
 		"Target Authorization", auth,
-	); err != nil {
+	)
+	// TODO: Sort by NetID.
+	for netID, auth := range target.OriginNetIdAuthentication {
+		WriteKV(w,
+			fmt.Sprintf("Target Authorization %s", packetbroker.NetID(netID)), targetAuth(auth),
+		)
+	}
+	return nil
+}
+
+// WriteJoinServer writes the Join Server.
+func WriteJoinServer(w io.Writer, js *packetbroker.JoinServer) error {
+	WriteKV(w,
+		"ID", fmt.Sprintf("%d", js.Id),
+		"Name", js.GetName(),
+	)
+	if err := writeContactInfo(w, "Administrator", js.GetAdministrativeContact()); err != nil {
 		return err
 	}
-	for i, r := range rootCAs {
-		if err := WriteKV(w,
-			fmt.Sprintf("Target Root CA #%d", i+1), r,
-		); err != nil {
+	if err := writeContactInfo(w, "Technical", js.GetTechnicalContact()); err != nil {
+		return err
+	}
+	switch resolver := js.Resolver.(type) {
+	case *packetbroker.JoinServer_Fixed:
+		WriteKV(w,
+			"Fixed NetID", packetbroker.NetID(resolver.Fixed.NetId),
+			"Fixed Tenant ID", resolver.Fixed.TenantId,
+			"Fixed Cluster ID", resolver.Fixed.ClusterId,
+		)
+	case *packetbroker.JoinServer_Lookup:
+		if err := writeTarget(w, resolver.Lookup); err != nil {
 			return err
 		}
 	}
-	return nil
+	fmt.Fprintln(w, "\nJoinEUI Prefixes:")
+	return WriteJoinEUIPrefixes(w, js.GetJoinEuiPrefixes())
 }
 
 // WriteNetwork writes the Network.
@@ -220,7 +360,7 @@ func WriteNetwork(w io.Writer, network *packetbroker.Network) error {
 	if err := writeContactInfo(w, "Administrator", network.GetAdministrativeContact()); err != nil {
 		return err
 	}
-	if err := writeContactInfo(w, "Technical", network.GetAdministrativeContact()); err != nil {
+	if err := writeContactInfo(w, "Technical", network.GetTechnicalContact()); err != nil {
 		return err
 	}
 	if err := writeTarget(w, network.GetTarget()); err != nil {

@@ -76,9 +76,12 @@ var (
     $ pbadmin network create --net-id 000013 \
       --dev-addr-blocks 26011000/20=eu1,26012000=eu2
 
-  Configure a LoRaWAN Backend Interfaces 1.1.0 target with HTTP basic auth:
-    $ pbadmin network create --net-id 000013 --target-protocol TS002_V1_1_0 \
-      --target-address https://user:pass@example.com`,
+  Configure a LoRaWAN Backend Interfaces 1.1 target with HTTP basic auth:
+    $ pbadmin network create --net-id 000013 --target-protocol TS002_V1_1 \
+      --target-address https://user:pass@example.com
+
+  See for more target configuration options:
+    $ pbadmin network update target --help`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			netID := pbflag.GetNetID(cmd.Flags(), "")
 			name, _ := cmd.Flags().GetString("name")
@@ -86,8 +89,8 @@ var (
 			adminContact := pbflag.GetContactInfo(cmd.Flags(), "admin")
 			techContact := pbflag.GetContactInfo(cmd.Flags(), "tech")
 			listed, _ := cmd.Flags().GetBool("listed")
-			target, err := target(cmd.Flags(), "target")
-			if err != nil {
+			var target *packetbroker.Target
+			if err := pbflag.ApplyToTarget(cmd.Flags(), "target", &target); err != nil {
 				return err
 			}
 			res, err := iampb.NewNetworkRegistryClient(conn).CreateNetwork(ctx, &iampb.CreateNetworkRequest{
@@ -173,27 +176,44 @@ var (
 		Use:   "target",
 		Short: "Update a network target",
 		Example: `
+  Configure a LoRaWAN Backend Interfaces 1.0 target with Packet Broker token
+  authentication:
+    $ pbadmin network update target --net-id 000013 \
+      --protocol TS002_V1_0 --address https://example.com --pb-token
+
   Configure a LoRaWAN Backend Interfaces 1.0 target with HTTP basic auth:
-    $ pbadmin network update target --net-id 000013 --protocol TS002_V1_0 \
-      --address https://user:pass@example.com
+    $ pbadmin network update target --net-id 000013 \
+      --protocol TS002_V1_0 --address https://user:pass@example.com
 
   Configure a LoRaWAN Backend Interfaces 1.0 target with TLS:
-    $ pbadmin network update target --net-id 000013 --protocol TS002_V1_0 \
-      --address https://example.com --root-cas-file ca.pem \
-      --tls-cert-file key.pem --tls-key-file key.pem`,
+    $ pbadmin network update target --net-id 000013 \
+      --protocol TS002_V1_0 --address https://example.com \
+      --root-cas-file ca.pem --tls-cert-file key.pem --tls-key-file key.pem
+
+  Configure a LoRaWAN Backend Interfaces 1.0 target with TLS and custom
+  originating NetID:
+    $ pbadmin network update target --net-id 000013 --origin-net-id 000013 \
+      --root-cas-file ca.pem --tls-cert-file key.pem --tls-key-file key.pem`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			netID := pbflag.GetNetID(cmd.Flags(), "")
-			req := &iampb.UpdateNetworkRequest{
+			client := iampb.NewNetworkRegistryClient(conn)
+			nwk, err := client.GetNetwork(ctx, &iampb.NetworkRequest{
 				NetId: uint32(netID),
-			}
-			target, err := target(cmd.Flags(), "")
+			})
 			if err != nil {
 				return err
 			}
-			req.Target = &iampb.TargetValue{
-				Value: target,
+			target := nwk.Network.Target
+			if err := pbflag.ApplyToTarget(cmd.Flags(), "", &target); err != nil {
+				return err
 			}
-			_, err = iampb.NewNetworkRegistryClient(conn).UpdateNetwork(ctx, req)
+			req := &iampb.UpdateNetworkRequest{
+				NetId: uint32(netID),
+				Target: &iampb.TargetValue{
+					Value: target,
+				},
+			}
+			_, err = client.UpdateNetwork(ctx, req)
 			return err
 		},
 	}
@@ -241,6 +261,7 @@ command-line interfaces.`,
 
 Rights:
   READ_NETWORK              Read networks
+  READ_JOIN_SERVER          Read Join Servers
   READ_NETWORK_CONTACT      Read network contact information
   READ_ROUTING_POLICY       Read routing policies
   WRITE_ROUTING_POLICY      Write routing policies
@@ -265,7 +286,10 @@ Router addresses:
 			if err != nil {
 				return err
 			}
+			iamAddress, _ := cmd.Flags().GetString("iam-address")
+			controlPlaneAddress, _ := cmd.Flags().GetString("controlplane-address")
 			routerAddress, _ := cmd.Flags().GetString("router-address")
+			viper.Set("controlplane-address", controlPlaneAddress)
 			viper.Set("router-address", routerAddress)
 			viper.Set("client-id", res.Key.GetKeyId())
 			viper.Set("client-secret", res.Key.GetKey())
@@ -277,6 +301,8 @@ Router addresses:
 				"NetID", endpoint.NetID,
 				"Tenant ID", endpoint.ID,
 				"Cluster ID", endpoint.ClusterID,
+				"IAM Address", iamAddress,
+				"Control Plane Address", controlPlaneAddress,
 				"Router Address", routerAddress,
 				"API Key ID", res.Key.GetKeyId(),
 				"API Secret Key", res.Key.GetKey(),
@@ -303,7 +329,7 @@ func init() {
 
 	networkCreateCmd.Flags().AddFlagSet(pbflag.NetID(""))
 	networkCreateCmd.Flags().AddFlagSet(networkSettingsFlags())
-	networkCreateCmd.Flags().AddFlagSet(targetFlags("target"))
+	networkCreateCmd.Flags().AddFlagSet(pbflag.Target("target"))
 	networkCreateCmd.Flags().AddFlagSet(pbflag.ContactInfo("admin"))
 	networkCreateCmd.Flags().AddFlagSet(pbflag.ContactInfo("tech"))
 	networkCmd.AddCommand(networkCreateCmd)
@@ -316,7 +342,7 @@ func init() {
 	networkUpdateCmd.Flags().AddFlagSet(pbflag.ContactInfo("admin"))
 	networkUpdateCmd.Flags().AddFlagSet(pbflag.ContactInfo("tech"))
 	networkUpdateTargetCmd.Flags().AddFlagSet(pbflag.NetID(""))
-	networkUpdateTargetCmd.Flags().AddFlagSet(targetFlags(""))
+	networkUpdateTargetCmd.Flags().AddFlagSet(pbflag.Target(""))
 	networkUpdateCmd.AddCommand(networkUpdateTargetCmd)
 	networkCmd.AddCommand(networkUpdateCmd)
 
@@ -326,6 +352,7 @@ func init() {
 	networkInitCmd.Flags().AddFlagSet(pbflag.Endpoint(""))
 	networkInitCmd.Flags().AddFlagSet(pbflag.APIKeyRights(
 		packetbroker.Right_READ_NETWORK,
+		packetbroker.Right_READ_JOIN_SERVER,
 		packetbroker.Right_READ_ROUTING_POLICY,
 		packetbroker.Right_WRITE_ROUTING_POLICY,
 		packetbroker.Right_READ_GATEWAY_VISIBILITY,
@@ -333,6 +360,7 @@ func init() {
 		packetbroker.Right_READ_TRAFFIC,
 		packetbroker.Right_WRITE_TRAFFIC,
 	))
-	networkInitCmd.Flags().String("router-address", "", "Packet Broker router address")
+	networkInitCmd.Flags().String("controlplane-address", "cp.packetbroker.net:443", `Packet Broker Control Plane address "host[:port]"`)
+	networkInitCmd.Flags().String("router-address", "", `Packet Broker Router address "host[:port]"`)
 	networkCmd.AddCommand(networkInitCmd)
 }

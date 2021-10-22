@@ -139,6 +139,40 @@ var (
 			return nil
 		},
 	}
+	catalogJoinServersCmd = &cobra.Command{
+		Use:          "join-servers",
+		Aliases:      []string{"join-server", "js"},
+		Short:        "Show Join Servers",
+		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var (
+				offset          = uint32(0)
+				nameContains, _ = cmd.Flags().GetString("name-contains")
+			)
+			fmt.Fprintln(tabout, "  ID\tName\tJoinEUI Prefixes\t")
+			for {
+				res, err := iampb.NewCatalogClient(iamConn).ListJoinServers(ctx, &iampb.ListJoinServersRequest{
+					Offset:       offset,
+					NameContains: nameContains,
+				})
+				if err != nil {
+					return err
+				}
+				for _, js := range res.JoinServers {
+					fmt.Fprintf(tabout, "%4d\t%s\t%s\t\n",
+						js.GetId(),
+						js.GetName(),
+						column.JoinEUIPrefixes(js.GetJoinEuiPrefixes()),
+					)
+				}
+				offset += uint32(len(res.JoinServers))
+				if len(res.JoinServers) == 0 || offset >= res.Total {
+					break
+				}
+			}
+			return nil
+		},
+	}
 )
 
 func init() {
@@ -153,4 +187,7 @@ func init() {
 	catalogHomeNetworksCmd.Flags().String("name-contains", "", "filter networks or tenants by name")
 	catalogHomeNetworksCmd.Flags().AddFlagSet(pbflag.TenantID("policy"))
 	catalogCmd.AddCommand(catalogHomeNetworksCmd)
+
+	catalogJoinServersCmd.Flags().String("name-contains", "", "filter Join Servers by name")
+	catalogCmd.AddCommand(catalogJoinServersCmd)
 }
