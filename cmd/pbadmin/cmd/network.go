@@ -261,6 +261,7 @@ command-line interfaces.`,
 
 Rights:
   READ_NETWORK              Read networks
+  READ_JOIN_SERVER          Read Join Servers
   READ_NETWORK_CONTACT      Read network contact information
   READ_ROUTING_POLICY       Read routing policies
   WRITE_ROUTING_POLICY      Write routing policies
@@ -346,6 +347,7 @@ func init() {
 	networkInitCmd.Flags().AddFlagSet(pbflag.Endpoint(""))
 	networkInitCmd.Flags().AddFlagSet(pbflag.APIKeyRights(
 		packetbroker.Right_READ_NETWORK,
+		packetbroker.Right_READ_JOIN_SERVER,
 		packetbroker.Right_READ_ROUTING_POLICY,
 		packetbroker.Right_WRITE_ROUTING_POLICY,
 		packetbroker.Right_READ_GATEWAY_VISIBILITY,

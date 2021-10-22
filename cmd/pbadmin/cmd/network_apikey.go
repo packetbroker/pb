@@ -100,6 +100,8 @@ the API key in a secure place, as it cannot be retrieved after create.`,
 Rights:
   READ_NETWORK              Read networks
   READ_NETWORK_CONTACT      Read network contact information
+  READ_JOIN_SERVER          Read Join Servers
+  READ_JOIN_SERVER_CONTACT  Read Join Server contact information
   READ_ROUTING_POLICY       Read routing policies
   WRITE_ROUTING_POLICY      Write routing policies
   READ_GATEWAY_VISIBILITY   Read gateway visibilities
