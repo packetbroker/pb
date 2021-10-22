@@ -8,12 +8,12 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.9.0
-	go.packetbroker.org/api/iam v1.5.19
-	go.packetbroker.org/api/iam/v2 v2.7.0
-	go.packetbroker.org/api/mapping/v2 v2.1.17
-	go.packetbroker.org/api/routing v1.8.10
-	go.packetbroker.org/api/routing/v2 v2.0.0
-	go.packetbroker.org/api/v3 v3.11.0
+	go.packetbroker.org/api/iam v1.5.20
+	go.packetbroker.org/api/iam/v2 v2.7.1
+	go.packetbroker.org/api/mapping/v2 v2.1.18
+	go.packetbroker.org/api/routing v1.8.11
+	go.packetbroker.org/api/routing/v2 v2.0.1
+	go.packetbroker.org/api/v3 v3.11.1
 	go.uber.org/zap v1.19.1
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616
 	golang.org/x/oauth2 v0.0.0-20211005180243-6b3c2da341f1
