@@ -286,7 +286,10 @@ Router addresses:
 			if err != nil {
 				return err
 			}
+			iamAddress, _ := cmd.Flags().GetString("iam-address")
+			controlPlaneAddress, _ := cmd.Flags().GetString("controlplane-address")
 			routerAddress, _ := cmd.Flags().GetString("router-address")
+			viper.Set("controlplane-address", controlPlaneAddress)
 			viper.Set("router-address", routerAddress)
 			viper.Set("client-id", res.Key.GetKeyId())
 			viper.Set("client-secret", res.Key.GetKey())
@@ -298,6 +301,8 @@ Router addresses:
 				"NetID", endpoint.NetID,
 				"Tenant ID", endpoint.ID,
 				"Cluster ID", endpoint.ClusterID,
+				"IAM Address", iamAddress,
+				"Control Plane Address", controlPlaneAddress,
 				"Router Address", routerAddress,
 				"API Key ID", res.Key.GetKeyId(),
 				"API Secret Key", res.Key.GetKey(),
@@ -355,6 +360,7 @@ func init() {
 		packetbroker.Right_READ_TRAFFIC,
 		packetbroker.Right_WRITE_TRAFFIC,
 	))
-	networkInitCmd.Flags().String("router-address", "", "Packet Broker Router address")
+	networkInitCmd.Flags().String("controlplane-address", "cp.packetbroker.net:443", `Packet Broker Control Plane address "host[:port]"`)
+	networkInitCmd.Flags().String("router-address", "", `Packet Broker Router address "host[:port]"`)
 	networkCmd.AddCommand(networkInitCmd)
 }
