@@ -306,45 +306,45 @@ func NewHomeNetworkMessage(flags *flag.FlagSet) proto.Message {
 	}
 }
 
-type targetProtocol struct {
-	*packetbroker.TargetProtocol
+type protocol struct {
+	*packetbroker.Protocol
 }
 
-func (p targetProtocol) String() string {
-	if p.TargetProtocol == nil {
+func (p protocol) String() string {
+	if p.Protocol == nil {
 		return ""
 	}
-	return packetbroker.TargetProtocol_name[int32(*p.TargetProtocol)]
+	return packetbroker.Protocol_name[int32(*p.Protocol)]
 }
 
-func (p *targetProtocol) Set(s string) error {
+func (p *protocol) Set(s string) error {
 	if s == "" {
-		*p = targetProtocol{}
+		*p = protocol{}
 		return nil
 	}
-	i, ok := packetbroker.TargetProtocol_value[s]
+	i, ok := packetbroker.Protocol_value[s]
 	if !ok {
 		return fmt.Errorf("pbflag: invalid protocol: %s", s)
 	}
-	*p = targetProtocol{
-		TargetProtocol: (*packetbroker.TargetProtocol)(&i),
+	*p = protocol{
+		Protocol: (*packetbroker.Protocol)(&i),
 	}
 	return nil
 }
 
-func (p *targetProtocol) Type() string {
-	return "targetProtocol"
+func (p *protocol) Type() string {
+	return "protocol"
 }
 
-// TargetProtocol returns flags for a target protocol.
-func TargetProtocol(actor string) *flag.FlagSet {
-	names := make([]string, 0, len(packetbroker.TargetProtocol_value))
-	for k := range packetbroker.TargetProtocol_value {
+// Protocol returns flags for a protocol.
+func Protocol(actor string) *flag.FlagSet {
+	names := make([]string, 0, len(packetbroker.Protocol_value))
+	for k := range packetbroker.Protocol_value {
 		names = append(names, k)
 	}
 	sort.Strings(names)
 	flags := new(flag.FlagSet)
-	flags.Var(new(targetProtocol), actorf(actor, "protocol"), fmt.Sprintf("target protocol (%s)", strings.Join(names, ",")))
+	flags.Var(new(protocol), actorf(actor, "protocol"), fmt.Sprintf("protocol (%s)", strings.Join(names, ",")))
 	return flags
 }
 
@@ -353,9 +353,9 @@ func TargetProtocolChanged(flags *flag.FlagSet, actor string) bool {
 	return flags.Changed(actorf(actor, "protocol"))
 }
 
-// GetTargetProtocol returns the target protocol from the flags.
-func GetTargetProtocol(flags *flag.FlagSet, actor string) *packetbroker.TargetProtocol {
-	return flags.Lookup(actorf(actor, "protocol")).Value.(*targetProtocol).TargetProtocol
+// GetTargetProtocol returns the protocol from the flags.
+func GetTargetProtocol(flags *flag.FlagSet, actor string) *packetbroker.Protocol {
+	return flags.Lookup(actorf(actor, "protocol")).Value.(*protocol).Protocol
 }
 
 type apiKeyRightsValue []packetbroker.Right
@@ -589,7 +589,7 @@ func GetAPIKeyState(flags *flag.FlagSet, name string) packetbroker.APIKeyState {
 // Target returns flags for a target.
 func Target(actor string) *flag.FlagSet {
 	flags := new(flag.FlagSet)
-	flags.AddFlagSet(TargetProtocol(actor))
+	flags.AddFlagSet(Protocol(actor))
 	flags.String(actorf(actor, "address"), "", "address (e.g. URL with HTTP basic authentication)")
 	flags.String(actorf(actor, "fns-path"), "", "path for Forwarding Network Server (fNS)")
 	flags.String(actorf(actor, "sns-path"), "", "path for Serving Network Server (sNS)")
@@ -632,7 +632,7 @@ func ApplyToTarget(flags *flag.FlagSet, actor string, target **packetbroker.Targ
 	}
 
 	switch (*target).Protocol {
-	case packetbroker.TargetProtocol_TS002_V1_0, packetbroker.TargetProtocol_TS002_V1_1:
+	case packetbroker.Protocol_TS002_V1_0, packetbroker.Protocol_TS002_V1_1:
 		var url *url.URL
 		if address, err := flags.GetString(actorf(actor, "address")); err == nil && address != "" {
 			url, err = url.Parse(address)

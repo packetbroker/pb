@@ -8,12 +8,12 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.9.0
-	go.packetbroker.org/api/iam v1.5.20
-	go.packetbroker.org/api/iam/v2 v2.7.1
-	go.packetbroker.org/api/mapping/v2 v2.1.18
-	go.packetbroker.org/api/routing v1.8.11
-	go.packetbroker.org/api/routing/v2 v2.0.1
-	go.packetbroker.org/api/v3 v3.11.1
+	go.packetbroker.org/api/iam v1.5.24
+	go.packetbroker.org/api/iam/v2 v2.7.5
+	go.packetbroker.org/api/mapping/v2 v2.1.22
+	go.packetbroker.org/api/routing v1.8.15
+	go.packetbroker.org/api/routing/v2 v2.0.5
+	go.packetbroker.org/api/v3 v3.12.2
 	go.uber.org/zap v1.19.1
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616
 	golang.org/x/oauth2 v0.0.0-20211005180243-6b3c2da341f1
@@ -41,13 +41,13 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/mod v0.4.2 // indirect
-	golang.org/x/net v0.0.0-20211020060615-d418f374d309 // indirect
-	golang.org/x/sys v0.0.0-20211020174200-9d6173849985 // indirect
+	golang.org/x/net v0.0.0-20211101193420-4a448f8816b3 // indirect
+	golang.org/x/sys v0.0.0-20211102061401-a2f17f7b995c // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.5 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20211021150943-2b146023228c // indirect
+	google.golang.org/genproto v0.0.0-20211101144312-62acf1d99145 // indirect
 	gopkg.in/ini.v1 v1.63.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
