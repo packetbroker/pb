@@ -186,7 +186,7 @@ func (r sortJoinEUIsByPrefix) Swap(i, j int) {
 func WriteJoinEUIPrefixes(w io.Writer, prefixes []*packetbroker.JoinEUIPrefix) error {
 	sort.Sort(sortJoinEUIsByPrefix(prefixes))
 	for _, b := range prefixes {
-		if _, err := fmt.Fprintf(w, "%08X/%d\t\n",
+		if _, err := fmt.Fprintf(w, "%016X/%d\t\n",
 			b.GetValue(),
 			b.GetLength(),
 		); err != nil {
