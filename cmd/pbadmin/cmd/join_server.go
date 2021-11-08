@@ -249,7 +249,6 @@ func joinServerSettingsFlags() *flag.FlagSet {
 	flags := new(flag.FlagSet)
 	flags.String("name", "", "Join Server name")
 	flags.Bool("listed", false, "list Join Server in catalog")
-	flags.AddFlagSet(pbflag.DevAddrBlocks())
 	return flags
 }
 
