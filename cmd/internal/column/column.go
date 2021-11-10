@@ -241,7 +241,7 @@ func writeTarget(w io.Writer, target *packetbroker.Target) error {
 		case *packetbroker.Target_Authentication_PbTokenAuth:
 			return "Packet Broker token"
 		case *packetbroker.Target_Authentication_BasicAuth:
-			return fmt.Sprintf("Basic %s:%s", a.BasicAuth.Username, a.BasicAuth.Password)
+			return fmt.Sprintf("Basic username %q, password %q", a.BasicAuth.Username, a.BasicAuth.Password)
 		case *packetbroker.Target_Authentication_CustomAuth:
 			return a.CustomAuth.Value
 		case *packetbroker.Target_Authentication_TlsClientAuth:
