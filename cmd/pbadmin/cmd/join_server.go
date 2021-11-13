@@ -103,6 +103,15 @@ var (
 				js.Resolver = &packetbroker.JoinServer_Lookup{
 					Lookup: target,
 				}
+			} else if pbflag.EndpointFlagsChanged(cmd.Flags(), "fixed") {
+				endpoint := pbflag.GetEndpoint(cmd.Flags(), "fixed")
+				js.Resolver = &packetbroker.JoinServer_Fixed{
+					Fixed: &packetbroker.JoinServerFixedEndpoint{
+						NetId:     uint32(endpoint.NetID),
+						TenantId:  endpoint.ID,
+						ClusterId: endpoint.ClusterID,
+					},
+				}
 			}
 			res, err := iampb.NewJoinServerRegistryClient(conn).CreateJoinServer(ctx, &iampb.CreateJoinServerRequest{
 				JoinServer: js,
