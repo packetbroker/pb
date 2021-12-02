@@ -104,7 +104,7 @@ var (
 					Lookup: target,
 				}
 			} else if pbflag.EndpointFlagsChanged(cmd.Flags(), "fixed") {
-				endpoint := pbflag.GetEndpoint(cmd.Flags(), "fixed")
+				endpoint, _ := pbflag.GetEndpoint(cmd.Flags(), "fixed")
 				js.Resolver = &packetbroker.JoinServer_Fixed{
 					Fixed: &packetbroker.JoinServerFixedEndpoint{
 						NetId:     uint32(endpoint.NetID),
@@ -223,7 +223,7 @@ var (
 					Lookup: target,
 				}
 			} else if pbflag.EndpointFlagsChanged(cmd.Flags(), "fixed") {
-				endpoint := pbflag.GetEndpoint(cmd.Flags(), "fixed")
+				endpoint, _ := pbflag.GetEndpoint(cmd.Flags(), "fixed")
 				req.Resolver = &iampb.UpdateJoinServerRequest_Fixed{
 					Fixed: &packetbroker.JoinServerFixedEndpoint{
 						NetId:     uint32(endpoint.NetID),

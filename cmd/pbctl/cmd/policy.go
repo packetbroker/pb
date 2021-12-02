@@ -48,15 +48,15 @@ var (
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
-				client              = routingpb.NewPolicyManagerClient(cpConn)
-				policies            []*packetbroker.RoutingPolicy
-				defaults            bool
-				homeNetworkTenantID = pbflag.GetTenantID(cmd.Flags(), "home-network")
+				client                 = routingpb.NewPolicyManagerClient(cpConn)
+				policies               []*packetbroker.RoutingPolicy
+				defaults               bool
+				homeNetworkTenantID, _ = pbflag.GetTenantID(cmd.Flags(), "home-network")
 			)
 			if homeNetworkTenantID.IsEmpty() {
 				var (
-					lastUpdatedAt     *timestamppb.Timestamp
-					forwarderTenantID = pbflag.GetTenantID(cmd.Flags(), "forwarder")
+					lastUpdatedAt        *timestamppb.Timestamp
+					forwarderTenantID, _ = pbflag.GetTenantID(cmd.Flags(), "forwarder")
 				)
 				defaults, _ = cmd.Flags().GetBool("defaults")
 				for {
@@ -146,7 +146,7 @@ may use their infrastructure.`,
       --set-uplink JM --set-downlink JM`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client := routingpb.NewPolicyManagerClient(cpConn)
-			forwarderTenantID := pbflag.GetTenantID(cmd.Flags(), "forwarder")
+			forwarderTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "forwarder")
 			uplink, downlink := pbflag.GetRoutingPolicy(cmd.Flags())
 			policy := &packetbroker.RoutingPolicy{
 				ForwarderNetId:    uint32(forwarderTenantID.NetID),
@@ -161,7 +161,7 @@ may use their infrastructure.`,
 					Policy: policy,
 				})
 			} else {
-				homeNetworkTenantID := pbflag.GetTenantID(cmd.Flags(), "home-network")
+				homeNetworkTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "home-network")
 				policy.HomeNetworkNetId = uint32(homeNetworkTenantID.NetID)
 				policy.HomeNetworkTenantId = homeNetworkTenantID.ID
 				_, err = client.SetHomeNetworkPolicy(ctx, &routingpb.SetPolicyRequest{
@@ -193,7 +193,7 @@ may use their infrastructure.`,
 				res    *routingpb.GetPolicyResponse
 				err    error
 			)
-			forwarderTenantID := pbflag.GetTenantID(cmd.Flags(), "forwarder")
+			forwarderTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "forwarder")
 			defaults, _ := cmd.Flags().GetBool("defaults")
 			if defaults {
 				res, err = client.GetDefaultPolicy(ctx, &routingpb.GetDefaultPolicyRequest{
@@ -201,7 +201,7 @@ may use their infrastructure.`,
 					ForwarderTenantId: forwarderTenantID.ID,
 				})
 			} else {
-				homeNetworkTenantID := pbflag.GetTenantID(cmd.Flags(), "home-network")
+				homeNetworkTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "home-network")
 				res, err = client.GetHomeNetworkPolicy(ctx, &routingpb.GetHomeNetworkPolicyRequest{
 					ForwarderNetId:      uint32(forwarderTenantID.NetID),
 					ForwarderTenantId:   forwarderTenantID.ID,
@@ -232,7 +232,7 @@ may use their infrastructure.`,
     $ pbctl policy delete --forwarder-net-id 000013 --home-network-net-id 000009`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client := routingpb.NewPolicyManagerClient(cpConn)
-			forwarderTenantID := pbflag.GetTenantID(cmd.Flags(), "forwarder")
+			forwarderTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "forwarder")
 			policy := &packetbroker.RoutingPolicy{
 				ForwarderNetId:    uint32(forwarderTenantID.NetID),
 				ForwarderTenantId: forwarderTenantID.ID,
@@ -243,7 +243,7 @@ may use their infrastructure.`,
 					Policy: policy,
 				})
 			} else {
-				homeNetworkTenantID := pbflag.GetTenantID(cmd.Flags(), "home-network")
+				homeNetworkTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "home-network")
 				policy.HomeNetworkNetId = uint32(homeNetworkTenantID.NetID)
 				policy.HomeNetworkTenantId = homeNetworkTenantID.ID
 				_, err = client.SetHomeNetworkPolicy(ctx, &routingpb.SetPolicyRequest{
@@ -263,7 +263,7 @@ may use their infrastructure.`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
-				tenantID        = pbflag.GetTenantID(cmd.Flags(), "")
+				tenantID, _     = pbflag.GetTenantID(cmd.Flags(), "")
 				offset          = uint32(0)
 				idContains, _   = cmd.Flags().GetString("id-contains")
 				nameContains, _ = cmd.Flags().GetString("name-contains")

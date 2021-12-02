@@ -27,7 +27,7 @@ var (
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
-				netID           = pbflag.GetNetID(cmd.Flags(), "")
+				netID, _        = pbflag.GetNetID(cmd.Flags(), "")
 				offset          = uint32(0)
 				idContains, _   = cmd.Flags().GetString("id-contains")
 				nameContains, _ = cmd.Flags().GetString("name-contains")
@@ -81,7 +81,7 @@ var (
       --target-protocol TS002_V1_1 \
       --target-address https://user:pass@example.com`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			tenantID := pbflag.GetTenantID(cmd.Flags(), "")
+			tenantID, _ := pbflag.GetTenantID(cmd.Flags(), "")
 			name, _ := cmd.Flags().GetString("name")
 			devAddrBlocks := pbflag.GetDevAddrBlocks(cmd.Flags())
 			adminContact := pbflag.GetContactInfo(cmd.Flags(), "admin")
@@ -117,7 +117,7 @@ var (
   Get:
     $ pbadmin network tenant get --net-id 000013 --tenant-id tti`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			tenantID := pbflag.GetTenantID(cmd.Flags(), "")
+			tenantID, _ := pbflag.GetTenantID(cmd.Flags(), "")
 			res, err := iampb.NewTenantRegistryClient(conn).GetTenant(ctx, &iampb.TenantRequest{
 				NetId:    uint32(tenantID.NetID),
 				TenantId: tenantID.ID,
@@ -141,7 +141,7 @@ var (
     $ pbadmin network tenant update --net-id 000013 --tenant-id tti \
       --dev-addr-blocks 26011000/20=eu1,26012000=eu2`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			tenantID := pbflag.GetTenantID(cmd.Flags(), "")
+			tenantID, _ := pbflag.GetTenantID(cmd.Flags(), "")
 			req := &iampb.UpdateTenantRequest{
 				NetId:    uint32(tenantID.NetID),
 				TenantId: tenantID.ID,
@@ -198,7 +198,7 @@ var (
       --origin-net-id 000013 \
       --root-cas-file ca.pem --tls-cert-file key.pem --tls-key-file key.pem`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			tenantID := pbflag.GetTenantID(cmd.Flags(), "")
+			tenantID, _ := pbflag.GetTenantID(cmd.Flags(), "")
 			client := iampb.NewTenantRegistryClient(conn)
 			tnt, err := client.GetTenant(ctx, &iampb.TenantRequest{
 				NetId:    uint32(tenantID.NetID),
@@ -231,7 +231,7 @@ var (
   Delete:
     $ pbadmin network tenant delete --net-id 000013 --tenant-id tti`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			tenantID := pbflag.GetTenantID(cmd.Flags(), "")
+			tenantID, _ := pbflag.GetTenantID(cmd.Flags(), "")
 			_, err := iampb.NewTenantRegistryClient(conn).DeleteTenant(ctx, &iampb.TenantRequest{
 				NetId:    uint32(tenantID.NetID),
 				TenantId: tenantID.ID,

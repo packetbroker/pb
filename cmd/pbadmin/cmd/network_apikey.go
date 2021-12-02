@@ -44,7 +44,7 @@ var (
     $ pbadmin network apikey list --net-id 000013 --tenant-id tti --cluster-id eu1`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			hasNetID, hasTenantID, hasClusterID := pbflag.HasEndpoint(cmd.Flags(), "")
-			endpoint := pbflag.GetEndpoint(cmd.Flags(), "")
+			endpoint, _ := pbflag.GetEndpoint(cmd.Flags(), "")
 			req := &iampbv2.ListNetworkAPIKeysRequest{}
 			if hasNetID {
 				req.NetId = wrapperspb.UInt32(uint32(endpoint.NetID))
@@ -109,7 +109,7 @@ Rights:
   READ_TRAFFIC              Read traffic
   WRITE_TRAFFIC             Write traffic`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			endpoint := pbflag.GetEndpoint(cmd.Flags(), "")
+			endpoint, _ := pbflag.GetEndpoint(cmd.Flags(), "")
 			req := &iampbv2.CreateNetworkAPIKeyRequest{
 				NetId:     uint32(endpoint.NetID),
 				TenantId:  endpoint.TenantID.ID,
