@@ -3,10 +3,12 @@
 package pbflag
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 
 	flag "github.com/spf13/pflag"
@@ -255,6 +257,59 @@ func JoinEUIPrefixes() *flag.FlagSet {
 func GetJoinEUIPrefixes(flags *flag.FlagSet) []*packetbroker.JoinEUIPrefix {
 	blocks := flags.Lookup("join-eui-prefixes").Value.(*joinEUIPrefixesValue)
 	return []*packetbroker.JoinEUIPrefix(*blocks)
+}
+
+type monthYear struct {
+	valid       bool
+	month, year int
+}
+
+func (f *monthYear) String() string {
+	return fmt.Sprintf("%04d-%02d", f.year, f.month)
+}
+
+func (f *monthYear) Set(s string) error {
+	parts := strings.SplitN(s, "-", 2)
+	if len(parts) != 2 {
+		return errors.New("pbflag: invalid month year: expect YYYY-MM")
+	}
+	year, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return fmt.Errorf("pbflag: invalid year %q: %w", parts[0], err)
+	}
+	month, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return fmt.Errorf("pbflag: invalid month %q: %w", parts[1], err)
+	}
+	if month < 1 || month > 12 {
+		return fmt.Errorf("pbflag: invalid month %d", month)
+	}
+	*f = monthYear{
+		valid: true,
+		month: month,
+		year:  year,
+	}
+	return nil
+}
+
+func (f *monthYear) Type() string {
+	return "monthYear"
+}
+
+// MonthYear returns flags for a month in a year.
+func MonthYear(name string) *flag.FlagSet {
+	flags := new(flag.FlagSet)
+	flags.Var(new(monthYear), name, "month in a year (YYYY-MM)")
+	return flags
+}
+
+// GetMonthYear returns the month year from flags.
+func GetMonthYear(flags *flag.FlagSet, name string) (month, year int, ok bool) {
+	monthYear := flags.Lookup(name).Value.(*monthYear)
+	if !monthYear.valid {
+		return 0, 0, false
+	}
+	return monthYear.month, monthYear.year, true
 }
 
 type messageType int

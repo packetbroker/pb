@@ -361,6 +361,7 @@ func init() {
 		packetbroker.Right_WRITE_GATEWAY_VISIBILITY,
 		packetbroker.Right_READ_TRAFFIC,
 		packetbroker.Right_WRITE_TRAFFIC,
+		packetbroker.Right_READ_REPORT,
 	))
 	networkInitCmd.Flags().String("controlplane-address", "cp.packetbroker.net:443", `Packet Broker Control Plane address "host[:port]"`)
 	networkInitCmd.Flags().String("reports-address", "reports.packetbroker.net:443", `Packet Broker Reporter address "host[:port]"`)
