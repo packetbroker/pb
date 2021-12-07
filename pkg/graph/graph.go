@@ -47,9 +47,9 @@ func tenantNode(
 	if !ok {
 		node = g.Node(id.String())
 		switch nwk, ok := networks[id]; {
-		case ok && nwk.GetNetwork() != nil:
+		case ok && nwk.GetNetwork().GetName() != "":
 			node.Label(nwk.GetNetwork().Name).Box()
-		case ok && nwk.GetTenant() != nil:
+		case ok && nwk.GetTenant().GetName() != "":
 			node.Label(nwk.GetTenant().Name)
 		case id.ID == "":
 			node.Label(id.NetID.String()).Box()
