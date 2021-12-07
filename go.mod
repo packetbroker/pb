@@ -3,6 +3,7 @@ module go.packetbroker.org/pb
 go 1.17
 
 require (
+	github.com/emicklei/dot v0.16.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/spf13/cobra v1.2.1

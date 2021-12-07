@@ -14,6 +14,7 @@ import (
 	flag "github.com/spf13/pflag"
 	packetbroker "go.packetbroker.org/api/v3"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 type netIDValue struct {
@@ -85,6 +86,20 @@ func GetTenantID(flags *flag.FlagSet, actor string) (packetbroker.TenantID, bool
 		NetID: netID,
 		ID:    tenantID,
 	}, true
+}
+
+// GetTenantIDWrappers returns the TenantID as protobuf wrappers.
+// The returned values are nil when they are not set.
+func GetTenantIDWrappers(flags *flag.FlagSet, actor string) (netID *wrapperspb.UInt32Value, id *wrapperspb.StringValue) {
+	tntID, ok := GetTenantID(flags, actor)
+	if !ok {
+		return
+	}
+	netID = wrapperspb.UInt32(uint32(tntID.NetID))
+	if TenantIDChanged(flags, actor) {
+		id = wrapperspb.String(tntID.ID)
+	}
+	return
 }
 
 // TenantIDChanged returns whether the tenant ID flag has been changed explicitly.
