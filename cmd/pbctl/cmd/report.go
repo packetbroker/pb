@@ -23,6 +23,7 @@ import (
 var (
 	reportCmd = &cobra.Command{
 		Use:               "report",
+		Aliases:           []string{"reports"},
 		Short:             "Packet Broker report",
 		PersistentPreRunE: prerunConnect,
 		PersistentPostRun: postrunConnect,
