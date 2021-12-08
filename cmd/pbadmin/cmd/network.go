@@ -83,7 +83,7 @@ var (
   See for more target configuration options:
     $ pbadmin network update target --help`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			netID := pbflag.GetNetID(cmd.Flags(), "")
+			netID, _ := pbflag.GetNetID(cmd.Flags(), "")
 			name, _ := cmd.Flags().GetString("name")
 			devAddrBlocks := pbflag.GetDevAddrBlocks(cmd.Flags())
 			adminContact := pbflag.GetContactInfo(cmd.Flags(), "admin")
@@ -118,7 +118,7 @@ var (
   Get:
     $ pbadmin network get --net-id 000013`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			netID := pbflag.GetNetID(cmd.Flags(), "")
+			netID, _ := pbflag.GetNetID(cmd.Flags(), "")
 			res, err := iampb.NewNetworkRegistryClient(conn).GetNetwork(ctx, &iampb.NetworkRequest{
 				NetId: uint32(netID),
 			})
@@ -140,7 +140,7 @@ var (
     $ pbadmin network update --net-id 000013 \
       --dev-addr-blocks 26011000/20=eu1,26012000=eu2`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			netID := pbflag.GetNetID(cmd.Flags(), "")
+			netID, _ := pbflag.GetNetID(cmd.Flags(), "")
 			req := &iampb.UpdateNetworkRequest{
 				NetId: uint32(netID),
 			}
@@ -195,7 +195,7 @@ var (
     $ pbadmin network update target --net-id 000013 --origin-net-id 000013 \
       --root-cas-file ca.pem --tls-cert-file key.pem --tls-key-file key.pem`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			netID := pbflag.GetNetID(cmd.Flags(), "")
+			netID, _ := pbflag.GetNetID(cmd.Flags(), "")
 			client := iampb.NewNetworkRegistryClient(conn)
 			nwk, err := client.GetNetwork(ctx, &iampb.NetworkRequest{
 				NetId: uint32(netID),
@@ -226,7 +226,7 @@ var (
   Delete:
     $ pbadmin network delete --net-id 000013`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			netID := pbflag.GetNetID(cmd.Flags(), "")
+			netID, _ := pbflag.GetNetID(cmd.Flags(), "")
 			_, err := iampb.NewNetworkRegistryClient(conn).DeleteNetwork(ctx, &iampb.NetworkRequest{
 				NetId: uint32(netID),
 			})
@@ -275,7 +275,7 @@ Router addresses:
   eu.packetbroker.io    Europe, Middle East and Africa
   nam.packetbroker.io   Americas`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			endpoint := pbflag.GetEndpoint(cmd.Flags(), "")
+			endpoint, _ := pbflag.GetEndpoint(cmd.Flags(), "")
 			req := &iampbv2.CreateNetworkAPIKeyRequest{
 				NetId:     uint32(endpoint.NetID),
 				TenantId:  endpoint.TenantID.ID,
@@ -288,8 +288,10 @@ Router addresses:
 			}
 			iamAddress, _ := cmd.Flags().GetString("iam-address")
 			controlPlaneAddress, _ := cmd.Flags().GetString("controlplane-address")
+			reportsAddress, _ := cmd.Flags().GetString("reports-address")
 			routerAddress, _ := cmd.Flags().GetString("router-address")
 			viper.Set("controlplane-address", controlPlaneAddress)
+			viper.Set("reports-address", reportsAddress)
 			viper.Set("router-address", routerAddress)
 			viper.Set("client-id", res.Key.GetKeyId())
 			viper.Set("client-secret", res.Key.GetKey())
@@ -359,8 +361,10 @@ func init() {
 		packetbroker.Right_WRITE_GATEWAY_VISIBILITY,
 		packetbroker.Right_READ_TRAFFIC,
 		packetbroker.Right_WRITE_TRAFFIC,
+		packetbroker.Right_READ_REPORT,
 	))
 	networkInitCmd.Flags().String("controlplane-address", "cp.packetbroker.net:443", `Packet Broker Control Plane address "host[:port]"`)
+	networkInitCmd.Flags().String("reports-address", "reports.packetbroker.net:443", `Packet Broker Reporter address "host[:port]"`)
 	networkInitCmd.Flags().String("router-address", "", `Packet Broker Router address "host[:port]"`)
 	networkCmd.AddCommand(networkInitCmd)
 }

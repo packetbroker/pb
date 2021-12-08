@@ -3,21 +3,29 @@
 package pbflag
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 
 	flag "github.com/spf13/pflag"
 	packetbroker "go.packetbroker.org/api/v3"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-type netIDValue packetbroker.NetID
+type netIDValue struct {
+	*packetbroker.NetID
+}
 
 func (f *netIDValue) String() string {
-	return packetbroker.NetID(*f).String()
+	if f.NetID == nil {
+		return ""
+	}
+	return packetbroker.NetID(*f.NetID).String()
 }
 
 func (f *netIDValue) Set(s string) error {
@@ -25,7 +33,9 @@ func (f *netIDValue) Set(s string) error {
 	if err := netID.UnmarshalText([]byte(s)); err != nil {
 		return err
 	}
-	*f = netIDValue(netID)
+	*f = netIDValue{
+		NetID: &netID,
+	}
 	return nil
 }
 
@@ -48,13 +58,12 @@ func NetID(actor string) *flag.FlagSet {
 }
 
 // GetNetID returns the NetID from the flags.
-func GetNetID(flags *flag.FlagSet, actor string) packetbroker.NetID {
-	return packetbroker.NetID(*flags.Lookup(actorf(actor, "net-id")).Value.(*netIDValue))
-}
-
-// NetIDChanged returns true if the NetID flag was explicitly set during Parse() and false otherwise.
-func NetIDChanged(flags *flag.FlagSet, actor string) bool {
-	return flags.Changed(actorf(actor, "net-id"))
+func GetNetID(flags *flag.FlagSet, actor string) (packetbroker.NetID, bool) {
+	netID := flags.Lookup(actorf(actor, "net-id")).Value.(*netIDValue).NetID
+	if netID == nil {
+		return 0, false
+	}
+	return packetbroker.NetID(*netID), true
 }
 
 // TenantID returns flags for a TenantID.
@@ -67,13 +76,35 @@ func TenantID(actor string) *flag.FlagSet {
 
 // GetTenantID returns the TenantID from the flags.
 // The actor is used as prefix.
-func GetTenantID(flags *flag.FlagSet, actor string) packetbroker.TenantID {
-	netID := GetNetID(flags, actor)
+func GetTenantID(flags *flag.FlagSet, actor string) (packetbroker.TenantID, bool) {
+	netID, ok := GetNetID(flags, actor)
+	if !ok {
+		return packetbroker.TenantID{}, false
+	}
 	tenantID, _ := flags.GetString(actorf(actor, "tenant-id"))
 	return packetbroker.TenantID{
 		NetID: netID,
 		ID:    tenantID,
+	}, true
+}
+
+// GetTenantIDWrappers returns the TenantID as protobuf wrappers.
+// The returned values are nil when they are not set.
+func GetTenantIDWrappers(flags *flag.FlagSet, actor string) (netID *wrapperspb.UInt32Value, id *wrapperspb.StringValue) {
+	tntID, ok := GetTenantID(flags, actor)
+	if !ok {
+		return
 	}
+	netID = wrapperspb.UInt32(uint32(tntID.NetID))
+	if TenantIDChanged(flags, actor) {
+		id = wrapperspb.String(tntID.ID)
+	}
+	return
+}
+
+// TenantIDChanged returns whether the tenant ID flag has been changed explicitly.
+func TenantIDChanged(flags *flag.FlagSet, actor string) bool {
+	return flags.Changed(actorf(actor, "tenant-id"))
 }
 
 // Endpoint returns flags for an Endpoint.
@@ -85,13 +116,16 @@ func Endpoint(actor string) *flag.FlagSet {
 }
 
 // GetEndpoint returns the Endpoint from the flags.
-func GetEndpoint(flags *flag.FlagSet, actor string) packetbroker.Endpoint {
-	tenantID := GetTenantID(flags, actor)
+func GetEndpoint(flags *flag.FlagSet, actor string) (packetbroker.Endpoint, bool) {
+	tenantID, ok := GetTenantID(flags, actor)
+	if !ok {
+		return packetbroker.Endpoint{}, false
+	}
 	clusterID, _ := flags.GetString(actorf(actor, "cluster-id"))
 	return packetbroker.Endpoint{
 		TenantID:  tenantID,
 		ClusterID: clusterID,
-	}
+	}, true
 }
 
 // HasEndpoint returns which endpoint flags are set.
@@ -238,6 +272,59 @@ func JoinEUIPrefixes() *flag.FlagSet {
 func GetJoinEUIPrefixes(flags *flag.FlagSet) []*packetbroker.JoinEUIPrefix {
 	blocks := flags.Lookup("join-eui-prefixes").Value.(*joinEUIPrefixesValue)
 	return []*packetbroker.JoinEUIPrefix(*blocks)
+}
+
+type monthYear struct {
+	valid       bool
+	month, year int
+}
+
+func (f *monthYear) String() string {
+	return fmt.Sprintf("%04d-%02d", f.year, f.month)
+}
+
+func (f *monthYear) Set(s string) error {
+	parts := strings.SplitN(s, "-", 2)
+	if len(parts) != 2 {
+		return errors.New("pbflag: invalid month year: expect YYYY-MM")
+	}
+	year, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return fmt.Errorf("pbflag: invalid year %q: %w", parts[0], err)
+	}
+	month, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return fmt.Errorf("pbflag: invalid month %q: %w", parts[1], err)
+	}
+	if month < 1 || month > 12 {
+		return fmt.Errorf("pbflag: invalid month %d", month)
+	}
+	*f = monthYear{
+		valid: true,
+		month: month,
+		year:  year,
+	}
+	return nil
+}
+
+func (f *monthYear) Type() string {
+	return "monthYear"
+}
+
+// MonthYear returns flags for a month in a year.
+func MonthYear(name string) *flag.FlagSet {
+	flags := new(flag.FlagSet)
+	flags.Var(new(monthYear), name, "month in a year (YYYY-MM)")
+	return flags
+}
+
+// GetMonthYear returns the month year from flags.
+func GetMonthYear(flags *flag.FlagSet, name string) (month, year int, ok bool) {
+	monthYear := flags.Lookup(name).Value.(*monthYear)
+	if !monthYear.valid {
+		return 0, 0, false
+	}
+	return monthYear.month, monthYear.year, true
 }
 
 type messageType int
@@ -615,7 +702,7 @@ func TargetFlagsChanged(flags *flag.FlagSet, actor string) bool {
 		flags.Changed(actorf(actor, "root-cas-file")) ||
 		flags.Changed(actorf(actor, "tls-cert-file")) ||
 		flags.Changed(actorf(actor, "tls-key-file")) ||
-		NetIDChanged(flags, "origin")
+		flags.Changed(actorf(actor, "net-id"))
 }
 
 // ApplyToTarget applies the values from the flags to the given target.
@@ -696,8 +783,7 @@ func ApplyToTarget(flags *flag.FlagSet, actor string, target **packetbroker.Targ
 			}
 		}
 
-		if NetIDChanged(flags, actorf(actor, "origin")) {
-			netID := GetNetID(flags, actorf(actor, "origin"))
+		if netID, ok := GetNetID(flags, actorf(actor, "origin")); ok {
 			if (*target).OriginNetIdAuthentication == nil {
 				(*target).OriginNetIdAuthentication = make(map[uint32]*packetbroker.Target_Authentication)
 			}

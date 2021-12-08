@@ -27,7 +27,8 @@ var (
 	ctx    = context.Background()
 	logger *zap.Logger
 	iamConn,
-	cpConn *grpc.ClientConn
+	cpConn,
+	reportsConn *grpc.ClientConn
 	tabout = tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
 )
 
@@ -50,12 +51,22 @@ func prerunConnect(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	reportsClientConf, err := config.OAuth2Client(ctx, "reports", "networks")
+	if err != nil {
+		return err
+	}
+	reportsConn, err = client.DialContext(ctx, logger, reportsClientConf, 443)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func postrunConnect(cmd *cobra.Command, args []string) {
 	iamConn.Close()
 	cpConn.Close()
+	reportsConn.Close()
 }
 
 var rootCmd = &cobra.Command{
@@ -79,6 +90,7 @@ func init() {
 
 	rootCmd.PersistentFlags().AddFlagSet(config.ClientFlags("iam", "iam.packetbroker.net:443"))
 	rootCmd.PersistentFlags().AddFlagSet(config.ClientFlags("controlplane", "cp.packetbroker.net:443"))
+	rootCmd.PersistentFlags().AddFlagSet(config.ClientFlags("reports", "reports.packetbroker.net:443"))
 	rootCmd.PersistentFlags().AddFlagSet(config.OAuth2ClientFlags())
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.pb.yaml, .pb.yaml)")

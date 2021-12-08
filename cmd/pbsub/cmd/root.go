@@ -83,14 +83,17 @@ var rootCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var (
-			forwarder   = pbflag.GetEndpoint(cmd.Flags(), "forwarder")
-			homeNetwork = pbflag.GetEndpoint(cmd.Flags(), "home-network")
+			forwarder, forwarderOK     = pbflag.GetEndpoint(cmd.Flags(), "forwarder")
+			homeNetwork, homeNetworkOK = pbflag.GetEndpoint(cmd.Flags(), "home-network")
 		)
 		group, _ := cmd.Flags().GetString("group")
-		if homeNetwork.IsEmpty() {
+		switch {
+		case forwarderOK:
 			return asForwarder(forwarder, group)
+		case homeNetworkOK:
+			return asHomeNetwork(homeNetwork, group)
 		}
-		return asHomeNetwork(homeNetwork, group)
+		return errors.New("no role specified")
 	},
 	PostRun: func(cmd *cobra.Command, args []string) {
 		logger.Sync()

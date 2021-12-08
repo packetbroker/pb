@@ -77,7 +77,7 @@ Rights:
   READ_ROUTING_POLICY       Read routing policies
   READ_TARGET_AUTH          Read target authentication information`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			endpoint := pbflag.GetEndpoint(cmd.Flags(), "")
+			endpoint, _ := pbflag.GetEndpoint(cmd.Flags(), "")
 			req := &iampbv2.CreateClusterAPIKeyRequest{
 				ClusterId: endpoint.ClusterID,
 				Rights:    pbflag.GetAPIKeyRights(cmd.Flags()),

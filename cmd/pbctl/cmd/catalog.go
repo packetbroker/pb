@@ -38,10 +38,10 @@ var (
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
-				offset          = uint32(0)
-				idContains, _   = cmd.Flags().GetString("id-contains")
-				nameContains, _ = cmd.Flags().GetString("name-contains")
-				policyTenantID  = pbflag.GetTenantID(cmd.Flags(), "policy")
+				offset            = uint32(0)
+				idContains, _     = cmd.Flags().GetString("id-contains")
+				nameContains, _   = cmd.Flags().GetString("name-contains")
+				policyTenantID, _ = pbflag.GetTenantID(cmd.Flags(), "policy")
 			)
 			var policyRef *iampb.ListNetworksRequest_PolicyReference
 			if !policyTenantID.IsEmpty() {
@@ -92,10 +92,10 @@ var (
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
-				offset          = uint32(0)
-				idContains, _   = cmd.Flags().GetString("id-contains")
-				nameContains, _ = cmd.Flags().GetString("name-contains")
-				policyTenantID  = pbflag.GetTenantID(cmd.Flags(), "policy")
+				offset            = uint32(0)
+				idContains, _     = cmd.Flags().GetString("id-contains")
+				nameContains, _   = cmd.Flags().GetString("name-contains")
+				policyTenantID, _ = pbflag.GetTenantID(cmd.Flags(), "policy")
 			)
 			var policyRef *iampb.ListNetworksRequest_PolicyReference
 			if !policyTenantID.IsEmpty() {

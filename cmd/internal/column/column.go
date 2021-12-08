@@ -20,7 +20,7 @@ import (
 
 const (
 	sep                = ", "
-	maxDevAddrBlocks   = 3
+	maxDevAddrBlocks   = 1
 	maxJoinEUIPrefixes = 2
 )
 
