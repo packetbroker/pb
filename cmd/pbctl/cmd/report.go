@@ -117,12 +117,11 @@ var (
 				}
 			nextRecord:
 				for _, nr := range res.Records {
-					if fID, hnID := packetbroker.ForwarderTenantID(nr), packetbroker.HomeNetworkTenantID(nr); fID == hnID {
-						for _, er := range records {
-							// Skip duplicate records.
-							if packetbroker.ForwarderTenantID(er) == fID && packetbroker.HomeNetworkTenantID(er) == hnID {
-								continue nextRecord
-							}
+					fID, hnID := packetbroker.ForwarderTenantID(nr), packetbroker.HomeNetworkTenantID(nr)
+					for _, er := range records {
+						// Skip duplicate records.
+						if packetbroker.ForwarderTenantID(er) == fID && packetbroker.HomeNetworkTenantID(er) == hnID {
+							continue nextRecord
 						}
 					}
 					records = append(records, nr)
