@@ -85,7 +85,7 @@ var (
 		RunE: func(cmd *cobra.Command, args []string) error {
 			netID, _ := pbflag.GetNetID(cmd.Flags(), "")
 			name, _ := cmd.Flags().GetString("name")
-			devAddrBlocks := pbflag.GetDevAddrBlocks(cmd.Flags())
+			devAddrBlocks, _, _ := pbflag.GetDevAddrBlocks(cmd.Flags())
 			adminContact := pbflag.GetContactInfo(cmd.Flags(), "admin")
 			techContact := pbflag.GetContactInfo(cmd.Flags(), "tech")
 			listed, _ := cmd.Flags().GetBool("listed")
@@ -141,15 +141,36 @@ var (
       --dev-addr-blocks 26011000/20=eu1,26012000=eu2`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			netID, _ := pbflag.GetNetID(cmd.Flags(), "")
+			client := iampb.NewNetworkRegistryClient(conn)
+			nwk, err := client.GetNetwork(ctx, &iampb.NetworkRequest{
+				NetId: uint32(netID),
+			})
+			if err != nil {
+				return err
+			}
 			req := &iampb.UpdateNetworkRequest{
 				NetId: uint32(netID),
 			}
-			if cmd.Flags().Lookup("name").Changed {
+			if cmd.Flags().Changed("name") {
 				name, _ := cmd.Flags().GetString("name")
 				req.Name = wrapperspb.String(name)
 			}
-			if cmd.Flags().Lookup("dev-addr-blocks").Changed {
-				devAddrBlocks := pbflag.GetDevAddrBlocks(cmd.Flags())
+			devAddrBlocksAll, devAddrBlocksAllAdd, devAddrBlocksAllRemove := pbflag.GetDevAddrBlocks(cmd.Flags())
+			if cmd.Flags().Changed("dev-addr-blocks") {
+				req.DevAddrBlocks = &iampb.DevAddrBlocksValue{
+					Value: devAddrBlocksAll,
+				}
+			} else {
+				devAddrBlocks := devAddrBlocksAllAdd
+			nextBlock:
+				for _, b := range nwk.Network.DevAddrBlocks {
+					for _, rm := range devAddrBlocksAllRemove {
+						if b.Prefix.Value == rm.Prefix.Value && b.Prefix.Length == rm.Prefix.Length {
+							continue nextBlock
+						}
+					}
+					devAddrBlocks = append(devAddrBlocks, b)
+				}
 				req.DevAddrBlocks = &iampb.DevAddrBlocksValue{
 					Value: devAddrBlocks,
 				}
@@ -164,11 +185,11 @@ var (
 					Value: techContact,
 				}
 			}
-			if cmd.Flags().Lookup("listed").Changed {
+			if cmd.Flags().Changed("listed") {
 				listed, _ := cmd.Flags().GetBool("listed")
 				req.Listed = wrapperspb.Bool(listed)
 			}
-			_, err := iampb.NewNetworkRegistryClient(conn).UpdateNetwork(ctx, req)
+			_, err = client.UpdateNetwork(ctx, req)
 			return err
 		},
 	}
@@ -319,7 +340,6 @@ func networkSettingsFlags() *flag.FlagSet {
 	flags := new(flag.FlagSet)
 	flags.String("name", "", "network name")
 	flags.Bool("listed", false, "list network in catalog")
-	flags.AddFlagSet(pbflag.DevAddrBlocks())
 	return flags
 }
 
@@ -331,6 +351,7 @@ func init() {
 
 	networkCreateCmd.Flags().AddFlagSet(pbflag.NetID(""))
 	networkCreateCmd.Flags().AddFlagSet(networkSettingsFlags())
+	networkCreateCmd.Flags().AddFlagSet(pbflag.DevAddrBlocks(false))
 	networkCreateCmd.Flags().AddFlagSet(pbflag.Target("target"))
 	networkCreateCmd.Flags().AddFlagSet(pbflag.ContactInfo("admin"))
 	networkCreateCmd.Flags().AddFlagSet(pbflag.ContactInfo("tech"))
@@ -341,6 +362,7 @@ func init() {
 
 	networkUpdateCmd.Flags().AddFlagSet(pbflag.NetID(""))
 	networkUpdateCmd.Flags().AddFlagSet(networkSettingsFlags())
+	networkUpdateCmd.Flags().AddFlagSet(pbflag.DevAddrBlocks(true))
 	networkUpdateCmd.Flags().AddFlagSet(pbflag.ContactInfo("admin"))
 	networkUpdateCmd.Flags().AddFlagSet(pbflag.ContactInfo("tech"))
 	networkUpdateTargetCmd.Flags().AddFlagSet(pbflag.NetID(""))

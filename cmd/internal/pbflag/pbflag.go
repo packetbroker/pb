@@ -217,16 +217,22 @@ func (f *devAddrBlocksValue) Type() string {
 }
 
 // DevAddrBlocks returns flags for DevAddr blocks.
-func DevAddrBlocks() *flag.FlagSet {
+func DevAddrBlocks(addRemove bool) *flag.FlagSet {
 	flags := new(flag.FlagSet)
 	flags.Var(new(devAddrBlocksValue), "dev-addr-blocks", "DevAddr blocks")
+	if addRemove {
+		flags.Var(new(devAddrBlocksValue), "dev-addr-blocks-add", "DevAddr blocks to add")
+		flags.Var(new(devAddrBlocksValue), "dev-addr-blocks-remove", "DevAddr blocks to remove")
+	}
 	return flags
 }
 
 // GetDevAddrBlocks returns the DevAddr blocks from the flags.
-func GetDevAddrBlocks(flags *flag.FlagSet) []*packetbroker.DevAddrBlock {
-	blocks := flags.Lookup("dev-addr-blocks").Value.(*devAddrBlocksValue)
-	return []*packetbroker.DevAddrBlock(*blocks)
+func GetDevAddrBlocks(flags *flag.FlagSet) (all, add, remove []*packetbroker.DevAddrBlock) {
+	all = []*packetbroker.DevAddrBlock(*flags.Lookup("dev-addr-blocks").Value.(*devAddrBlocksValue))
+	add = []*packetbroker.DevAddrBlock(*flags.Lookup("dev-addr-blocks-add").Value.(*devAddrBlocksValue))
+	remove = []*packetbroker.DevAddrBlock(*flags.Lookup("dev-addr-blocks-remove").Value.(*devAddrBlocksValue))
+	return
 }
 
 type joinEUIPrefixesValue []*packetbroker.JoinEUIPrefix
