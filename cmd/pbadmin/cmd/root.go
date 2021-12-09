@@ -47,8 +47,9 @@ func postrunConnect(cmd *cobra.Command, args []string) {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "pbadmin",
-	Short: "pbadmin can be used to manage networks, tenants and API keys.",
+	Use:          "pbadmin",
+	Short:        "pbadmin can be used to manage networks, tenants and API keys.",
+	SilenceUsage: true,
 }
 
 // Execute runs pbadmin.

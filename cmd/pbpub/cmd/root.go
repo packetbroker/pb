@@ -40,8 +40,9 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "pbpub",
-	Short: "pbpub can be used to publish uplink and downlink messages.",
+	Use:          "pbpub",
+	Short:        "pbpub can be used to publish uplink and downlink messages.",
+	SilenceUsage: true,
 	Example: `
   Publish uplink message as Forwarder:
 

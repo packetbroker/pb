@@ -32,10 +32,9 @@ var (
 		PersistentPostRun: postrunConnect,
 	}
 	catalogNetworksCmd = &cobra.Command{
-		Use:          "networks",
-		Aliases:      []string{"network", "ns"},
-		Short:        "Show Forwarders and Home Networks",
-		SilenceUsage: true,
+		Use:     "networks",
+		Aliases: []string{"network", "ns"},
+		Short:   "Show Forwarders and Home Networks",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
 				offset            = uint32(0)
@@ -86,10 +85,9 @@ var (
 		},
 	}
 	catalogHomeNetworksCmd = &cobra.Command{
-		Use:          "home-networks",
-		Aliases:      []string{"home-network", "hns"},
-		Short:        "Show Home Networks",
-		SilenceUsage: true,
+		Use:     "home-networks",
+		Aliases: []string{"home-network", "hns"},
+		Short:   "Show Home Networks",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
 				offset            = uint32(0)
@@ -140,10 +138,9 @@ var (
 		},
 	}
 	catalogJoinServersCmd = &cobra.Command{
-		Use:          "join-servers",
-		Aliases:      []string{"join-server", "js"},
-		Short:        "Show Join Servers",
-		SilenceUsage: true,
+		Use:     "join-servers",
+		Aliases: []string{"join-server", "js"},
+		Short:   "Show Join Servers",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
 				offset          = uint32(0)

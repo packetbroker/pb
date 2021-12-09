@@ -22,10 +22,9 @@ var (
 		Short:   "Manage Packet Broker API keys for clusters",
 	}
 	clusterAPIKeyListCmd = &cobra.Command{
-		Use:          "list",
-		Aliases:      []string{"ls"},
-		Short:        "List API keys",
-		SilenceUsage: true,
+		Use:     "list",
+		Aliases: []string{"ls"},
+		Short:   "List API keys",
 		Example: `
   List all API keys:
     $ pbadmin cluster apikey list
@@ -105,9 +104,8 @@ Rights:
 		},
 	}
 	clusterAPIKeyUpdateStateCmd = &cobra.Command{
-		Use:          "update-state",
-		Short:        "Update the API key state",
-		SilenceUsage: true,
+		Use:   "update-state",
+		Short: "Update the API key state",
 		Example: `
   Update the API key state to APPROVED:
     $ pbadmin cluster apikey update-state --key-id C5232IFFX4UKEELB --state APPROVED`,
@@ -122,10 +120,9 @@ Rights:
 		},
 	}
 	clusterAPIKeyDeleteCmd = &cobra.Command{
-		Use:          "delete",
-		Aliases:      []string{"rm"},
-		Short:        "Delete an API key",
-		SilenceUsage: true,
+		Use:     "delete",
+		Aliases: []string{"rm"},
+		Short:   "Delete an API key",
 		Example: `
   Delete an API key:
     $ pbadmin cluster apikey delete --key-id C5232IFFX4UKEELB`,

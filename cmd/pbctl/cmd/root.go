@@ -70,8 +70,9 @@ func postrunConnect(cmd *cobra.Command, args []string) {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "pbctl",
-	Short: "pbctl can be used to manage routing policies and list routes.",
+	Use:          "pbctl",
+	Short:        "pbctl can be used to manage routing policies and list routes.",
+	SilenceUsage: true,
 }
 
 // Execute runs pbctl.

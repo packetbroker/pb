@@ -37,8 +37,9 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "pbsub",
-	Short: "pbsub can be used to subscribe to uplink and downlink messages.",
+	Use:          "pbsub",
+	Short:        "pbsub can be used to subscribe to uplink and downlink messages.",
+	SilenceUsage: true,
 	Example: `
   Subscribe as Forwarder:
 

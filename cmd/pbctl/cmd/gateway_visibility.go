@@ -119,10 +119,9 @@ who may see their infrastructure.`,
 		},
 	}
 	gatewayVisibilityDeleteCmd = &cobra.Command{
-		Use:          "delete",
-		Aliases:      []string{"rm"},
-		Short:        "Delete a visibility",
-		SilenceUsage: true,
+		Use:     "delete",
+		Aliases: []string{"rm"},
+		Short:   "Delete a visibility",
 		Example: `
   Delete default gateway visibility of Forwarder network:
     $ pbctl gateway-visibility delete --forwarder-net-id 000013 --defaults

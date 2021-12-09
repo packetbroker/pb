@@ -216,10 +216,9 @@ may use their infrastructure.`,
 		},
 	}
 	policyDeleteCmd = &cobra.Command{
-		Use:          "delete",
-		Aliases:      []string{"rm"},
-		Short:        "Delete a policy",
-		SilenceUsage: true,
+		Use:     "delete",
+		Aliases: []string{"rm"},
+		Short:   "Delete a policy",
 		Example: `
   Delete default policy of Forwarder network:
     $ pbctl policy delete --forwarder-net-id 000013 --defaults
@@ -257,10 +256,9 @@ may use their infrastructure.`,
 		},
 	}
 	policyNetworksCmd = &cobra.Command{
-		Use:          "networks",
-		Aliases:      []string{"network", "ns"},
-		Short:        "Show Forwarders and Home Networks with which a policy has been defined",
-		SilenceUsage: true,
+		Use:     "networks",
+		Aliases: []string{"network", "ns"},
+		Short:   "Show Forwarders and Home Networks with which a policy has been defined",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
 				tenantID, _     = pbflag.GetTenantID(cmd.Flags(), "")

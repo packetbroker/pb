@@ -23,10 +23,9 @@ var (
 		PersistentPostRun: postrunConnect,
 	}
 	joinServerListCmd = &cobra.Command{
-		Use:          "list",
-		Aliases:      []string{"ls"},
-		Short:        "List Join Servers",
-		SilenceUsage: true,
+		Use:     "list",
+		Aliases: []string{"ls"},
+		Short:   "List Join Servers",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
 				offset          = uint32(0)
@@ -123,9 +122,8 @@ var (
 		},
 	}
 	joinServerGetCmd = &cobra.Command{
-		Use:          "get",
-		Short:        "Get a Join Server",
-		SilenceUsage: true,
+		Use:   "get",
+		Short: "Get a Join Server",
 		Example: `
   Get:
     $ pbadmin join-server get --id 1`,
@@ -237,10 +235,9 @@ var (
 		},
 	}
 	joinServerDeleteCmd = &cobra.Command{
-		Use:          "delete",
-		Aliases:      []string{"rm"},
-		Short:        "Delete a Join Server",
-		SilenceUsage: true,
+		Use:     "delete",
+		Aliases: []string{"rm"},
+		Short:   "Delete a Join Server",
 		Example: `
   Delete:
     $ pbadmin join-server delete --id 1`,

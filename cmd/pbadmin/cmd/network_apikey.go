@@ -23,10 +23,9 @@ var (
 		Short:   "Manage Packet Broker API keys for networks and tenants",
 	}
 	networkAPIKeyListCmd = &cobra.Command{
-		Use:          "list",
-		Aliases:      []string{"ls"},
-		Short:        "List API keys",
-		SilenceUsage: true,
+		Use:     "list",
+		Aliases: []string{"ls"},
+		Short:   "List API keys",
 		Example: `
   List all API keys:
     $ pbadmin network apikey list
@@ -150,9 +149,8 @@ Rights:
 		},
 	}
 	networkAPIKeyUpdateStateCmd = &cobra.Command{
-		Use:          "update-state",
-		Short:        "Update the API key state",
-		SilenceUsage: true,
+		Use:   "update-state",
+		Short: "Update the API key state",
 		Example: `
   Update the API key state to APPROVED:
     $ pbadmin network apikey update-state --key-id C5232IFFX4UKEELB --state APPROVED`,
@@ -167,10 +165,9 @@ Rights:
 		},
 	}
 	networkAPIKeyDeleteCmd = &cobra.Command{
-		Use:          "delete",
-		Aliases:      []string{"rm"},
-		Short:        "Delete an API key",
-		SilenceUsage: true,
+		Use:     "delete",
+		Aliases: []string{"rm"},
+		Short:   "Delete an API key",
 		Example: `
   Delete an API key:
     $ pbadmin network apikey delete --key-id C5232IFFX4UKEELB`,

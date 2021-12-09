@@ -21,10 +21,9 @@ var (
 		Short:   "Manage Packet Broker tenants",
 	}
 	networkTenantListCmd = &cobra.Command{
-		Use:          "list",
-		Aliases:      []string{"ls"},
-		Short:        "List tenants",
-		SilenceUsage: true,
+		Use:     "list",
+		Aliases: []string{"ls"},
+		Short:   "List tenants",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
 				netID, _        = pbflag.GetNetID(cmd.Flags(), "")
@@ -110,9 +109,8 @@ var (
 		},
 	}
 	networkTenantGetCmd = &cobra.Command{
-		Use:          "get",
-		Short:        "Get a tenant",
-		SilenceUsage: true,
+		Use:   "get",
+		Short: "Get a tenant",
 		Example: `
   Get:
     $ pbadmin network tenant get --net-id 000013 --tenant-id tti`,
@@ -235,10 +233,9 @@ var (
 		},
 	}
 	networkTenantDeleteCmd = &cobra.Command{
-		Use:          "delete",
-		Aliases:      []string{"rm"},
-		Short:        "Delete a tenant",
-		SilenceUsage: true,
+		Use:     "delete",
+		Aliases: []string{"rm"},
+		Short:   "Delete a tenant",
 		Example: `
   Delete:
     $ pbadmin network tenant delete --net-id 000013 --tenant-id tti`,

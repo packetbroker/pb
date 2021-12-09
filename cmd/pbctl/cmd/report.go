@@ -29,10 +29,9 @@ var (
 		PersistentPostRun: postrunConnect,
 	}
 	reportRoutedMessagesCmd = &cobra.Command{
-		Use:          "routed-messages",
-		Aliases:      []string{"routedmsgs"},
-		Short:        "Report routed messages",
-		SilenceUsage: true,
+		Use:     "routed-messages",
+		Aliases: []string{"routedmsgs"},
+		Short:   "Report routed messages",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Query the routed messages for the selected period.
 			// If a generic tenant ID is provided, request the routed messages both as Forwarder and Home Network.

@@ -26,10 +26,9 @@ var (
 		PersistentPostRun: postrunConnect,
 	}
 	networkListCmd = &cobra.Command{
-		Use:          "list",
-		Aliases:      []string{"ls"},
-		Short:        "List networks",
-		SilenceUsage: true,
+		Use:     "list",
+		Aliases: []string{"ls"},
+		Short:   "List networks",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
 				offset          = uint32(0)
@@ -111,9 +110,8 @@ var (
 		},
 	}
 	networkGetCmd = &cobra.Command{
-		Use:          "get",
-		Short:        "Get a network",
-		SilenceUsage: true,
+		Use:   "get",
+		Short: "Get a network",
 		Example: `
   Get:
     $ pbadmin network get --net-id 000013`,
@@ -229,10 +227,9 @@ var (
 		},
 	}
 	networkDeleteCmd = &cobra.Command{
-		Use:          "delete",
-		Aliases:      []string{"rm"},
-		Short:        "Delete a network",
-		SilenceUsage: true,
+		Use:     "delete",
+		Aliases: []string{"rm"},
+		Short:   "Delete a network",
 		Example: `
   Delete:
     $ pbadmin network delete --net-id 000013`,
@@ -252,7 +249,6 @@ var (
 This stores the router address and a newly requested network API key in a local
 configuration file (.pb.yaml). This configuration can be used by Packet Broker
 command-line interfaces.`,
-		SilenceUsage: true,
 		Example: `
   Initialize configuration for a network:
     $ pbadmin network init --net-id 000013 \
