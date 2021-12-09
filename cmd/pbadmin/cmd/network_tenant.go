@@ -83,7 +83,7 @@ var (
 		RunE: func(cmd *cobra.Command, args []string) error {
 			tenantID, _ := pbflag.GetTenantID(cmd.Flags(), "")
 			name, _ := cmd.Flags().GetString("name")
-			devAddrBlocks := pbflag.GetDevAddrBlocks(cmd.Flags())
+			devAddrBlocks, _, _ := pbflag.GetDevAddrBlocks(cmd.Flags())
 			adminContact := pbflag.GetContactInfo(cmd.Flags(), "admin")
 			techContact := pbflag.GetContactInfo(cmd.Flags(), "tech")
 			listed, _ := cmd.Flags().GetBool("listed")
@@ -142,16 +142,38 @@ var (
       --dev-addr-blocks 26011000/20=eu1,26012000=eu2`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			tenantID, _ := pbflag.GetTenantID(cmd.Flags(), "")
+			client := iampb.NewTenantRegistryClient(conn)
+			tnt, err := client.GetTenant(ctx, &iampb.TenantRequest{
+				NetId:    uint32(tenantID.NetID),
+				TenantId: tenantID.ID,
+			})
+			if err != nil {
+				return err
+			}
 			req := &iampb.UpdateTenantRequest{
 				NetId:    uint32(tenantID.NetID),
 				TenantId: tenantID.ID,
 			}
-			if cmd.Flags().Lookup("name").Changed {
+			if cmd.Flags().Changed("name") {
 				name, _ := cmd.Flags().GetString("name")
 				req.Name = wrapperspb.String(name)
 			}
-			if cmd.Flags().Lookup("dev-addr-blocks").Changed {
-				devAddrBlocks := pbflag.GetDevAddrBlocks(cmd.Flags())
+			devAddrBlocksAll, devAddrBlocksAllAdd, devAddrBlocksAllRemove := pbflag.GetDevAddrBlocks(cmd.Flags())
+			if cmd.Flags().Changed("dev-addr-blocks") {
+				req.DevAddrBlocks = &iampb.DevAddrBlocksValue{
+					Value: devAddrBlocksAll,
+				}
+			} else {
+				devAddrBlocks := devAddrBlocksAllAdd
+			nextBlock:
+				for _, b := range tnt.Tenant.DevAddrBlocks {
+					for _, rm := range devAddrBlocksAllRemove {
+						if b.Prefix.Value == rm.Prefix.Value && b.Prefix.Length == rm.Prefix.Length {
+							continue nextBlock
+						}
+					}
+					devAddrBlocks = append(devAddrBlocks, b)
+				}
 				req.DevAddrBlocks = &iampb.DevAddrBlocksValue{
 					Value: devAddrBlocks,
 				}
@@ -166,11 +188,11 @@ var (
 					Value: techContact,
 				}
 			}
-			if cmd.Flags().Lookup("listed").Changed {
+			if cmd.Flags().Changed("listed") {
 				listed, _ := cmd.Flags().GetBool("listed")
 				req.Listed = wrapperspb.Bool(listed)
 			}
-			_, err := iampb.NewTenantRegistryClient(conn).UpdateTenant(ctx, req)
+			_, err = client.UpdateTenant(ctx, req)
 			return err
 		},
 	}
@@ -244,7 +266,6 @@ var (
 func tenantSettingsFlags() *flag.FlagSet {
 	flags := new(flag.FlagSet)
 	flags.String("name", "", "tenant name")
-	flags.AddFlagSet(pbflag.DevAddrBlocks())
 	flags.Bool("listed", false, "list tenant in catalog")
 	return flags
 }
@@ -259,6 +280,7 @@ func init() {
 
 	networkTenantCreateCmd.Flags().AddFlagSet(pbflag.TenantID(""))
 	networkTenantCreateCmd.Flags().AddFlagSet(tenantSettingsFlags())
+	networkTenantCreateCmd.Flags().AddFlagSet(pbflag.DevAddrBlocks(false))
 	networkTenantCreateCmd.Flags().AddFlagSet(pbflag.Target("target"))
 	networkTenantCreateCmd.Flags().AddFlagSet(pbflag.ContactInfo("admin"))
 	networkTenantCreateCmd.Flags().AddFlagSet(pbflag.ContactInfo("tech"))
@@ -269,6 +291,7 @@ func init() {
 
 	networkTenantUpdateCmd.Flags().AddFlagSet(pbflag.TenantID(""))
 	networkTenantUpdateCmd.Flags().AddFlagSet(tenantSettingsFlags())
+	networkTenantUpdateCmd.Flags().AddFlagSet(pbflag.DevAddrBlocks(true))
 	networkTenantUpdateCmd.Flags().AddFlagSet(pbflag.ContactInfo("admin"))
 	networkTenantUpdateCmd.Flags().AddFlagSet(pbflag.ContactInfo("tech"))
 	networkTenantUpdateTargetCmd.Flags().AddFlagSet(pbflag.TenantID(""))
