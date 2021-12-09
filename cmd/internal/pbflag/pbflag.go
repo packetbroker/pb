@@ -230,8 +230,12 @@ func DevAddrBlocks(addRemove bool) *flag.FlagSet {
 // GetDevAddrBlocks returns the DevAddr blocks from the flags.
 func GetDevAddrBlocks(flags *flag.FlagSet) (all, add, remove []*packetbroker.DevAddrBlock) {
 	all = []*packetbroker.DevAddrBlock(*flags.Lookup("dev-addr-blocks").Value.(*devAddrBlocksValue))
-	add = []*packetbroker.DevAddrBlock(*flags.Lookup("dev-addr-blocks-add").Value.(*devAddrBlocksValue))
-	remove = []*packetbroker.DevAddrBlock(*flags.Lookup("dev-addr-blocks-remove").Value.(*devAddrBlocksValue))
+	if f := flags.Lookup("dev-addr-blocks-add"); f != nil {
+		add = []*packetbroker.DevAddrBlock(*f.Value.(*devAddrBlocksValue))
+	}
+	if f := flags.Lookup("dev-addr-blocks-remove"); f != nil {
+		remove = []*packetbroker.DevAddrBlock(*f.Value.(*devAddrBlocksValue))
+	}
 	return
 }
 
