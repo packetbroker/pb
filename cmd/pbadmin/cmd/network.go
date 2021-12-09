@@ -161,18 +161,8 @@ var (
 					Value: devAddrBlocksAll,
 				}
 			} else {
-				devAddrBlocks := devAddrBlocksAllAdd
-			nextBlock:
-				for _, b := range nwk.Network.DevAddrBlocks {
-					for _, rm := range devAddrBlocksAllRemove {
-						if b.Prefix.Value == rm.Prefix.Value && b.Prefix.Length == rm.Prefix.Length {
-							continue nextBlock
-						}
-					}
-					devAddrBlocks = append(devAddrBlocks, b)
-				}
 				req.DevAddrBlocks = &iampb.DevAddrBlocksValue{
-					Value: devAddrBlocks,
+					Value: mergeDevAddrBlocks(nwk.Network.DevAddrBlocks, devAddrBlocksAllAdd, devAddrBlocksAllRemove),
 				}
 			}
 			if adminContact := pbflag.GetContactInfo(cmd.Flags(), "admin"); adminContact != nil {
