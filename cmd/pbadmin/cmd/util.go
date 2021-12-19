@@ -10,10 +10,10 @@ func mergeDevAddrBlocks(current, add, remove []*packetbroker.DevAddrBlock) []*pa
 	}
 	for _, a := range add {
 		var found bool
-		for _, c := range current {
+		for i, c := range current {
 			if equals(a, c) {
 				found = true
-				*c = *a
+				current[i] = a
 				break
 			}
 		}
