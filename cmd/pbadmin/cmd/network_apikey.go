@@ -140,11 +140,11 @@ Rights:
 			return column.WriteKV(tabout,
 				"Key ID", res.Key.GetKeyId(),
 				"Secret Key", res.Key.GetKey(),
-				"NetID", packetbroker.NetID(res.Key.GetNetId()),
+				"NetID", packetbroker.NetID(res.Key.GetNetId()).String(),
 				"Tenant ID", res.Key.GetTenantId(),
 				"Cluster ID", res.Key.GetClusterId(),
-				"Rights", column.Rights(res.Key.GetRights()),
-				"State", res.Key.GetState(),
+				"Rights", column.Rights(res.Key.GetRights()).String(),
+				"State", res.Key.GetState().String(),
 			)
 		},
 	}

@@ -118,7 +118,7 @@ var (
 			if err != nil {
 				return err
 			}
-			return column.WriteJoinServer(tabout, res.JoinServer)
+			return column.WriteJoinServer(tabout, res.JoinServer, false)
 		},
 	}
 	joinServerGetCmd = &cobra.Command{
@@ -135,7 +135,8 @@ var (
 			if err != nil {
 				return err
 			}
-			return column.WriteJoinServer(tabout, res.JoinServer)
+			verbose, _ := cmd.Flags().GetBool("verbose")
+			return column.WriteJoinServer(tabout, res.JoinServer, verbose)
 		},
 	}
 	joinServerUpdateCmd = &cobra.Command{
@@ -273,6 +274,7 @@ func init() {
 	joinServerCmd.AddCommand(joinServerCreateCmd)
 
 	joinServerGetCmd.Flags().Uint32("id", 0, "unique identifier of the Join Server")
+	joinServerGetCmd.Flags().Bool("verbose", false, "verbose output")
 	joinServerCmd.AddCommand(joinServerGetCmd)
 
 	joinServerUpdateCmd.Flags().Uint32("id", 0, "unique identifier of the Join Server")

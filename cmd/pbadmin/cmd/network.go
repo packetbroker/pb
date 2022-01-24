@@ -106,7 +106,7 @@ var (
 			if err != nil {
 				return err
 			}
-			return column.WriteNetwork(tabout, res.Network)
+			return column.WriteNetwork(tabout, res.Network, false)
 		},
 	}
 	networkGetCmd = &cobra.Command{
@@ -123,7 +123,8 @@ var (
 			if err != nil {
 				return err
 			}
-			return column.WriteNetwork(tabout, res.Network)
+			verbose, _ := cmd.Flags().GetBool("verbose")
+			return column.WriteNetwork(tabout, res.Network, verbose)
 		},
 	}
 	networkUpdateCmd = &cobra.Command{
@@ -307,7 +308,7 @@ Router addresses:
 			}
 			fmt.Fprintln(os.Stderr, "Saved configuration to .pb.yaml")
 			return column.WriteKV(tabout,
-				"NetID", endpoint.NetID,
+				"NetID", endpoint.NetID.String(),
 				"Tenant ID", endpoint.ID,
 				"Cluster ID", endpoint.ClusterID,
 				"IAM Address", iamAddress,
@@ -315,8 +316,8 @@ Router addresses:
 				"Router Address", routerAddress,
 				"API Key ID", res.Key.GetKeyId(),
 				"API Secret Key", res.Key.GetKey(),
-				"API Key Rights", column.Rights(res.Key.GetRights()),
-				"API Key State", res.Key.GetState(),
+				"API Key Rights", column.Rights(res.Key.GetRights()).String(),
+				"API Key State", res.Key.GetState().String(),
 			)
 		},
 	}
@@ -344,6 +345,7 @@ func init() {
 	networkCmd.AddCommand(networkCreateCmd)
 
 	networkGetCmd.Flags().AddFlagSet(pbflag.NetID(""))
+	networkGetCmd.Flags().Bool("verbose", false, "verbose output")
 	networkCmd.AddCommand(networkGetCmd)
 
 	networkUpdateCmd.Flags().AddFlagSet(pbflag.NetID(""))

@@ -120,7 +120,7 @@ func (bs JoinEUIPrefixes) String() string {
 }
 
 // WriteKV writes the key/value pairs.
-func WriteKV(w io.Writer, kv ...interface{}) error {
+func WriteKV(w io.Writer, kv ...string) error {
 	for i := 0; i < len(kv); i += 2 {
 		if _, err := fmt.Fprintf(w, "%v:\t%v\t\n", kv[i], kv[i+1]); err != nil {
 			return err
@@ -231,50 +231,60 @@ func x509Subject(raw []byte) (string, error) {
 	return res.String(), nil
 }
 
-func writeTarget(w io.Writer, target *packetbroker.Target) error {
+func writeTarget(w io.Writer, target *packetbroker.Target, verbose bool) error {
 	if target == nil {
 		return nil
 	}
 
-	targetAuth := func(auth *packetbroker.Target_Authentication) string {
+	targetAuthKV := func(auth *packetbroker.Target_Authentication) []string {
 		switch a := auth.GetValue().(type) {
 		case *packetbroker.Target_Authentication_PbTokenAuth:
-			return "Packet Broker token"
+			return []string{"Token", "Packet Broker"}
 		case *packetbroker.Target_Authentication_BasicAuth:
-			return fmt.Sprintf("Basic username %q, password %q", a.BasicAuth.Username, a.BasicAuth.Password)
+			kv := []string{"Basic username", a.BasicAuth.Username}
+			if verbose {
+				kv = append(kv, "Basic password", a.BasicAuth.Password)
+			}
+			return kv
 		case *packetbroker.Target_Authentication_CustomAuth:
-			return a.CustomAuth.Value
+			return []string{"Authorization", a.CustomAuth.Value}
 		case *packetbroker.Target_Authentication_TlsClientAuth:
+			if verbose {
+				return []string{
+					"TLS client certificate", string(a.TlsClientAuth.Cert),
+					"TLS client key", string(a.TlsClientAuth.Key),
+				}
+			}
 			sub, err := x509SubjectFromPair(a.TlsClientAuth.Cert, a.TlsClientAuth.Key)
 			if err != nil {
-				return err.Error()
+				return []string{"Error", err.Error()}
 			}
-			return sub
+			return []string{"TLS client certificate subject", sub}
 		default:
-			return ""
+			return nil
 		}
 	}
 
-	var auth string
+	var authKV []string
 	switch a := target.DefaultAuthentication.(type) {
 	case *packetbroker.Target_PbTokenAuth:
-		auth = targetAuth(&packetbroker.Target_Authentication{
+		authKV = targetAuthKV(&packetbroker.Target_Authentication{
 			Value: &packetbroker.Target_Authentication_PbTokenAuth{},
 		})
 	case *packetbroker.Target_BasicAuth_:
-		auth = targetAuth(&packetbroker.Target_Authentication{
+		authKV = targetAuthKV(&packetbroker.Target_Authentication{
 			Value: &packetbroker.Target_Authentication_BasicAuth{
 				BasicAuth: a.BasicAuth,
 			},
 		})
 	case *packetbroker.Target_CustomAuth_:
-		auth = targetAuth(&packetbroker.Target_Authentication{
+		authKV = targetAuthKV(&packetbroker.Target_Authentication{
 			Value: &packetbroker.Target_Authentication_CustomAuth{
 				CustomAuth: a.CustomAuth,
 			},
 		})
 	case *packetbroker.Target_TlsClientAuth:
-		auth = targetAuth(&packetbroker.Target_Authentication{
+		authKV = targetAuthKV(&packetbroker.Target_Authentication{
 			Value: &packetbroker.Target_Authentication_TlsClientAuth{
 				TlsClientAuth: a.TlsClientAuth,
 			},
@@ -309,20 +319,21 @@ func writeTarget(w io.Writer, target *packetbroker.Target) error {
 			fmt.Sprintf("Target Root CA #%d", i+1), r,
 		)
 	}
-	WriteKV(w,
-		"Target Authorization", auth,
-	)
+	if len(authKV) > 0 {
+		fmt.Fprintln(w, "\nTarget Authorization")
+		WriteKV(w, authKV...)
+	}
+
 	// TODO: Sort by NetID.
 	for netID, auth := range target.OriginNetIdAuthentication {
-		WriteKV(w,
-			fmt.Sprintf("Target Authorization %s", packetbroker.NetID(netID)), targetAuth(auth),
-		)
+		fmt.Fprintf(w, "\nTarget Authorization %s\n", packetbroker.NetID(netID))
+		WriteKV(w, targetAuthKV(auth)...)
 	}
 	return nil
 }
 
 // WriteJoinServer writes the Join Server.
-func WriteJoinServer(w io.Writer, js *packetbroker.JoinServer) error {
+func WriteJoinServer(w io.Writer, js *packetbroker.JoinServer, verbose bool) error {
 	WriteKV(w,
 		"ID", fmt.Sprintf("%d", js.Id),
 		"Name", js.GetName(),
@@ -336,12 +347,12 @@ func WriteJoinServer(w io.Writer, js *packetbroker.JoinServer) error {
 	switch resolver := js.Resolver.(type) {
 	case *packetbroker.JoinServer_Fixed:
 		WriteKV(w,
-			"Fixed NetID", packetbroker.NetID(resolver.Fixed.NetId),
+			"Fixed NetID", packetbroker.NetID(resolver.Fixed.NetId).String(),
 			"Fixed Tenant ID", resolver.Fixed.TenantId,
 			"Fixed Cluster ID", resolver.Fixed.ClusterId,
 		)
 	case *packetbroker.JoinServer_Lookup:
-		if err := writeTarget(w, resolver.Lookup); err != nil {
+		if err := writeTarget(w, resolver.Lookup, verbose); err != nil {
 			return err
 		}
 	}
@@ -350,9 +361,9 @@ func WriteJoinServer(w io.Writer, js *packetbroker.JoinServer) error {
 }
 
 // WriteNetwork writes the Network.
-func WriteNetwork(w io.Writer, network *packetbroker.Network) error {
+func WriteNetwork(w io.Writer, network *packetbroker.Network, verbose bool) error {
 	if err := WriteKV(w,
-		"NetID", packetbroker.NetID(network.GetNetId()),
+		"NetID", packetbroker.NetID(network.GetNetId()).String(),
 		"Name", network.GetName(),
 	); err != nil {
 		return err
@@ -363,7 +374,7 @@ func WriteNetwork(w io.Writer, network *packetbroker.Network) error {
 	if err := writeContactInfo(w, "Technical", network.GetTechnicalContact()); err != nil {
 		return err
 	}
-	if err := writeTarget(w, network.GetTarget()); err != nil {
+	if err := writeTarget(w, network.GetTarget(), verbose); err != nil {
 		return err
 	}
 	fmt.Fprintln(w, "\nDevAddr Blocks:")
@@ -371,9 +382,9 @@ func WriteNetwork(w io.Writer, network *packetbroker.Network) error {
 }
 
 // WriteTenant writes the Tenant.
-func WriteTenant(w io.Writer, tenant *packetbroker.Tenant) error {
+func WriteTenant(w io.Writer, tenant *packetbroker.Tenant, verbose bool) error {
 	if err := WriteKV(w,
-		"NetID", packetbroker.NetID(tenant.GetNetId()),
+		"NetID", packetbroker.NetID(tenant.GetNetId()).String(),
 		"Tenant ID", tenant.GetTenantId(),
 		"Name", tenant.GetName(),
 	); err != nil {
@@ -385,7 +396,7 @@ func WriteTenant(w io.Writer, tenant *packetbroker.Tenant) error {
 	if err := writeContactInfo(w, "Technical", tenant.GetAdministrativeContact()); err != nil {
 		return err
 	}
-	if err := writeTarget(w, tenant.GetTarget()); err != nil {
+	if err := writeTarget(w, tenant.GetTarget(), verbose); err != nil {
 		return err
 	}
 	fmt.Fprintln(w, "\nDevAddr Blocks:")

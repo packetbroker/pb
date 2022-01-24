@@ -105,7 +105,7 @@ var (
 			if err != nil {
 				return err
 			}
-			return column.WriteTenant(tabout, res.Tenant)
+			return column.WriteTenant(tabout, res.Tenant, false)
 		},
 	}
 	networkTenantGetCmd = &cobra.Command{
@@ -123,7 +123,8 @@ var (
 			if err != nil {
 				return err
 			}
-			return column.WriteTenant(tabout, res.Tenant)
+			verbose, _ := cmd.Flags().GetBool("verbose")
+			return column.WriteTenant(tabout, res.Tenant, verbose)
 		},
 	}
 	networkTenantUpdateCmd = &cobra.Command{
@@ -274,6 +275,7 @@ func init() {
 	networkTenantCmd.AddCommand(networkTenantCreateCmd)
 
 	networkTenantGetCmd.Flags().AddFlagSet(pbflag.TenantID(""))
+	networkTenantGetCmd.Flags().Bool("verbose", false, "verbose output")
 	networkTenantCmd.AddCommand(networkTenantGetCmd)
 
 	networkTenantUpdateCmd.Flags().AddFlagSet(pbflag.TenantID(""))
