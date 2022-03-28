@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	routingpb "go.packetbroker.org/api/routing"
+	routingpb "go.packetbroker.org/api/routing/v2"
 	packetbroker "go.packetbroker.org/api/v3"
 	"go.packetbroker.org/pb/cmd/internal/column"
 )
@@ -24,7 +24,7 @@ var targetsCmd = &cobra.Command{
 			targets []*packetbroker.NetworkTarget
 		)
 		for {
-			res, err := client.ListTargets(ctx, &routingpb.ListTargetsRequest{
+			res, err := client.ListNetworkTargets(ctx, &routingpb.ListNetworkTargetsRequest{
 				Offset: offset,
 			})
 			if err != nil {
