@@ -76,9 +76,9 @@ Rights:
   READ_ROUTING_POLICY       Read routing policies
   READ_TARGET_AUTH          Read target authentication information`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			endpoint, _ := pbflag.GetEndpoint(cmd.Flags(), "")
+			clusterID, _ := cmd.Flags().GetString("cluster-id")
 			req := &iampbv2.CreateClusterAPIKeyRequest{
-				ClusterId: endpoint.ClusterID,
+				ClusterId: clusterID,
 				Rights:    pbflag.GetAPIKeyRights(cmd.Flags()),
 			}
 			if promptKey, _ := cmd.Flags().GetBool("prompt-key"); promptKey {
@@ -139,10 +139,10 @@ Rights:
 func init() {
 	clusterCmd.AddCommand(clusterAPIKeyCmd)
 
-	clusterAPIKeyListCmd.Flags().AddFlagSet(pbflag.Endpoint(""))
+	clusterAPIKeyListCmd.Flags().String("cluster-id", "", "cluster ID")
 	clusterAPIKeyCmd.AddCommand(clusterAPIKeyListCmd)
 
-	clusterAPIKeyCreateCmd.Flags().AddFlagSet(pbflag.Endpoint(""))
+	clusterAPIKeyCreateCmd.Flags().String("cluster-id", "", "cluster ID")
 	clusterAPIKeyCreateCmd.Flags().AddFlagSet(pbflag.APIKeyRights())
 	clusterAPIKeyCreateCmd.Flags().Bool("prompt-key", false, "prompt custom secret key value")
 	clusterAPIKeyCmd.AddCommand(clusterAPIKeyCreateCmd)
