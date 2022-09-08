@@ -15,7 +15,7 @@ deps.tidy:
 
 .PHONY: fmt
 fmt:
-	@$(GOBIN)/gofumports -w .
+	@$(GOBIN)/gofumpt -w .
 
 .PHONY: quality
 quality:
