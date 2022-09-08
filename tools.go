@@ -6,5 +6,5 @@ package main
 
 import (
 	_ "golang.org/x/lint/golint"
-	_ "mvdan.cc/gofumpt/gofumports"
+	_ "mvdan.cc/gofumpt"
 )
