@@ -3,32 +3,32 @@ name: Code Quality
 on:
   push:
     paths:
-    - '**.go'
+      - "**.go"
   pull_request:
     paths:
-    - '**.go'
+      - "**.go"
 
 jobs:
   quality:
     name: Quality
     runs-on: ubuntu-latest
     steps:
-    - name: Check out code
-      uses: actions/checkout@v2
-    - name: Install Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: '~1.18'
-    - name: Get dependencies
-      run: make deps.dev
-    - name: Check code quality
-      run: make quality
-    - name: Format code
-      run: make fmt
-    - name: Tidy modules
-      run: make deps.tidy
-    - name: Check no diff
-      run: make git.nodiff
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "~1.19"
+      - name: Get dependencies
+        run: make deps.dev
+      - name: Check code quality
+        run: make quality
+      - name: Format code
+        run: make fmt
+      - name: Tidy modules
+        run: make deps.tidy
+      - name: Check no diff
+        run: make git.nodiff
 
   test:
     name: Test
@@ -39,13 +39,13 @@ jobs:
         go-arch: [amd64]
     runs-on: ${{ matrix.os }}
     steps:
-    - name: Check out code
-      uses: actions/checkout@v2
-    - name: Install Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: '~1.18'
-    - name: Test coverage and races
-      run: make test.race
-      env:
-        GOARCH: ${{ matrix.go-arch }}
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "~1.19"
+      - name: Test coverage and races
+        run: make test.race
+        env:
+          GOARCH: ${{ matrix.go-arch }}
