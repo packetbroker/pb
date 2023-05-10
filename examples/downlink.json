@@ -1,12 +1,25 @@
 {
+  "region": "EU_863_870",
   "phyPayload": "YJNnjgCAJwAinVl6k6U=",
   "rx1": {
     "frequency": "868100000",
-    "dataRateIndex": 5
+    "dataRate": {
+      "lora": {
+        "spreading_factor": 7,
+        "bandwidth": 125000,
+        "coding_rate": "4/5"
+      }
+    }
   },
   "rx2": {
     "frequency": "869525000",
-    "dataRateIndex": 0
+    "dataRate": {
+      "lora": {
+        "spreading_factor": 12,
+        "bandwidth": 125000,
+        "coding_rate": "4/5"
+      }
+    }
   },
   "rx1Delay": "5s",
   "class": "CLASS_A",
