@@ -102,10 +102,10 @@ var rootCmd = &cobra.Command{
 			homeNetwork, homeNetworkOK = pbflag.GetEndpoint(cmd.Flags(), "home-network")
 		)
 		switch {
-		case forwarderOK:
-			return asForwarder(cmd.Flags(), forwarder)
 		case homeNetworkOK:
 			return asHomeNetwork(cmd.Flags(), forwarder, homeNetwork)
+		case forwarderOK:
+			return asForwarder(cmd.Flags(), forwarder)
 		}
 		return errors.New("no role specified")
 	},
