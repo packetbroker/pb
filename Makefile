@@ -15,7 +15,11 @@ deps.tidy:
 
 .PHONY: fmt
 fmt:
+<<<<<<< HEAD
 	@$(GOBIN)/gofumpt -w .
+=======
+	@$(GOBIN)/gofumpt -l -w .
+>>>>>>> 67ead33 (Switch to gofumpt)
 
 .PHONY: quality
 quality:
