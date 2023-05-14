@@ -362,9 +362,25 @@ func WriteJoinServer(w io.Writer, js *packetbroker.JoinServer, verbose bool) err
 
 // WriteNetwork writes the Network.
 func WriteNetwork(w io.Writer, network *packetbroker.Network, verbose bool) error {
+	var (
+		delegatedNetID   string
+		representsNetIDs string
+	)
+	if val := network.GetDelegatedNetId(); val != nil {
+		delegatedNetID = packetbroker.NetID(val.Value).String()
+	}
+	if len(network.RepresentsNetIds) > 0 {
+		netIDs := make([]string, len(network.RepresentsNetIds))
+		for i, n := range network.RepresentsNetIds {
+			netIDs[i] = packetbroker.NetID(n).String()
+		}
+		representsNetIDs = strings.Join(netIDs, ", ")
+	}
 	if err := WriteKV(w,
 		"NetID", packetbroker.NetID(network.GetNetId()).String(),
 		"Name", network.GetName(),
+		"Delegated NetID", delegatedNetID,
+		"Represents NetIDs", representsNetIDs,
 	); err != nil {
 		return err
 	}

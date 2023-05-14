@@ -34,7 +34,7 @@ var (
 				offset          = uint32(0)
 				nameContains, _ = cmd.Flags().GetString("name-contains")
 			)
-			fmt.Fprintln(tabout, "NetID\tName\tDevAddr Blocks\tListed\tTarget\t")
+			fmt.Fprintln(tabout, "NetID\tName\tDevAddr Blocks\tListed\tTarget\tDelegated NetID\t")
 			for {
 				res, err := iampb.NewNetworkRegistryClient(conn).ListNetworks(ctx, &iampb.ListNetworksRequest{
 					Offset:       offset,
@@ -44,12 +44,17 @@ var (
 					return err
 				}
 				for _, t := range res.Networks {
-					fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t%s\t\n",
+					var delegatedNetID *uint32
+					if val := t.GetDelegatedNetId(); val != nil {
+						delegatedNetID = &val.Value
+					}
+					fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t%s\t%s\t\n",
 						packetbroker.NetID(t.GetNetId()),
 						t.GetName(),
 						column.DevAddrBlocks(t.GetDevAddrBlocks()),
 						column.YesNo(t.GetListed()),
 						(*column.Target)(t.GetTarget()),
+						(*packetbroker.NetID)(delegatedNetID),
 					)
 				}
 				offset += uint32(len(res.Networks))
@@ -92,6 +97,10 @@ var (
 			if err := pbflag.ApplyToTarget(cmd.Flags(), "target", &target); err != nil {
 				return err
 			}
+			var delegatedNetID *wrapperspb.UInt32Value
+			if netID, ok := pbflag.GetNetID(cmd.Flags(), "delegated"); ok {
+				delegatedNetID = wrapperspb.UInt32(uint32(netID))
+			}
 			res, err := iampb.NewNetworkRegistryClient(conn).CreateNetwork(ctx, &iampb.CreateNetworkRequest{
 				Network: &packetbroker.Network{
 					NetId:                 uint32(netID),
@@ -101,6 +110,7 @@ var (
 					TechnicalContact:      techContact,
 					Listed:                listed,
 					Target:                target,
+					DelegatedNetId:        delegatedNetID,
 				},
 			})
 			if err != nil {
@@ -177,6 +187,13 @@ var (
 			if cmd.Flags().Changed("listed") {
 				listed, _ := cmd.Flags().GetBool("listed")
 				req.Listed = wrapperspb.Bool(listed)
+			}
+			if delegatedNetID, ok := pbflag.GetNetID(cmd.Flags(), "delegated"); ok {
+				req.DelegatedNetId = &iampb.UpdateNetworkRequest_DelegatedNetID{
+					Value: wrapperspb.UInt32(uint32(delegatedNetID)),
+				}
+			} else if unset, _ := cmd.Flags().GetBool("unset-delegated-net-id"); cmd.Flags().Changed("unset-delegated-net-id") && unset {
+				req.DelegatedNetId = new(iampb.UpdateNetworkRequest_DelegatedNetID)
 			}
 			_, err = client.UpdateNetwork(ctx, req)
 			return err
@@ -327,6 +344,7 @@ func networkSettingsFlags() *flag.FlagSet {
 	flags := new(flag.FlagSet)
 	flags.String("name", "", "network name")
 	flags.Bool("listed", false, "list network in catalog")
+	flags.AddFlagSet(pbflag.NetID("delegated"))
 	return flags
 }
 
@@ -353,6 +371,7 @@ func init() {
 	networkUpdateCmd.Flags().AddFlagSet(pbflag.DevAddrBlocks(true))
 	networkUpdateCmd.Flags().AddFlagSet(pbflag.ContactInfo("admin"))
 	networkUpdateCmd.Flags().AddFlagSet(pbflag.ContactInfo("tech"))
+	networkUpdateCmd.Flags().Bool("unset-delegated-net-id", false, "unset the delegated NetID")
 	networkUpdateTargetCmd.Flags().AddFlagSet(pbflag.NetID(""))
 	networkUpdateTargetCmd.Flags().AddFlagSet(pbflag.Target(""))
 	networkUpdateCmd.AddCommand(networkUpdateTargetCmd)
