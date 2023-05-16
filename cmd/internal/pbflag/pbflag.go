@@ -843,11 +843,16 @@ func ApplyToTarget(flags *flag.FlagSet, actor string, target **packetbroker.Targ
 		return fmt.Errorf("invalid protocol: %s", protocol)
 	}
 
-	if rootCAsFile, err := flags.GetString(actorf(actor, "root-cas-file")); err == nil && rootCAsFile != "" {
-		var err error
-		(*target).RootCas, err = ioutil.ReadFile(rootCAsFile)
-		if err != nil {
-			return fmt.Errorf("read root CAs file %q: %w", rootCAsFile, err)
+	if flags.Changed(actorf(actor, "root-cas-file")) {
+		rootCAsFile, _ := flags.GetString(actorf(actor, "root-cas-file"))
+		if rootCAsFile != "" {
+			var err error
+			(*target).RootCas, err = ioutil.ReadFile(rootCAsFile)
+			if err != nil {
+				return fmt.Errorf("read root CAs file %q: %w", rootCAsFile, err)
+			}
+		} else {
+			(*target).RootCas = nil
 		}
 	}
 
