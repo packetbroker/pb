@@ -1,0 +1,69 @@
+{
+  "gatewayId": {
+    "eui": "1234605616436508552",
+    "plain": "my-gateway"
+  },
+  "phyPayload": {
+    "teaser": {
+      "hash": "SFDudlmz+5nnIEppPoocAYQtauhCubioxqpl9sIHoG4=",
+      "join_request": {
+        "join_eui": "1234605616436508552",
+        "dev_eui": "1234605616436508552",
+        "dev_nonce": 4660
+      }
+    },
+    "plain": "AIh3ZlVEMyIRiHdmVUQzIhEiEaq7zN0="
+  },
+  "forwarderReceiveTime": "2020-01-24T16:46:01Z",
+  "gatewayReceiveTime": "2020-01-24T16:46:00Z",
+  "gatewayRegion": "EU_863_870",
+  "dataRateIndex": 5,
+  "frequency": 868100000,
+  "gatewayMetadata": {
+    "teaser": {
+      "terrestrial": {
+        "fineTimestamp": false
+      }
+    },
+    "plainSignalQuality": {
+      "terrestrial": {
+        "antennas": [
+          {
+            "index": 0,
+            "value": {
+              "channelRssi": -125.2,
+              "signalRssi": -121.5,
+              "rssiStandardDeviation": 5.6,
+              "snr": 10.5,
+              "frequencyOffset": -5
+            }
+          }
+        ]
+      }
+    },
+    "plainLocalization": {
+      "terrestrial": {
+        "antennas": [
+          {
+            "index": 0,
+            "location": {
+              "latitude": 52.5464,
+              "longitude": 4.8521,
+              "altitude": 15.6,
+              "accuracy": 3
+            },
+            "signalQuality": {
+              "channelRssi": -125.2,
+              "signalRssi": -121.5,
+              "rssiStandardDeviation": 5.6,
+              "snr": 10.5,
+              "frequencyOffset": -5
+            }
+          }
+        ]
+      }
+    }
+  },
+  "forwarderUplinkToken": "AQID",
+  "gatewayUplinkToken": "AQID"
+}
