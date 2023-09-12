@@ -150,6 +150,18 @@ var (
 			if err != nil {
 				return err
 			}
+			if cmd.Flags().Changed("listed") {
+				listed, _ := cmd.Flags().GetBool("listed")
+				_, err := client.UpdateTenantListed(ctx, &iampb.UpdateTenantListedRequest{
+					NetId:    uint32(tenantID.NetID),
+					TenantId: tenantID.ID,
+					Listed:   listed,
+				})
+				if err != nil {
+					return err
+				}
+			}
+			var any bool
 			req := &iampb.UpdateTenantRequest{
 				NetId:    uint32(tenantID.NetID),
 				TenantId: tenantID.ID,
@@ -157,33 +169,37 @@ var (
 			if cmd.Flags().Changed("name") {
 				name, _ := cmd.Flags().GetString("name")
 				req.Name = wrapperspb.String(name)
+				any = true
 			}
 			devAddrBlocksAll, devAddrBlocksAllAdd, devAddrBlocksAllRemove := pbflag.GetDevAddrBlocks(cmd.Flags())
 			if cmd.Flags().Changed("dev-addr-blocks") {
 				req.DevAddrBlocks = &iampb.DevAddrBlocksValue{
 					Value: devAddrBlocksAll,
 				}
-			} else {
+				any = true
+			} else if len(devAddrBlocksAllAdd) > 0 || len(devAddrBlocksAllRemove) > 0 {
 				req.DevAddrBlocks = &iampb.DevAddrBlocksValue{
 					Value: mergeDevAddrBlocks(tnt.Tenant.DevAddrBlocks, devAddrBlocksAllAdd, devAddrBlocksAllRemove),
 				}
+				any = true
 			}
 			if adminContact := pbflag.GetContactInfo(cmd.Flags(), "admin"); adminContact != nil {
 				req.AdministrativeContact = &packetbroker.ContactInfoValue{
 					Value: adminContact,
 				}
+				any = true
 			}
 			if techContact := pbflag.GetContactInfo(cmd.Flags(), "tech"); techContact != nil {
 				req.TechnicalContact = &packetbroker.ContactInfoValue{
 					Value: techContact,
 				}
+				any = true
 			}
-			if cmd.Flags().Changed("listed") {
-				listed, _ := cmd.Flags().GetBool("listed")
-				req.Listed = wrapperspb.Bool(listed)
+			if any {
+				_, err = client.UpdateTenant(ctx, req)
+				return err
 			}
-			_, err = client.UpdateTenant(ctx, req)
-			return err
+			return nil
 		},
 	}
 	networkTenantUpdateTargetCmd = &cobra.Command{

@@ -158,46 +158,63 @@ var (
 			if err != nil {
 				return err
 			}
+			if cmd.Flags().Changed("listed") {
+				listed, _ := cmd.Flags().GetBool("listed")
+				_, err := client.UpdateNetworkListed(ctx, &iampb.UpdateNetworkListedRequest{
+					NetId:  uint32(netID),
+					Listed: listed,
+				})
+				if err != nil {
+					return err
+				}
+			}
+			var any bool
 			req := &iampb.UpdateNetworkRequest{
 				NetId: uint32(netID),
 			}
 			if cmd.Flags().Changed("name") {
 				name, _ := cmd.Flags().GetString("name")
 				req.Name = wrapperspb.String(name)
+				any = true
 			}
 			devAddrBlocksAll, devAddrBlocksAllAdd, devAddrBlocksAllRemove := pbflag.GetDevAddrBlocks(cmd.Flags())
 			if cmd.Flags().Changed("dev-addr-blocks") {
 				req.DevAddrBlocks = &iampb.DevAddrBlocksValue{
 					Value: devAddrBlocksAll,
 				}
-			} else {
+				any = true
+			} else if len(devAddrBlocksAllAdd) > 0 || len(devAddrBlocksAllRemove) > 0 {
 				req.DevAddrBlocks = &iampb.DevAddrBlocksValue{
 					Value: mergeDevAddrBlocks(nwk.Network.DevAddrBlocks, devAddrBlocksAllAdd, devAddrBlocksAllRemove),
 				}
+				any = true
 			}
 			if adminContact := pbflag.GetContactInfo(cmd.Flags(), "admin"); adminContact != nil {
 				req.AdministrativeContact = &packetbroker.ContactInfoValue{
 					Value: adminContact,
 				}
+				any = true
 			}
 			if techContact := pbflag.GetContactInfo(cmd.Flags(), "tech"); techContact != nil {
 				req.TechnicalContact = &packetbroker.ContactInfoValue{
 					Value: techContact,
 				}
-			}
-			if cmd.Flags().Changed("listed") {
-				listed, _ := cmd.Flags().GetBool("listed")
-				req.Listed = wrapperspb.Bool(listed)
+				any = true
 			}
 			if delegatedNetID, ok := pbflag.GetNetID(cmd.Flags(), "delegated"); ok {
 				req.DelegatedNetId = &iampb.UpdateNetworkRequest_DelegatedNetID{
 					Value: wrapperspb.UInt32(uint32(delegatedNetID)),
 				}
+				any = true
 			} else if unset, _ := cmd.Flags().GetBool("unset-delegated-net-id"); cmd.Flags().Changed("unset-delegated-net-id") && unset {
 				req.DelegatedNetId = new(iampb.UpdateNetworkRequest_DelegatedNetID)
+				any = true
 			}
-			_, err = client.UpdateNetwork(ctx, req)
-			return err
+			if any {
+				_, err = client.UpdateNetwork(ctx, req)
+				return err
+			}
+			return nil
 		},
 	}
 	networkUpdateTargetCmd = &cobra.Command{
