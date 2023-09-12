@@ -378,6 +378,7 @@ func WriteNetwork(w io.Writer, network *packetbroker.Network, verbose bool) erro
 	}
 	if err := WriteKV(w,
 		"NetID", packetbroker.NetID(network.GetNetId()).String(),
+		"Authority", network.GetAuthority(),
 		"Name", network.GetName(),
 		"Delegated NetID", delegatedNetID,
 		"Represents NetIDs", representsNetIDs,
@@ -402,6 +403,7 @@ func WriteTenant(w io.Writer, tenant *packetbroker.Tenant, verbose bool) error {
 	if err := WriteKV(w,
 		"NetID", packetbroker.NetID(tenant.GetNetId()).String(),
 		"Tenant ID", tenant.GetTenantId(),
+		"Authority", tenant.GetAuthority(),
 		"Name", tenant.GetName(),
 	); err != nil {
 		return err

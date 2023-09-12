@@ -31,7 +31,7 @@ var (
 				idContains, _   = cmd.Flags().GetString("id-contains")
 				nameContains, _ = cmd.Flags().GetString("name-contains")
 			)
-			fmt.Fprintln(tabout, "NetID\tTenant ID\tName\tDevAddr Blocks\tListed\tTarget\t")
+			fmt.Fprintln(tabout, "NetID\tTenant ID\tAuthority\tName\tDevAddr Blocks\tListed\tTarget\t")
 			for {
 				res, err := iampb.NewTenantRegistryClient(conn).ListTenants(ctx, &iampb.ListTenantsRequest{
 					NetId:            uint32(netID),
@@ -43,9 +43,10 @@ var (
 					return err
 				}
 				for _, t := range res.Tenants {
-					fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t%s\t%s\t\n",
+					fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n",
 						packetbroker.NetID(t.GetNetId()),
 						t.GetTenantId(),
+						t.GetAuthority(),
 						t.GetName(),
 						column.DevAddrBlocks(t.GetDevAddrBlocks()),
 						column.YesNo(t.GetListed()),

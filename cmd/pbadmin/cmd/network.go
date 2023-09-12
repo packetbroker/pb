@@ -34,7 +34,7 @@ var (
 				offset          = uint32(0)
 				nameContains, _ = cmd.Flags().GetString("name-contains")
 			)
-			fmt.Fprintln(tabout, "NetID\tName\tDevAddr Blocks\tListed\tTarget\tDelegated NetID\t")
+			fmt.Fprintln(tabout, "NetID\tAuthority\tName\tDevAddr Blocks\tListed\tTarget\tDelegated NetID\t")
 			for {
 				res, err := iampb.NewNetworkRegistryClient(conn).ListNetworks(ctx, &iampb.ListNetworksRequest{
 					Offset:       offset,
@@ -48,8 +48,9 @@ var (
 					if val := t.GetDelegatedNetId(); val != nil {
 						delegatedNetID = &val.Value
 					}
-					fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t%s\t%s\t\n",
+					fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n",
 						packetbroker.NetID(t.GetNetId()),
+						t.Authority,
 						t.GetName(),
 						column.DevAddrBlocks(t.GetDevAddrBlocks()),
 						column.YesNo(t.GetListed()),
