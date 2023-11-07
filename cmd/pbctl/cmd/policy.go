@@ -3,6 +3,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -147,6 +148,9 @@ may use their infrastructure.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client := routingpb.NewPolicyManagerClient(cpConn)
 			forwarderTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "forwarder")
+			if forwarderTenantID.IsEmpty() {
+				return errors.New("pass your NetID (and tenant ID) via --forwarder-net-id (and --forwarder-tenant-id)")
+			}
 			uplink, downlink := pbflag.GetRoutingPolicy(cmd.Flags())
 			policy := &packetbroker.RoutingPolicy{
 				ForwarderNetId:    uint32(forwarderTenantID.NetID),
@@ -162,6 +166,9 @@ may use their infrastructure.`,
 				})
 			} else {
 				homeNetworkTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "home-network")
+				if homeNetworkTenantID.IsEmpty() {
+					return errors.New("pass the Home Network NetID (and tenant ID) via --home-network-net-id (and --home-network-tenant-id)")
+				}
 				policy.HomeNetworkNetId = uint32(homeNetworkTenantID.NetID)
 				policy.HomeNetworkTenantId = homeNetworkTenantID.ID
 				_, err = client.SetHomeNetworkPolicy(ctx, &routingpb.SetPolicyRequest{
@@ -194,6 +201,9 @@ may use their infrastructure.`,
 				err    error
 			)
 			forwarderTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "forwarder")
+			if forwarderTenantID.IsEmpty() {
+				return errors.New("pass your NetID (and tenant ID) via --forwarder-net-id (and --forwarder-tenant-id)")
+			}
 			defaults, _ := cmd.Flags().GetBool("defaults")
 			if defaults {
 				res, err = client.GetDefaultPolicy(ctx, &routingpb.GetDefaultPolicyRequest{
@@ -202,6 +212,9 @@ may use their infrastructure.`,
 				})
 			} else {
 				homeNetworkTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "home-network")
+				if homeNetworkTenantID.IsEmpty() {
+					return errors.New("pass the Home Network NetID (and tenant ID) via --home-network-net-id (and --home-network-tenant-id)")
+				}
 				res, err = client.GetHomeNetworkPolicy(ctx, &routingpb.GetHomeNetworkPolicyRequest{
 					ForwarderNetId:      uint32(forwarderTenantID.NetID),
 					ForwarderTenantId:   forwarderTenantID.ID,
@@ -232,6 +245,9 @@ may use their infrastructure.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client := routingpb.NewPolicyManagerClient(cpConn)
 			forwarderTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "forwarder")
+			if forwarderTenantID.IsEmpty() {
+				return errors.New("pass your NetID (and tenant ID) via --forwarder-net-id (and --forwarder-tenant-id)")
+			}
 			policy := &packetbroker.RoutingPolicy{
 				ForwarderNetId:    uint32(forwarderTenantID.NetID),
 				ForwarderTenantId: forwarderTenantID.ID,
@@ -243,6 +259,9 @@ may use their infrastructure.`,
 				})
 			} else {
 				homeNetworkTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "home-network")
+				if homeNetworkTenantID.IsEmpty() {
+					return errors.New("pass the Home Network NetID (and tenant ID) via --home-network-net-id (and --home-network-tenant-id)")
+				}
 				policy.HomeNetworkNetId = uint32(homeNetworkTenantID.NetID)
 				policy.HomeNetworkTenantId = homeNetworkTenantID.ID
 				_, err = client.SetHomeNetworkPolicy(ctx, &routingpb.SetPolicyRequest{
@@ -266,6 +285,9 @@ may use their infrastructure.`,
 				idContains, _   = cmd.Flags().GetString("id-contains")
 				nameContains, _ = cmd.Flags().GetString("name-contains")
 			)
+			if tenantID.IsEmpty() {
+				return errors.New("pass the NetID (and tenant ID) via --net-id (and --tenant-id)")
+			}
 			fmt.Fprintln(tabout, "NetID\tTenant ID\tName\tDevAddr Blocks\t")
 			for {
 				res, err := routingpb.NewPolicyManagerClient(cpConn).ListNetworksWithPolicy(ctx,

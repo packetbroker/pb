@@ -3,6 +3,8 @@
 package cmd
 
 import (
+	"errors"
+
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	mappingpb "go.packetbroker.org/api/mapping/v2"
@@ -53,6 +55,9 @@ who may see their infrastructure.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client := mappingpb.NewGatewayVisibilityManagerClient(cpConn)
 			forwarderTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "forwarder")
+			if forwarderTenantID.IsEmpty() {
+				return errors.New("pass your NetID (and tenant ID) via --forwarder-net-id (and --forwarder-tenant-id)")
+			}
 			visibility := pbflag.GetGatewayVisibility(cmd.Flags())
 			visibility.ForwarderNetId = uint32(forwarderTenantID.NetID)
 			visibility.ForwarderTenantId = forwarderTenantID.ID
@@ -64,6 +69,9 @@ who may see their infrastructure.`,
 				})
 			} else {
 				homeNetworkTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "home-network")
+				if homeNetworkTenantID.IsEmpty() {
+					return errors.New("pass the Home Network NetID (and tenant ID) via --home-network-net-id (and --home-network-tenant-id)")
+				}
 				visibility.HomeNetworkNetId = uint32(homeNetworkTenantID.NetID)
 				visibility.HomeNetworkTenantId = homeNetworkTenantID.ID
 				_, err = client.SetHomeNetworkVisibility(ctx, &mappingpb.SetGatewayVisibilityRequest{
@@ -97,6 +105,9 @@ who may see their infrastructure.`,
 				err    error
 			)
 			forwarderTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "forwarder")
+			if forwarderTenantID.IsEmpty() {
+				return errors.New("pass your NetID (and tenant ID) via --forwarder-net-id (and --forwarder-tenant-id)")
+			}
 			defaults, _ := cmd.Flags().GetBool("defaults")
 			if defaults {
 				res, err = client.GetDefaultVisibility(ctx, &mappingpb.GetDefaultGatewayVisibilityRequest{
@@ -105,6 +116,9 @@ who may see their infrastructure.`,
 				})
 			} else {
 				homeNetworkTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "home-network")
+				if homeNetworkTenantID.IsEmpty() {
+					return errors.New("pass the Home Network NetID (and tenant ID) via --home-network-net-id (and --home-network-tenant-id)")
+				}
 				res, err = client.GetHomeNetworkVisibility(ctx, &mappingpb.GetHomeNetworkGatewayVisibilityRequest{
 					ForwarderNetId:      uint32(forwarderTenantID.NetID),
 					ForwarderTenantId:   forwarderTenantID.ID,
@@ -136,6 +150,9 @@ who may see their infrastructure.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client := mappingpb.NewGatewayVisibilityManagerClient(cpConn)
 			forwarderTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "forwarder")
+			if forwarderTenantID.IsEmpty() {
+				return errors.New("pass your NetID (and tenant ID) via --forwarder-net-id (and --forwarder-tenant-id)")
+			}
 			visibility := &packetbroker.GatewayVisibility{
 				ForwarderNetId:    uint32(forwarderTenantID.NetID),
 				ForwarderTenantId: forwarderTenantID.ID,
@@ -147,6 +164,9 @@ who may see their infrastructure.`,
 				})
 			} else {
 				homeNetworkTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "home-network")
+				if homeNetworkTenantID.IsEmpty() {
+					return errors.New("pass the Home Network NetID (and tenant ID) via --home-network-net-id (and --home-network-tenant-id)")
+				}
 				visibility.HomeNetworkNetId = uint32(homeNetworkTenantID.NetID)
 				visibility.HomeNetworkTenantId = homeNetworkTenantID.ID
 				_, err = client.SetHomeNetworkVisibility(ctx, &mappingpb.SetGatewayVisibilityRequest{
