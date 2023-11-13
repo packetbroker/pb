@@ -5,8 +5,8 @@ package pbflag
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/url"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -762,7 +762,7 @@ func ApplyToTarget(flags *flag.FlagSet, actor string, target **packetbroker.Targ
 		rootCAsFile, _ := flags.GetString(actorf(actor, "root-cas-file"))
 		if rootCAsFile != "" {
 			var err error
-			(*target).RootCas, err = ioutil.ReadFile(rootCAsFile)
+			(*target).RootCas, err = os.ReadFile(rootCAsFile)
 			if err != nil {
 				return fmt.Errorf("read root CAs file %q: %w", rootCAsFile, err)
 			}
