@@ -33,7 +33,7 @@ var (
 )
 
 func prerunConnect(cmd *cobra.Command, args []string) error {
-	iamClientConf, err := config.OAuth2Client(ctx, "iam", "networks")
+	iamClientConf, err := config.AutomaticClient(ctx, "iam", config.BasicAuthIAM, "networks")
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func prerunConnect(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	cpClientConf, err := config.OAuth2Client(ctx, "controlplane", "networks")
+	cpClientConf, err := config.AutomaticClient(ctx, "controlplane", config.BasicAuthControlPlane, "networks")
 	if err != nil {
 		return err
 	}
@@ -51,7 +51,7 @@ func prerunConnect(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	reportsClientConf, err := config.OAuth2Client(ctx, "reports", "networks")
+	reportsClientConf, err := config.AutomaticClient(ctx, "reports", config.BasicAuthReporter, "networks")
 	if err != nil {
 		return err
 	}
@@ -90,8 +90,11 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().AddFlagSet(config.ClientFlags("iam", "iam.packetbroker.net:443"))
+	rootCmd.PersistentFlags().AddFlagSet(config.BasicAuthClientFlags(config.BasicAuthIAM))
 	rootCmd.PersistentFlags().AddFlagSet(config.ClientFlags("controlplane", "cp.packetbroker.net:443"))
+	rootCmd.PersistentFlags().AddFlagSet(config.BasicAuthClientFlags(config.BasicAuthControlPlane))
 	rootCmd.PersistentFlags().AddFlagSet(config.ClientFlags("reports", "reports.packetbroker.net:443"))
+	rootCmd.PersistentFlags().AddFlagSet(config.BasicAuthClientFlags(config.BasicAuthReporter))
 	rootCmd.PersistentFlags().AddFlagSet(config.OAuth2ClientFlags())
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.pb.yaml, .pb.yaml)")
