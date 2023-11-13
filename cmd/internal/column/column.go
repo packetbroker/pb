@@ -59,15 +59,14 @@ func (t *Target) String() string {
 	switch t.DefaultAuthentication.(type) {
 	case *packetbroker.Target_PbTokenAuth:
 		s += " (with PB token auth)"
+	case *packetbroker.Target_PbTlsClientAuth:
+		s += " (with PB TLS client auth)"
 	case *packetbroker.Target_BasicAuth_:
 		s += " (with HTTP basic auth)"
 	case *packetbroker.Target_CustomAuth_:
 		s += " (with HTTP custom auth)"
-	case *packetbroker.Target_TlsClientAuth:
-		s += " (with TLS client auth)"
-	}
-	if l := len(t.OriginNetIdAuthentication); l > 0 {
-		s += fmt.Sprintf(" (+%d with custom origin)", l)
+	case *packetbroker.Target_CustomTlsClientAuth:
+		s += " (with custom TLS client auth)"
 	}
 	return s
 }
@@ -247,59 +246,33 @@ func writeTarget(w io.Writer, target *packetbroker.Target, verbose bool) error {
 		return nil
 	}
 
-	targetAuthKV := func(auth *packetbroker.Target_Authentication) []string {
-		switch a := auth.GetValue().(type) {
-		case *packetbroker.Target_Authentication_PbTokenAuth:
-			return []string{"Token", "Packet Broker"}
-		case *packetbroker.Target_Authentication_BasicAuth:
-			kv := []string{"Basic username", a.BasicAuth.Username}
-			if verbose {
-				kv = append(kv, "Basic password", a.BasicAuth.Password)
-			}
-			return kv
-		case *packetbroker.Target_Authentication_CustomAuth:
-			return []string{"Authorization", a.CustomAuth.Value}
-		case *packetbroker.Target_Authentication_TlsClientAuth:
-			if verbose {
-				return []string{
-					"TLS client certificate", string(a.TlsClientAuth.Cert),
-					"TLS client key", string(a.TlsClientAuth.Key),
-				}
-			}
-			sub, err := x509SubjectFromPair(a.TlsClientAuth.Cert, a.TlsClientAuth.Key)
-			if err != nil {
-				return []string{"Error", err.Error()}
-			}
-			return []string{"TLS client certificate subject", sub}
-		default:
-			return nil
-		}
-	}
-
 	var authKV []string
 	switch a := target.DefaultAuthentication.(type) {
 	case *packetbroker.Target_PbTokenAuth:
-		authKV = targetAuthKV(&packetbroker.Target_Authentication{
-			Value: &packetbroker.Target_Authentication_PbTokenAuth{},
-		})
+		authKV = []string{"Token", "Packet Broker"}
+	case *packetbroker.Target_PbTlsClientAuth:
+		authKV = []string{"TLS client certificate", "Packet Broker"}
 	case *packetbroker.Target_BasicAuth_:
-		authKV = targetAuthKV(&packetbroker.Target_Authentication{
-			Value: &packetbroker.Target_Authentication_BasicAuth{
-				BasicAuth: a.BasicAuth,
-			},
-		})
+		kv := []string{"Basic username", a.BasicAuth.Username}
+		if verbose {
+			kv = append(kv, "Basic password", a.BasicAuth.Password)
+		}
+		authKV = kv
 	case *packetbroker.Target_CustomAuth_:
-		authKV = targetAuthKV(&packetbroker.Target_Authentication{
-			Value: &packetbroker.Target_Authentication_CustomAuth{
-				CustomAuth: a.CustomAuth,
-			},
-		})
-	case *packetbroker.Target_TlsClientAuth:
-		authKV = targetAuthKV(&packetbroker.Target_Authentication{
-			Value: &packetbroker.Target_Authentication_TlsClientAuth{
-				TlsClientAuth: a.TlsClientAuth,
-			},
-		})
+		authKV = []string{"Authorization", a.CustomAuth.Value}
+	case *packetbroker.Target_CustomTlsClientAuth:
+		if verbose {
+			authKV = []string{
+				"TLS client certificate", string(a.CustomTlsClientAuth.Cert),
+				"TLS client key", string(a.CustomTlsClientAuth.Key),
+			}
+		}
+		sub, err := x509SubjectFromPair(a.CustomTlsClientAuth.Cert, a.CustomTlsClientAuth.Key)
+		if err != nil {
+			authKV = []string{"Error", err.Error()}
+		} else {
+			authKV = []string{"TLS client certificate subject", sub}
+		}
 	}
 
 	var rootCAs []string

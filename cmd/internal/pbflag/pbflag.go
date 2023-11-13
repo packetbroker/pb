@@ -743,83 +743,49 @@ func ApplyToTarget(flags *flag.FlagSet, actor string, target **packetbroker.Targ
 		tlsCertFile, _ := flags.GetString(actorf(actor, "tls-cert-file"))
 		tlsKeyFile, _ := flags.GetString(actorf(actor, "tls-key-file"))
 
-		var authentication *packetbroker.Target_Authentication
 		switch {
 		// Packet Broker token authentication.
 		case pbToken:
-			authentication = &packetbroker.Target_Authentication{
-				Value: &packetbroker.Target_Authentication_PbTokenAuth{
-					PbTokenAuth: &packetbroker.Target_PacketBrokerTokenAuth{},
-				},
+			(*target).DefaultAuthentication = &packetbroker.Target_PbTokenAuth{
+				PbTokenAuth: &packetbroker.Target_PacketBrokerTokenAuth{},
+			}
+		// Packet Broker TLS client authentication.
+		case pbToken:
+			(*target).DefaultAuthentication = &packetbroker.Target_PbTlsClientAuth{
+				PbTlsClientAuth: &packetbroker.Target_PacketBrokerTLSClientAuth{},
 			}
 		// HTTP basic authentication.
 		case url != nil && url.User != nil:
 			password, _ := url.User.Password()
-			authentication = &packetbroker.Target_Authentication{
-				Value: &packetbroker.Target_Authentication_BasicAuth{
-					BasicAuth: &packetbroker.Target_BasicAuth{
-						Username: url.User.Username(),
-						Password: password,
-					},
+			(*target).DefaultAuthentication = &packetbroker.Target_BasicAuth_{
+				BasicAuth: &packetbroker.Target_BasicAuth{
+					Username: url.User.Username(),
+					Password: password,
 				},
 			}
 			url.User = nil
 		// Custom HTTP authorization value.
 		case authorization != "":
-			authentication = &packetbroker.Target_Authentication{
-				Value: &packetbroker.Target_Authentication_CustomAuth{
-					CustomAuth: &packetbroker.Target_CustomAuth{
-						Value: authorization,
-					},
+			(*target).DefaultAuthentication = &packetbroker.Target_CustomAuth_{
+				CustomAuth: &packetbroker.Target_CustomAuth{
+					Value: authorization,
 				},
 			}
 		// TLS client authentication.
 		case tlsCertFile != "" || tlsKeyFile != "":
-			tlsCert, err := ioutil.ReadFile(tlsCertFile)
+			tlsCert, err := os.ReadFile(tlsCertFile)
 			if err != nil {
 				return err
 			}
-			tlsKey, err := ioutil.ReadFile(tlsKeyFile)
+			tlsKey, err := os.ReadFile(tlsKeyFile)
 			if err != nil {
 				return err
 			}
-			authentication = &packetbroker.Target_Authentication{
-				Value: &packetbroker.Target_Authentication_TlsClientAuth{
-					TlsClientAuth: &packetbroker.Target_TLSClientAuth{
-						Cert: tlsCert,
-						Key:  tlsKey,
-					},
+			(*target).DefaultAuthentication = &packetbroker.Target_CustomTlsClientAuth{
+				CustomTlsClientAuth: &packetbroker.Target_CustomTLSClientAuth{
+					Cert: tlsCert,
+					Key:  tlsKey,
 				},
-			}
-		}
-
-		if netID, ok := GetNetID(flags, actorf(actor, "origin")); ok {
-			if (*target).OriginNetIdAuthentication == nil {
-				(*target).OriginNetIdAuthentication = make(map[uint32]*packetbroker.Target_Authentication)
-			}
-			if authentication == nil {
-				delete((*target).OriginNetIdAuthentication, uint32(netID))
-			} else {
-				(*target).OriginNetIdAuthentication[uint32(netID)] = authentication
-			}
-		} else if authentication != nil {
-			switch auth := authentication.GetValue().(type) {
-			case *packetbroker.Target_Authentication_PbTokenAuth:
-				(*target).DefaultAuthentication = &packetbroker.Target_PbTokenAuth{
-					PbTokenAuth: auth.PbTokenAuth,
-				}
-			case *packetbroker.Target_Authentication_BasicAuth:
-				(*target).DefaultAuthentication = &packetbroker.Target_BasicAuth_{
-					BasicAuth: auth.BasicAuth,
-				}
-			case *packetbroker.Target_Authentication_CustomAuth:
-				(*target).DefaultAuthentication = &packetbroker.Target_CustomAuth_{
-					CustomAuth: auth.CustomAuth,
-				}
-			case *packetbroker.Target_Authentication_TlsClientAuth:
-				(*target).DefaultAuthentication = &packetbroker.Target_TlsClientAuth{
-					TlsClientAuth: auth.TlsClientAuth,
-				}
 			}
 		}
 
