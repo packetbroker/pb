@@ -24,6 +24,17 @@ const (
 	maxJoinEUIPrefixes = 2
 )
 
+// NetIDs prints the NetIDs as list.
+type NetIDs []uint32
+
+func (n NetIDs) String() string {
+	res := make([]string, len(n))
+	for i, v := range n {
+		res[i] = packetbroker.NetID(v).String()
+	}
+	return strings.Join(res, ",")
+}
+
 // YesNo prints the boolean as Yes or No.
 type YesNo bool
 

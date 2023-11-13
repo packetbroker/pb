@@ -12,36 +12,38 @@ import (
 )
 
 var targetsCmd = &cobra.Command{
-	Use:               "targets",
-	Short:             "List Packet Broker targets",
+	Use:               "network-server-clusters",
+	Aliases:           []string{"nsc"},
+	Short:             "List Packet Broker Network Server clusters",
 	SilenceUsage:      true,
 	PersistentPreRunE: prerunConnect,
 	PersistentPostRun: postrunConnect,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var (
-			client  = routingpb.NewRoutesClient(cpConn)
-			offset  = uint32(0)
-			targets []*packetbroker.NetworkTarget
+			client   = routingpb.NewRoutesClient(cpConn)
+			offset   = uint32(0)
+			clusters []*packetbroker.NetworkServerCluster
 		)
 		for {
-			res, err := client.ListNetworkTargets(ctx, &routingpb.ListNetworkTargetsRequest{
+			res, err := client.ListNetworkServerClusters(ctx, &routingpb.ListNetworkServerClustersRequest{
 				Offset: offset,
 			})
 			if err != nil {
 				return err
 			}
-			targets = append(targets, res.Targets...)
-			offset += uint32(len(res.Targets))
-			if len(res.Targets) == 0 || offset >= res.Total {
+			clusters = append(clusters, res.Clusters...)
+			offset += uint32(len(res.Clusters))
+			if len(res.Clusters) == 0 || offset >= res.Total {
 				break
 			}
 		}
-		fmt.Fprintln(tabout, "NetID\tTenant ID\tTarget\t")
-		for _, t := range targets {
+		fmt.Fprintln(tabout, "Authority\tCluster ID\tNet IDs\tTarget\t")
+		for _, t := range clusters {
 			fmt.Fprintf(tabout,
-				"%s\t%s\t%s\t\n",
-				packetbroker.NetID(t.GetNetId()),
-				t.GetTenantId(),
+				"%s\t%s\t%s\t%s\t\n",
+				t.GetAuthority(),
+				t.GetClusterId(),
+				(column.NetIDs)(t.GetNetIds()),
 				(*column.Target)(t.Target),
 			)
 		}
