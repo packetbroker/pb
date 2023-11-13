@@ -410,18 +410,6 @@ func (t *TimeSince) String() string {
 	return d.String()
 }
 
-// Rights formats the API key rights.
-type Rights []packetbroker.Right
-
-func (r Rights) String() string {
-	rights := make([]string, 0, len(r))
-	for _, v := range r {
-		rights = append(rights, v.String())
-	}
-	sort.Strings(rights)
-	return strings.Join(rights, ",")
-}
-
 // WritePolicies writes the policies as a table.
 func WritePolicies(w io.Writer, defaults bool, policies ...*packetbroker.RoutingPolicy) error {
 	fmt.Fprint(w, "Forwarder\t\t")

@@ -455,57 +455,6 @@ func GetTargetProtocol(flags *flag.FlagSet, actor string) *packetbroker.Protocol
 	return flags.Lookup(actorf(actor, "protocol")).Value.(*protocol).Protocol
 }
 
-type apiKeyRightsValue []packetbroker.Right
-
-func (p apiKeyRightsValue) String() string {
-	rights := make([]string, 0, len(p))
-	for _, v := range p {
-		rights = append(rights, v.String())
-	}
-	return strings.Join(rights, ",")
-}
-
-func (p *apiKeyRightsValue) Set(s string) error {
-	if s == "" {
-		*p = []packetbroker.Right{}
-		return nil
-	}
-	rights := strings.Split(s, ",")
-	res := make([]packetbroker.Right, len(rights))
-	for i, r := range rights {
-		v, ok := packetbroker.Right_value[r]
-		if !ok {
-			return fmt.Errorf("pbflag: invalid right: %s", r)
-		}
-		res[i] = packetbroker.Right(v)
-	}
-	*p = res
-	return nil
-}
-
-func (p *apiKeyRightsValue) Type() string {
-	return "apiKeyRightsValue"
-}
-
-// APIKeyRights returns flags for API key rights.
-func APIKeyRights(defaultRights ...packetbroker.Right) *flag.FlagSet {
-	flags := new(flag.FlagSet)
-	names := make([]string, 0, len(packetbroker.Right_value))
-	for k := range packetbroker.Right_value {
-		names = append(names, k)
-	}
-	sort.Strings(names)
-	value := apiKeyRightsValue(defaultRights)
-	flags.Var(&value, "rights", fmt.Sprintf("API key rights (%s)", strings.Join(names, ",")))
-	return flags
-}
-
-// GetAPIKeyRights returns the API key rights from the flags.
-func GetAPIKeyRights(flags *flag.FlagSet) []packetbroker.Right {
-	rights := flags.Lookup("rights").Value.(*apiKeyRightsValue)
-	return []packetbroker.Right(*rights)
-}
-
 type uplinkPolicyValue packetbroker.RoutingPolicy_Uplink
 
 func (p *uplinkPolicyValue) String() string {

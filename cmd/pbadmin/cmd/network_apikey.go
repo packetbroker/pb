@@ -58,14 +58,13 @@ var (
 			if err != nil {
 				return err
 			}
-			fmt.Fprintln(tabout, "Key ID\tNetID\tTenant ID\tCluster ID\tRights\tState\tLast Used\t")
+			fmt.Fprintln(tabout, "Key ID\tNetID\tTenant ID\tCluster ID\tState\tLast Used\t")
 			for _, t := range res.Keys {
-				fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n",
+				fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t%s\t%s\t\n",
 					t.GetKeyId(),
 					packetbroker.NetID(t.GetNetId()),
 					t.GetTenantId(),
 					t.GetClusterId(),
-					column.Rights(t.GetRights()),
 					t.GetState(),
 					(*column.TimeSince)(t.GetAuthenticatedAt()),
 				)
@@ -91,29 +90,13 @@ the API key in a secure place, as it cannot be retrieved after create.`,
     $ pbadmin network apikey create --net-id 000013 --cluster-id eu1
 
   Create API key for a named cluster in a tenant:
-    $ pbadmin network apikey create --net-id 000013 --tenant-id tti --cluster-id eu1
-
-  Create API key for a network with rights to read networks and tenants:
-    $ pbadmin network apikey create --net-id 000013 --rights READ_NETWORK
-
-Rights:
-  READ_NETWORK              Read networks
-  READ_NETWORK_CONTACT      Read network contact information
-  READ_JOIN_SERVER          Read Join Servers
-  READ_JOIN_SERVER_CONTACT  Read Join Server contact information
-  READ_ROUTING_POLICY       Read routing policies
-  WRITE_ROUTING_POLICY      Write routing policies
-  READ_GATEWAY_VISIBILITY   Read gateway visibilities
-  WRITE_GATEWAY_VISIBILITY  Write gateway visibilities
-  READ_TRAFFIC              Read traffic
-  WRITE_TRAFFIC             Write traffic`,
+    $ pbadmin network apikey create --net-id 000013 --tenant-id tti --cluster-id eu1`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			endpoint, _ := pbflag.GetEndpoint(cmd.Flags(), "")
 			req := &iampbv2.CreateNetworkAPIKeyRequest{
 				NetId:     uint32(endpoint.NetID),
 				TenantId:  endpoint.TenantID.ID,
 				ClusterId: endpoint.ClusterID,
-				Rights:    pbflag.GetAPIKeyRights(cmd.Flags()),
 			}
 			if promptKey, _ := cmd.Flags().GetBool("prompt-key"); promptKey {
 				fmt.Fprint(os.Stdout, "Secret key: ")
@@ -143,7 +126,6 @@ Rights:
 				"NetID", packetbroker.NetID(res.Key.GetNetId()).String(),
 				"Tenant ID", res.Key.GetTenantId(),
 				"Cluster ID", res.Key.GetClusterId(),
-				"Rights", column.Rights(res.Key.GetRights()).String(),
 				"State", res.Key.GetState().String(),
 			)
 		},
@@ -188,7 +170,6 @@ func init() {
 	networkAPIKeyCmd.AddCommand(networkAPIKeyListCmd)
 
 	networkAPIKeyCreateCmd.Flags().AddFlagSet(pbflag.Endpoint(""))
-	networkAPIKeyCreateCmd.Flags().AddFlagSet(pbflag.APIKeyRights())
 	networkAPIKeyCreateCmd.Flags().Bool("prompt-key", false, "prompt custom secret key value")
 	networkAPIKeyCreateCmd.Flags().Bool("save", false, "save the API key to configuration")
 	networkAPIKeyCmd.AddCommand(networkAPIKeyCreateCmd)

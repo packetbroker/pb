@@ -240,21 +240,6 @@ command-line interfaces.`,
     $ pbadmin network init --net-id 000013 --tenant-id ttn --cluster-id eu1 \
         --router-address eu.packetbroker.io
 
-  Initialize configuration for network with rights to read networks:
-    $ pbadmin network init --net-id 000013 --rights READ_NETWORK \
-        --router-address eu.packetbroker.io
-
-Rights:
-  READ_NETWORK              Read networks
-  READ_JOIN_SERVER          Read Join Servers
-  READ_NETWORK_CONTACT      Read network contact information
-  READ_ROUTING_POLICY       Read routing policies
-  WRITE_ROUTING_POLICY      Write routing policies
-  READ_GATEWAY_VISIBILITY   Read gateway visibilities
-  WRITE_GATEWAY_VISIBILITY  Write gateway visibilities
-  READ_TRAFFIC              Read traffic
-  WRITE_TRAFFIC             Write traffic
-
 Router addresses:
   apac.packetbroker.io  Asia Pacific
   eu.packetbroker.io    Europe, Middle East and Africa
@@ -265,7 +250,6 @@ Router addresses:
 				NetId:     uint32(endpoint.NetID),
 				TenantId:  endpoint.TenantID.ID,
 				ClusterId: endpoint.ClusterID,
-				Rights:    pbflag.GetAPIKeyRights(cmd.Flags()),
 			}
 			res, err := iampbv2.NewNetworkAPIKeyVaultClient(conn).CreateAPIKey(ctx, req)
 			if err != nil {
@@ -293,7 +277,6 @@ Router addresses:
 				"Router Address", routerAddress,
 				"API Key ID", res.Key.GetKeyId(),
 				"API Secret Key", res.Key.GetKey(),
-				"API Key Rights", column.Rights(res.Key.GetRights()).String(),
 				"API Key State", res.Key.GetState().String(),
 			)
 		},
@@ -331,26 +314,12 @@ func init() {
 	networkUpdateCmd.Flags().AddFlagSet(pbflag.ContactInfo("admin"))
 	networkUpdateCmd.Flags().AddFlagSet(pbflag.ContactInfo("tech"))
 	networkUpdateCmd.Flags().Bool("unset-delegated-net-id", false, "unset the delegated NetID")
-	networkUpdateTargetCmd.Flags().AddFlagSet(pbflag.NetID(""))
-	networkUpdateTargetCmd.Flags().AddFlagSet(pbflag.Target(""))
-	networkUpdateCmd.AddCommand(networkUpdateTargetCmd)
 	networkCmd.AddCommand(networkUpdateCmd)
 
 	networkDeleteCmd.Flags().AddFlagSet(pbflag.NetID(""))
 	networkCmd.AddCommand(networkDeleteCmd)
 
 	networkInitCmd.Flags().AddFlagSet(pbflag.Endpoint(""))
-	networkInitCmd.Flags().AddFlagSet(pbflag.APIKeyRights(
-		packetbroker.Right_READ_NETWORK,
-		packetbroker.Right_READ_JOIN_SERVER,
-		packetbroker.Right_READ_ROUTING_POLICY,
-		packetbroker.Right_WRITE_ROUTING_POLICY,
-		packetbroker.Right_READ_GATEWAY_VISIBILITY,
-		packetbroker.Right_WRITE_GATEWAY_VISIBILITY,
-		packetbroker.Right_READ_TRAFFIC,
-		packetbroker.Right_WRITE_TRAFFIC,
-		packetbroker.Right_READ_REPORT,
-	))
 	networkInitCmd.Flags().String("controlplane-address", "cp.packetbroker.net:443", `Packet Broker Control Plane address "host[:port]"`)
 	networkInitCmd.Flags().String("reports-address", "reports.packetbroker.net:443", `Packet Broker Reporter address "host[:port]"`)
 	networkInitCmd.Flags().String("router-address", "", `Packet Broker Router address "host[:port]"`)
