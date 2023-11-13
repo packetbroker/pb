@@ -108,7 +108,7 @@ var routeCmd = &cobra.Command{
 			}
 		}
 		sort.Sort(sortDevAddrRoutesByPrefix(devAddrRoutes))
-		fmt.Fprintln(tabout, "DevAddr Prefix\tNetID\tTenant ID\tCluster ID\tTarget\t")
+		fmt.Fprintln(tabout, "DevAddr Prefix\tNetID\tTenant ID\tCluster ID\tNSID\t")
 		for _, p := range devAddrRoutes {
 			fmt.Fprintf(tabout,
 				"%08X/%d\t%s\t%s\t%s\t%s\t\n",
@@ -117,7 +117,7 @@ var routeCmd = &cobra.Command{
 				packetbroker.NetID(p.GetNetId()),
 				p.GetTenantId(),
 				p.GetHomeNetworkClusterId(),
-				(*column.Target)(p.Target),
+				packetbroker.EUI(p.NsId),
 			)
 		}
 		fmt.Fprintln(tabout)

@@ -48,13 +48,12 @@ var (
 					if val := t.GetDelegatedNetId(); val != nil {
 						delegatedNetID = &val.Value
 					}
-					fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n",
+					fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t%s\t%s\t\n",
 						packetbroker.NetID(t.GetNetId()),
 						t.Authority,
 						t.GetName(),
 						column.DevAddrBlocks(t.GetDevAddrBlocks()),
 						column.YesNo(t.GetListed()),
-						(*column.Target)(t.GetTarget()),
 						(*packetbroker.NetID)(delegatedNetID),
 					)
 				}
@@ -79,14 +78,7 @@ var (
 
   Define DevAddr blocks to named clusters:
     $ pbadmin network create --net-id 000013 \
-      --dev-addr-blocks 26011000/20=eu1,26012000=eu2
-
-  Configure a LoRaWAN Backend Interfaces 1.1 target with HTTP basic auth:
-    $ pbadmin network create --net-id 000013 --target-protocol TS002_V1_1 \
-      --target-address https://user:pass@example.com
-
-  See for more target configuration options:
-    $ pbadmin network update target --help`,
+      --dev-addr-blocks 26011000/20=eu1,26012000=eu2`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			netID, _ := pbflag.GetNetID(cmd.Flags(), "")
 			name, _ := cmd.Flags().GetString("name")
@@ -94,10 +86,6 @@ var (
 			adminContact := pbflag.GetContactInfo(cmd.Flags(), "admin")
 			techContact := pbflag.GetContactInfo(cmd.Flags(), "tech")
 			listed, _ := cmd.Flags().GetBool("listed")
-			var target *packetbroker.Target
-			if err := pbflag.ApplyToTarget(cmd.Flags(), "target", &target); err != nil {
-				return err
-			}
 			var delegatedNetID *wrapperspb.UInt32Value
 			if netID, ok := pbflag.GetNetID(cmd.Flags(), "delegated"); ok {
 				delegatedNetID = wrapperspb.UInt32(uint32(netID))
@@ -110,7 +98,6 @@ var (
 					AdministrativeContact: adminContact,
 					TechnicalContact:      techContact,
 					Listed:                listed,
-					Target:                target,
 					DelegatedNetId:        delegatedNetID,
 				},
 			})
@@ -215,51 +202,6 @@ var (
 				return err
 			}
 			return nil
-		},
-	}
-	networkUpdateTargetCmd = &cobra.Command{
-		Use:   "target",
-		Short: "Update a network target",
-		Example: `
-  Configure a LoRaWAN Backend Interfaces 1.0 target with Packet Broker token
-  authentication:
-    $ pbadmin network update target --net-id 000013 \
-      --protocol TS002_V1_0 --address https://example.com --pb-token
-
-  Configure a LoRaWAN Backend Interfaces 1.0 target with HTTP basic auth:
-    $ pbadmin network update target --net-id 000013 \
-      --protocol TS002_V1_0 --address https://user:pass@example.com
-
-  Configure a LoRaWAN Backend Interfaces 1.0 target with TLS:
-    $ pbadmin network update target --net-id 000013 \
-      --protocol TS002_V1_0 --address https://example.com \
-      --root-cas-file ca.pem --tls-cert-file key.pem --tls-key-file key.pem
-
-  Configure a LoRaWAN Backend Interfaces 1.0 target with TLS and custom
-  originating NetID:
-    $ pbadmin network update target --net-id 000013 --origin-net-id 000013 \
-      --root-cas-file ca.pem --tls-cert-file key.pem --tls-key-file key.pem`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			netID, _ := pbflag.GetNetID(cmd.Flags(), "")
-			client := iampb.NewNetworkRegistryClient(conn)
-			nwk, err := client.GetNetwork(ctx, &iampb.NetworkRequest{
-				NetId: uint32(netID),
-			})
-			if err != nil {
-				return err
-			}
-			target := nwk.Network.Target
-			if err := pbflag.ApplyToTarget(cmd.Flags(), "", &target); err != nil {
-				return err
-			}
-			req := &iampb.UpdateNetworkRequest{
-				NetId: uint32(netID),
-				Target: &iampb.TargetValue{
-					Value: target,
-				},
-			}
-			_, err = client.UpdateNetwork(ctx, req)
-			return err
 		},
 	}
 	networkDeleteCmd = &cobra.Command{
@@ -375,7 +317,6 @@ func init() {
 	networkCreateCmd.Flags().AddFlagSet(pbflag.NetID(""))
 	networkCreateCmd.Flags().AddFlagSet(networkSettingsFlags())
 	networkCreateCmd.Flags().AddFlagSet(pbflag.DevAddrBlocks(false))
-	networkCreateCmd.Flags().AddFlagSet(pbflag.Target("target"))
 	networkCreateCmd.Flags().AddFlagSet(pbflag.ContactInfo("admin"))
 	networkCreateCmd.Flags().AddFlagSet(pbflag.ContactInfo("tech"))
 	networkCmd.AddCommand(networkCreateCmd)

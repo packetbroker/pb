@@ -335,11 +335,6 @@ func writeTarget(w io.Writer, target *packetbroker.Target, verbose bool) error {
 		WriteKV(w, authKV...)
 	}
 
-	// TODO: Sort by NetID.
-	for netID, auth := range target.OriginNetIdAuthentication {
-		fmt.Fprintf(w, "\nTarget Authorization %s\n", packetbroker.NetID(netID))
-		WriteKV(w, targetAuthKV(auth)...)
-	}
 	return nil
 }
 
@@ -402,9 +397,6 @@ func WriteNetwork(w io.Writer, network *packetbroker.Network, verbose bool) erro
 	if err := writeContactInfo(w, "Technical", network.GetTechnicalContact()); err != nil {
 		return err
 	}
-	if err := writeTarget(w, network.GetTarget(), verbose); err != nil {
-		return err
-	}
 	fmt.Fprintln(w, "\nDevAddr Blocks:")
 	return WriteDevAddrBlocks(w, network.GetDevAddrBlocks())
 }
@@ -423,9 +415,6 @@ func WriteTenant(w io.Writer, tenant *packetbroker.Tenant, verbose bool) error {
 		return err
 	}
 	if err := writeContactInfo(w, "Technical", tenant.GetAdministrativeContact()); err != nil {
-		return err
-	}
-	if err := writeTarget(w, tenant.GetTarget(), verbose); err != nil {
 		return err
 	}
 	fmt.Fprintln(w, "\nDevAddr Blocks:")
