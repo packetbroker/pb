@@ -12,6 +12,7 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	packetbroker "go.packetbroker.org/api/v3"
@@ -169,6 +170,21 @@ func WriteDevAddrBlocks(w io.Writer, blocks []*packetbroker.DevAddrBlock) error 
 		); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// WriteClusterNSIDs writes the cluster NSIDs as a table.
+func WriteClusterNSIDs(w io.Writer, nsIDs map[string]uint64) error {
+	clusterIDs := make([]string, 0, len(nsIDs))
+	for k := range nsIDs {
+		clusterIDs = append(clusterIDs, k)
+	}
+	sort.Strings(clusterIDs)
+	tabout := tabwriter.NewWriter(w, 0, 0, 3, ' ', 0)
+	defer tabout.Flush()
+	for _, k := range clusterIDs {
+		fmt.Fprintf(tabout, "%s\t%s\t\n", k, packetbroker.EUI(nsIDs[k]))
 	}
 	return nil
 }
@@ -371,7 +387,14 @@ func WriteNetwork(w io.Writer, network *packetbroker.Network, verbose bool) erro
 		return err
 	}
 	fmt.Fprintln(w, "\nDevAddr Blocks:")
-	return WriteDevAddrBlocks(w, network.GetDevAddrBlocks())
+	if err := WriteDevAddrBlocks(w, network.GetDevAddrBlocks()); err != nil {
+		return err
+	}
+	fmt.Fprintln(w, "\nCluster NSIDs:")
+	if err := WriteClusterNSIDs(w, network.GetNsIds()); err != nil {
+		return err
+	}
+	return nil
 }
 
 // WriteTenant writes the Tenant.
@@ -391,7 +414,14 @@ func WriteTenant(w io.Writer, tenant *packetbroker.Tenant, verbose bool) error {
 		return err
 	}
 	fmt.Fprintln(w, "\nDevAddr Blocks:")
-	return WriteDevAddrBlocks(w, tenant.GetDevAddrBlocks())
+	if err := WriteDevAddrBlocks(w, tenant.GetDevAddrBlocks()); err != nil {
+		return err
+	}
+	fmt.Fprintln(w, "\nCluster NSIDs:")
+	if err := WriteClusterNSIDs(w, tenant.GetNsIds()); err != nil {
+		return err
+	}
+	return nil
 }
 
 // TimeSince formats the timestamp as duration since then, in seconds.

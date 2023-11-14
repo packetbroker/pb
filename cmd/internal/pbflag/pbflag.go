@@ -239,6 +239,59 @@ func GetDevAddrBlocks(flags *flag.FlagSet) (all, add, remove []*packetbroker.Dev
 	return
 }
 
+type clusterNSIDs map[string]uint64
+
+func (f clusterNSIDs) String() string {
+	ss := make([]string, 0, len(f))
+	for clusterID, nsID := range f {
+		ss = append(ss, fmt.Sprintf("%s=%s", clusterID, packetbroker.EUI(nsID)))
+	}
+	return strings.Join(ss, ",")
+}
+
+func (f *clusterNSIDs) Set(s string) error {
+	if s == "" {
+		*f = make(clusterNSIDs)
+		return nil
+	}
+	clusters := strings.Split(s, ",")
+	res := make(clusterNSIDs, len(clusters))
+	for _, c := range clusters {
+		parts := strings.SplitN(c, "=", 2)
+		if len(parts) != 2 {
+			return errors.New("pbflag: require cluster1=eui1[,cluster2=eui2,...] input")
+		}
+		var nsID packetbroker.EUI
+		if err := nsID.UnmarshalText([]byte(parts[1])); err != nil {
+			return err
+		}
+		res[parts[0]] = uint64(nsID)
+	}
+	*f = res
+	return nil
+}
+
+func (f *clusterNSIDs) Type() string {
+	return "clusterNSIDs"
+}
+
+// ClusterNSIDs returns flags for cluster NSIDs.
+func ClusterNSIDs() *flag.FlagSet {
+	flags := new(flag.FlagSet)
+	flags.Var(new(clusterNSIDs), "cluster-ns-ids", "cluster NSIDs")
+	return flags
+}
+
+// GetClusterNSIDs returns the cluster NSIDs from the flags.
+func GetClusterNSIDs(flags *flag.FlagSet) map[string]uint64 {
+	return map[string]uint64(*flags.Lookup("cluster-ns-ids").Value.(*clusterNSIDs))
+}
+
+// ClusterNSIDsChanged returns whether the flag has been changed.
+func ClusterNSIDsChanged(flags *flag.FlagSet) bool {
+	return flags.Changed("cluster-ns-ids")
+}
+
 type joinEUIPrefixesValue []*packetbroker.JoinEUIPrefix
 
 func (f *joinEUIPrefixesValue) String() string {
@@ -645,7 +698,6 @@ func Target(actor string) *flag.FlagSet {
 	flags.String(actorf(actor, "root-cas-file"), "", "path to PEM encoded root CAs")
 	flags.String(actorf(actor, "tls-cert-file"), "", "path to PEM encoded client certificate")
 	flags.String(actorf(actor, "tls-key-file"), "", "path to PEM encoded private key")
-	flags.AddFlagSet(NetID(actorf(actor, "origin")))
 	return flags
 }
 

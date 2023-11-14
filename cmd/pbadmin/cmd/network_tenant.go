@@ -71,13 +71,15 @@ var (
     $ pbadmin network tenant create --net-id 000013 --tenant-id tti \
       --name "The Things Industries" --listed
 
-  Define DevAddr blocks to named clusters:
+  Define DevAddr blocks to named clusters with NSIDs:
     $ pbadmin network tenant create --net-id 000013 --tenant-id tti \
-      --dev-addr-blocks 26011000/20=eu1,26012000=eu2`,
+      --dev-addr-blocks 26011000/20=eu1.cloud.thethings.industries,26012000=eu2.cloud.thethings.industries \
+      --cluster-ns-ids eu1.cloud.thethings.industries=EC656E0000000001,eu2.cloud.thethings.industries=EC656E0000000002`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			tenantID, _ := pbflag.GetTenantID(cmd.Flags(), "")
 			name, _ := cmd.Flags().GetString("name")
 			devAddrBlocks, _, _ := pbflag.GetDevAddrBlocks(cmd.Flags())
+			clusterNSIDs := pbflag.GetClusterNSIDs(cmd.Flags())
 			adminContact := pbflag.GetContactInfo(cmd.Flags(), "admin")
 			techContact := pbflag.GetContactInfo(cmd.Flags(), "tech")
 			listed, _ := cmd.Flags().GetBool("listed")
@@ -87,6 +89,7 @@ var (
 					TenantId:              tenantID.ID,
 					Name:                  name,
 					DevAddrBlocks:         devAddrBlocks,
+					NsIds:                 clusterNSIDs,
 					AdministrativeContact: adminContact,
 					TechnicalContact:      techContact,
 					Listed:                listed,
@@ -126,9 +129,10 @@ var (
     $ pbadmin network tenant update --net-id 000013 --tenant-id tti \
       --name "The Things Network"
 
-  Define DevAddr blocks to named clusters:
+  Define DevAddr blocks to named clusters with NSIDs:
     $ pbadmin network tenant update --net-id 000013 --tenant-id tti \
-      --dev-addr-blocks 26011000/20=eu1,26012000=eu2`,
+      --dev-addr-blocks 26011000/20=eu1.cloud.thethings.industries,26012000=eu2.cloud.thethings.industries \
+      --cluster-ns-ids eu1.cloud.thethings.industries=EC656E0000000001,eu2.cloud.thethings.industries=EC656E0000000002`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			tenantID, _ := pbflag.GetTenantID(cmd.Flags(), "")
 			client := iampb.NewTenantRegistryClient(conn)
@@ -169,6 +173,13 @@ var (
 			} else if len(devAddrBlocksAllAdd) > 0 || len(devAddrBlocksAllRemove) > 0 {
 				req.DevAddrBlocks = &iampb.DevAddrBlocksValue{
 					Value: mergeDevAddrBlocks(tnt.Tenant.DevAddrBlocks, devAddrBlocksAllAdd, devAddrBlocksAllRemove),
+				}
+				any = true
+			}
+			if pbflag.ClusterNSIDsChanged(cmd.Flags()) {
+				clusterNSIDs := pbflag.GetClusterNSIDs(cmd.Flags())
+				req.NsIds = &iampb.NSIDsValue{
+					Value: clusterNSIDs,
 				}
 				any = true
 			}
@@ -227,6 +238,7 @@ func init() {
 	networkTenantCreateCmd.Flags().AddFlagSet(pbflag.TenantID(""))
 	networkTenantCreateCmd.Flags().AddFlagSet(tenantSettingsFlags())
 	networkTenantCreateCmd.Flags().AddFlagSet(pbflag.DevAddrBlocks(false))
+	networkTenantCreateCmd.Flags().AddFlagSet(pbflag.ClusterNSIDs())
 	networkTenantCreateCmd.Flags().AddFlagSet(pbflag.ContactInfo("admin"))
 	networkTenantCreateCmd.Flags().AddFlagSet(pbflag.ContactInfo("tech"))
 	networkTenantCmd.AddCommand(networkTenantCreateCmd)
@@ -238,6 +250,7 @@ func init() {
 	networkTenantUpdateCmd.Flags().AddFlagSet(pbflag.TenantID(""))
 	networkTenantUpdateCmd.Flags().AddFlagSet(tenantSettingsFlags())
 	networkTenantUpdateCmd.Flags().AddFlagSet(pbflag.DevAddrBlocks(true))
+	networkTenantUpdateCmd.Flags().AddFlagSet(pbflag.ClusterNSIDs())
 	networkTenantUpdateCmd.Flags().AddFlagSet(pbflag.ContactInfo("admin"))
 	networkTenantUpdateCmd.Flags().AddFlagSet(pbflag.ContactInfo("tech"))
 	networkTenantCmd.AddCommand(networkTenantUpdateCmd)

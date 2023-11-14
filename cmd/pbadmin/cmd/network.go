@@ -78,11 +78,13 @@ var (
 
   Define DevAddr blocks to named clusters:
     $ pbadmin network create --net-id 000013 \
-      --dev-addr-blocks 26011000/20=eu1,26012000=eu2`,
+      --dev-addr-blocks 26011000/20=eu1.cloud.thethings.industries,26012000=eu2.cloud.thethings.industries \
+      --cluster-ns-ids eu1.cloud.thethings.industries=EC656E0000000001,eu2.cloud.thethings.industries=EC656E0000000002`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			netID, _ := pbflag.GetNetID(cmd.Flags(), "")
 			name, _ := cmd.Flags().GetString("name")
 			devAddrBlocks, _, _ := pbflag.GetDevAddrBlocks(cmd.Flags())
+			clusterNSIDs := pbflag.GetClusterNSIDs(cmd.Flags())
 			adminContact := pbflag.GetContactInfo(cmd.Flags(), "admin")
 			techContact := pbflag.GetContactInfo(cmd.Flags(), "tech")
 			listed, _ := cmd.Flags().GetBool("listed")
@@ -95,6 +97,7 @@ var (
 					NetId:                 uint32(netID),
 					Name:                  name,
 					DevAddrBlocks:         devAddrBlocks,
+					NsIds:                 clusterNSIDs,
 					AdministrativeContact: adminContact,
 					TechnicalContact:      techContact,
 					Listed:                listed,
@@ -135,7 +138,8 @@ var (
 
   Define DevAddr blocks to named clusters:
     $ pbadmin network update --net-id 000013 \
-      --dev-addr-blocks 26011000/20=eu1,26012000=eu2`,
+      --dev-addr-blocks 26011000/20=eu1.cloud.thethings.industries,26012000=eu2.cloud.thethings.industries \
+      --cluster-ns-ids eu1.cloud.thethings.industries=EC656E0000000001,eu2.cloud.thethings.industries=EC656E0000000002`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			netID, _ := pbflag.GetNetID(cmd.Flags(), "")
 			client := iampb.NewNetworkRegistryClient(conn)
@@ -173,6 +177,13 @@ var (
 			} else if len(devAddrBlocksAllAdd) > 0 || len(devAddrBlocksAllRemove) > 0 {
 				req.DevAddrBlocks = &iampb.DevAddrBlocksValue{
 					Value: mergeDevAddrBlocks(nwk.Network.DevAddrBlocks, devAddrBlocksAllAdd, devAddrBlocksAllRemove),
+				}
+				any = true
+			}
+			if pbflag.ClusterNSIDsChanged(cmd.Flags()) {
+				clusterNSIDs := pbflag.GetClusterNSIDs(cmd.Flags())
+				req.NsIds = &iampb.NSIDsValue{
+					Value: clusterNSIDs,
 				}
 				any = true
 			}
@@ -300,6 +311,7 @@ func init() {
 	networkCreateCmd.Flags().AddFlagSet(pbflag.NetID(""))
 	networkCreateCmd.Flags().AddFlagSet(networkSettingsFlags())
 	networkCreateCmd.Flags().AddFlagSet(pbflag.DevAddrBlocks(false))
+	networkCreateCmd.Flags().AddFlagSet(pbflag.ClusterNSIDs())
 	networkCreateCmd.Flags().AddFlagSet(pbflag.ContactInfo("admin"))
 	networkCreateCmd.Flags().AddFlagSet(pbflag.ContactInfo("tech"))
 	networkCmd.AddCommand(networkCreateCmd)
@@ -311,6 +323,7 @@ func init() {
 	networkUpdateCmd.Flags().AddFlagSet(pbflag.NetID(""))
 	networkUpdateCmd.Flags().AddFlagSet(networkSettingsFlags())
 	networkUpdateCmd.Flags().AddFlagSet(pbflag.DevAddrBlocks(true))
+	networkUpdateCmd.Flags().AddFlagSet(pbflag.ClusterNSIDs())
 	networkUpdateCmd.Flags().AddFlagSet(pbflag.ContactInfo("admin"))
 	networkUpdateCmd.Flags().AddFlagSet(pbflag.ContactInfo("tech"))
 	networkUpdateCmd.Flags().Bool("unset-delegated-net-id", false, "unset the delegated NetID")
