@@ -4,6 +4,7 @@ package client
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"os"
@@ -16,6 +17,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 )
 
@@ -23,7 +25,7 @@ import (
 type Config struct {
 	Address     string
 	DialTimeout time.Duration
-	Insecure    bool
+	TLSConfig   *tls.Config
 	Credentials credentials.PerRPCCredentials
 }
 
@@ -62,6 +64,19 @@ func DialContext(ctx context.Context, logger *zap.Logger, config *Config, defaul
 		return nil, err
 	}
 
+	var (
+		transportCreds    credentials.TransportCredentials
+		perRPCCredsOption grpc.DialOption = grpc.EmptyDialOption{}
+	)
+	if config.TLSConfig != nil {
+		transportCreds = credentials.NewTLS(config.TLSConfig)
+	} else {
+		transportCreds = insecure.NewCredentials()
+	}
+	if config.Credentials != nil {
+		perRPCCredsOption = grpc.WithPerRPCCredentials(config.Credentials)
+	}
+
 	dialOpts := []grpc.DialOption{
 		grpc.WithBlock(),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
@@ -75,22 +90,10 @@ func DialContext(ctx context.Context, logger *zap.Logger, config *Config, defaul
 			strings.TrimPrefix(runtime.Version(), "go"),
 			runtime.GOOS, runtime.GOARCH,
 		)),
-		grpc.WithChainStreamInterceptor(
-			grpc_zap.StreamClientInterceptor(logger),
-		),
-		grpc.WithChainUnaryInterceptor(
-			grpc_zap.UnaryClientInterceptor(logger),
-		),
-	}
-
-	if config.Insecure {
-		dialOpts = append(dialOpts, grpc.WithInsecure())
-	} else {
-		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(nil, "")))
-	}
-
-	if config.Credentials != nil {
-		dialOpts = append(dialOpts, grpc.WithPerRPCCredentials(config.Credentials))
+		grpc.WithStreamInterceptor(grpc_zap.StreamClientInterceptor(logger)),
+		grpc.WithUnaryInterceptor(grpc_zap.UnaryClientInterceptor(logger)),
+		grpc.WithTransportCredentials(transportCreds),
+		perRPCCredsOption,
 	}
 
 	return grpc.DialContext(ctx, address, dialOpts...)

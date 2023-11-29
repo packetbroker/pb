@@ -5,6 +5,7 @@ package config
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -60,6 +61,8 @@ func ClientFlags(service, defaultAddress string) *flag.FlagSet {
 	flags := new(flag.FlagSet)
 	flags.String(fmt.Sprintf("%s-address", service), defaultAddress, `address of the server "host[:port]"`)
 	flags.Bool("insecure", false, "insecure")
+	flags.String("cert-file", "", "TLS certificate file (ignored when insecure)")
+	flags.String("key-file", "", "TLS key file (ignored when insecure)")
 	viper.BindPFlags(flags)
 	return flags
 }
@@ -87,11 +90,22 @@ func OAuth2ClientFlags() *flag.FlagSet {
 // initClient returns initial client configuration.
 func initClient(service string) (*client.Config, error) {
 	res := client.Config{
-		Address:  viper.GetString(fmt.Sprintf("%s-address", service)),
-		Insecure: viper.GetBool("insecure"),
+		Address: viper.GetString(fmt.Sprintf("%s-address", service)),
 	}
 	if res.Address == "" {
 		return nil, errors.New("missing server address")
+	}
+	if !viper.GetBool("insecure") {
+		res.TLSConfig = &tls.Config{}
+		if certFile := viper.GetString("cert-file"); certFile != "" {
+			res.TLSConfig.GetClientCertificate = func(cri *tls.CertificateRequestInfo) (*tls.Certificate, error) {
+				cert, err := tls.LoadX509KeyPair(certFile, viper.GetString("key-file"))
+				if err != nil {
+					return nil, err
+				}
+				return &cert, nil
+			}
+		}
 	}
 	return &res, nil
 }
