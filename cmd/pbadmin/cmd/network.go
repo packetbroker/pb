@@ -277,6 +277,25 @@ var (
 			return err
 		},
 	}
+	networkDeleteTargetCmd = &cobra.Command{
+		Use:   "target",
+		Short: "Delete a network target",
+		Example: `
+  Delete a network target:
+    $ pbadmin network delete target --net-id 000013`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			netID, _ := pbflag.GetNetID(cmd.Flags(), "")
+			client := iampb.NewNetworkRegistryClient(conn)
+			req := &iampb.UpdateNetworkRequest{
+				NetId: uint32(netID),
+				Target: &iampb.TargetValue{
+					Value: nil,
+				},
+			}
+			_, err := client.UpdateNetwork(ctx, req)
+			return err
+		},
+	}
 	networkInitCmd = &cobra.Command{
 		Use:   "init",
 		Short: "Initialize network configuration",
@@ -396,6 +415,8 @@ func init() {
 	networkCmd.AddCommand(networkUpdateCmd)
 
 	networkDeleteCmd.Flags().AddFlagSet(pbflag.NetID(""))
+	networkDeleteTargetCmd.Flags().AddFlagSet(pbflag.NetID(""))
+	networkDeleteCmd.AddCommand(networkDeleteTargetCmd)
 	networkCmd.AddCommand(networkDeleteCmd)
 
 	networkInitCmd.Flags().AddFlagSet(pbflag.Endpoint(""))

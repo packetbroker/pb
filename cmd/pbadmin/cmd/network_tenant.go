@@ -266,6 +266,26 @@ var (
 			return err
 		},
 	}
+	networkTenantDeleteTargetCmd = &cobra.Command{
+		Use:   "target",
+		Short: "Delete a tenant target",
+		Example: `
+  Delete a tenant target:
+    $ pbadmin network delete target --net-id 000013 --tenant-id tti`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			tenantID, _ := pbflag.GetTenantID(cmd.Flags(), "")
+			client := iampb.NewTenantRegistryClient(conn)
+			req := &iampb.UpdateTenantRequest{
+				NetId:    uint32(tenantID.NetID),
+				TenantId: tenantID.ID,
+				Target: &iampb.TargetValue{
+					Value: nil,
+				},
+			}
+			_, err := client.UpdateTenant(ctx, req)
+			return err
+		},
+	}
 )
 
 func tenantSettingsFlags() *flag.FlagSet {
