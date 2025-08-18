@@ -326,5 +326,7 @@ func init() {
 	networkTenantCmd.AddCommand(networkTenantUpdateCmd)
 
 	networkTenantDeleteCmd.Flags().AddFlagSet(pbflag.TenantID(""))
+	networkTenantDeleteTargetCmd.Flags().AddFlagSet(pbflag.TenantID(""))
+	networkTenantDeleteCmd.AddCommand(networkTenantDeleteTargetCmd)
 	networkTenantCmd.AddCommand(networkTenantDeleteCmd)
 }
