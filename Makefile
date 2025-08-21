@@ -2,12 +2,6 @@
 
 SHELL = bash
 GO = go
-GOBIN = $(PWD)/.bin
-export GOBIN
-
-.PHONY: deps.dev
-deps.dev:
-	@cat tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -tI % $(GO) install %
 
 .PHONY: deps.tidy
 deps.tidy:
@@ -15,12 +9,11 @@ deps.tidy:
 
 .PHONY: fmt
 fmt:
-	@$(GOBIN)/gofumpt -l -w .
+	@$(GO) tool gofumpt -l -w .
 
 .PHONY: quality
 quality:
-	@$(GOBIN)/golint -set_exit_status ./... && \
-		$(GO) vet ./...
+	$(GO) tool golangci-lint run --timeout 5m0s --issues-exit-code 0
 
 .PHONY: test
 test:

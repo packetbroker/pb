@@ -1,0 +1,67 @@
+version: "2"
+
+run:
+  relative-path-mode: wd
+
+linters:
+  enable:
+    - asciicheck
+    - errname
+    - errorlint
+    - exhaustive
+    - exptostd
+    - fatcontext
+    - gocritic
+    - godot
+    - goheader
+    - gomodguard
+    - gosec
+    - intrange
+    - lll
+    - loggercheck
+    - nilnil
+    - noctx
+    - nolintlint
+    - paralleltest
+    - prealloc
+    - predeclared
+    - revive
+    - rowserrcheck
+    - sloglint
+    - spancheck
+    - sqlclosecheck
+    - staticcheck
+    - tagalign
+    - testifylint
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
+    - wrapcheck
+
+  settings:
+    godot:
+      capital: true
+      period: true
+    lll:
+      line-length: 120
+      tab-width: 2
+    goheader:
+      values:
+        regexp:
+          YEAR: 20\d\d
+      template: |-
+        Copyright {YEAR} The Things Industries B.V.
+    gosec:
+      excludes:
+        - G115 # Potential integer overflow when converting between integer types
+        - G404 # Insecure random number source (rand)
+    exhaustive:
+      default-signifies-exhaustive: true
+    varnamelen:
+      ignore-names:
+        - a
+        - b
+    wrapcheck:
+      extra-ignore-sigs:
+        - "func (context.Context).Err() error"
