@@ -22,7 +22,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v4
         with:
-          go-version: "~1.24"
+          go-version-file: "go.mod"
       - name: Check code quality
         run: make quality
       - name: Format code
@@ -46,7 +46,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v4
         with:
-          go-version: "~1.24"
+          go-version-file: "go.mod"
       - name: Test coverage and races
         run: make test.race
         env:
