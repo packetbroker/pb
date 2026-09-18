@@ -1,7 +1,8 @@
-# Copyright © 2020 The Things Industries B.V.
+# SPDX-FileCopyrightText: Copyright 2020 The Things Industries B.V.
 
 SHELL = bash
 GO = go
+GIT = git
 
 .PHONY: deps.tidy
 deps.tidy:
@@ -9,11 +10,16 @@ deps.tidy:
 
 .PHONY: fmt
 fmt:
-	@$(GO) tool gofumpt -l -w .
+	@$(GO) tool gofumpt -w -extra -l .
 
 .PHONY: quality
 quality:
-	$(GO) tool golangci-lint run --timeout 5m0s --issues-exit-code 0
+	$(GO) tool golangci-lint run --timeout 5m0s --allow-parallel-runners --max-issues-per-linter 0 --max-same-issues 0 $(GO_LINT_FLAGS) ./...
+
+BASE_REF ?= master
+.PHONY: quality.new
+quality.new:
+	@$(MAKE) quality GO_LINT_FLAGS="$(strip $(GO_LINT_FLAGS) --new-from-rev=origin/$(BASE_REF))"
 
 .PHONY: test
 test:
@@ -29,9 +35,6 @@ test.cover:
 
 .PHONY: git.nodiff
 git.nodiff:
-	@if [[ ! -z "`git diff`" ]]; then \
-		git diff; \
-		exit 1; \
-	fi
+	@$(GIT) diff --exit-code
 
 # vim: ft=make
