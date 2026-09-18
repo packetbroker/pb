@@ -1,4 +1,5 @@
-// Copyright © 2021 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2021 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
 package cmd
 
@@ -41,7 +42,7 @@ var (
 
   List API keys of a named cluster in a tenant:
     $ pbadmin network apikey list --net-id 000013 --tenant-id tti --cluster-id eu1`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			hasNetID, hasTenantID, hasClusterID := pbflag.HasEndpoint(cmd.Flags(), "")
 			endpoint, _ := pbflag.GetEndpoint(cmd.Flags(), "")
 			req := &iampbv2.ListNetworkAPIKeysRequest{}
@@ -56,11 +57,11 @@ var (
 			}
 			res, err := iampbv2.NewNetworkAPIKeyVaultClient(conn).ListAPIKeys(ctx, req)
 			if err != nil {
-				return err
+				return fmt.Errorf("list API keys: %w", err)
 			}
-			fmt.Fprintln(tabout, "Key ID\tNetID\tTenant ID\tCluster ID\tRights\tState\tLast Used\t")
-			for _, t := range res.Keys {
-				fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n",
+			tabout.Println("Key ID\tNetID\tTenant ID\tCluster ID\tRights\tState\tLast Used\t")
+			for _, t := range res.GetKeys() {
+				tabout.Printf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n",
 					t.GetKeyId(),
 					packetbroker.NetID(t.GetNetId()),
 					t.GetTenantId(),
@@ -107,45 +108,48 @@ Rights:
   WRITE_GATEWAY_VISIBILITY  Write gateway visibilities
   READ_TRAFFIC              Read traffic
   WRITE_TRAFFIC             Write traffic`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			endpoint, _ := pbflag.GetEndpoint(cmd.Flags(), "")
 			req := &iampbv2.CreateNetworkAPIKeyRequest{
 				NetId:     uint32(endpoint.NetID),
-				TenantId:  endpoint.TenantID.ID,
+				TenantId:  endpoint.ID,
 				ClusterId: endpoint.ClusterID,
 				Rights:    pbflag.GetAPIKeyRights(cmd.Flags()),
 			}
 			if promptKey, _ := cmd.Flags().GetBool("prompt-key"); promptKey {
-				fmt.Fprint(os.Stdout, "Secret key: ")
+				fmt.Print("Secret key: ")
 				keyBuf, err := term.ReadPassword(int(os.Stdin.Fd()))
 				if err != nil {
-					return err
+					return fmt.Errorf("read secret key: %w", err)
 				}
 				req.Key = string(keyBuf)
 			}
 			res, err := iampbv2.NewNetworkAPIKeyVaultClient(conn).CreateAPIKey(ctx, req)
 			if err != nil {
-				return err
+				return fmt.Errorf("create API key: %w", err)
 			}
 			if save, _ := cmd.Flags().GetBool("save"); save {
-				viper.Set("client-id", res.Key.GetKeyId())
-				viper.Set("client-secret", res.Key.GetKey())
+				viper.Set("client-id", res.GetKey().GetKeyId())
+				viper.Set("client-secret", res.GetKey().GetKey())
 				if err := viper.SafeWriteConfig(); err != nil {
-					return err
+					return fmt.Errorf("write config file: %w", err)
 				}
 				fmt.Fprintln(os.Stderr, "Saved to API key to .pb.yaml")
 			} else {
 				fmt.Fprintln(os.Stderr, "Store the API key now in a secure place, as it cannot be retrieved later.")
 			}
-			return column.WriteKV(tabout,
-				"Key ID", res.Key.GetKeyId(),
-				"Secret Key", res.Key.GetKey(),
-				"NetID", packetbroker.NetID(res.Key.GetNetId()).String(),
-				"Tenant ID", res.Key.GetTenantId(),
-				"Cluster ID", res.Key.GetClusterId(),
-				"Rights", column.Rights(res.Key.GetRights()).String(),
-				"State", res.Key.GetState().String(),
-			)
+			if err := column.WriteKV(tabout,
+				"Key ID", res.GetKey().GetKeyId(),
+				"Secret Key", res.GetKey().GetKey(),
+				"NetID", packetbroker.NetID(res.GetKey().GetNetId()).String(),
+				"Tenant ID", res.GetKey().GetTenantId(),
+				"Cluster ID", res.GetKey().GetClusterId(),
+				"Rights", column.Rights(res.GetKey().GetRights()).String(),
+				"State", res.GetKey().GetState().String(),
+			); err != nil {
+				return fmt.Errorf("write API key: %w", err)
+			}
+			return nil
 		},
 	}
 	networkAPIKeyUpdateStateCmd = &cobra.Command{
@@ -154,14 +158,17 @@ Rights:
 		Example: `
   Update the API key state to APPROVED:
     $ pbadmin network apikey update-state --key-id C5232IFFX4UKEELB --state APPROVED`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			keyID, _ := cmd.Flags().GetString("key-id")
 			state := pbflag.GetAPIKeyState(cmd.Flags(), "state")
 			_, err := iampbv2.NewNetworkAPIKeyVaultClient(conn).UpdateAPIKeyState(ctx, &iampbv2.UpdateAPIKeyStateRequest{
 				KeyId: keyID,
 				State: state,
 			})
-			return err
+			if err != nil {
+				return fmt.Errorf("update API key state: %w", err)
+			}
+			return nil
 		},
 	}
 	networkAPIKeyDeleteCmd = &cobra.Command{
@@ -171,12 +178,15 @@ Rights:
 		Example: `
   Delete an API key:
     $ pbadmin network apikey delete --key-id C5232IFFX4UKEELB`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			keyID, _ := cmd.Flags().GetString("key-id")
 			_, err := iampbv2.NewNetworkAPIKeyVaultClient(conn).DeleteAPIKey(ctx, &iampbv2.APIKeyRequest{
 				KeyId: keyID,
 			})
-			return err
+			if err != nil {
+				return fmt.Errorf("delete API key: %w", err)
+			}
+			return nil
 		},
 	}
 )

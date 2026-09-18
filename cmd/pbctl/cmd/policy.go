@@ -1,4 +1,5 @@
-// Copyright © 2020 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2020 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
 package cmd
 
@@ -47,7 +48,7 @@ var (
     $ pbctl policy list --home-network-net-id 000013 \
       --home-network-tenant-id tti
 `,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			var (
 				client                 = routingpb.NewPolicyManagerClient(cpConn)
 				policies               []*packetbroker.RoutingPolicy
@@ -67,9 +68,9 @@ var (
 							UpdatedSince: lastUpdatedAt,
 						})
 						if err != nil {
-							return err
+							return fmt.Errorf("list default policies: %w", err)
 						}
-						page = res.Policies
+						page = res.GetPolicies()
 					} else {
 						req := &routingpb.ListHomeNetworkPoliciesRequest{
 							UpdatedSince: lastUpdatedAt,
@@ -80,9 +81,9 @@ var (
 						}
 						res, err := client.ListHomeNetworkPolicies(ctx, req)
 						if err != nil {
-							return err
+							return fmt.Errorf("list Home Network policies: %w", err)
 						}
-						page = res.Policies
+						page = res.GetPolicies()
 					}
 					if len(page) == 0 {
 						break
@@ -99,16 +100,18 @@ var (
 						Offset:              offset,
 					})
 					if err != nil {
-						return err
+						return fmt.Errorf("list effective policies: %w", err)
 					}
-					policies = append(policies, res.Policies...)
-					offset += uint32(len(res.Policies))
-					if len(res.Policies) == 0 || offset >= res.Total {
+					policies = append(policies, res.GetPolicies()...)
+					offset += uint32(len(res.GetPolicies()))
+					if len(res.GetPolicies()) == 0 || offset >= res.GetTotal() {
 						break
 					}
 				}
 			}
-			column.WritePolicies(tabout, defaults, policies...)
+			if err := column.WritePolicies(tabout, defaults, policies...); err != nil {
+				return fmt.Errorf("write policies: %w", err)
+			}
 			return nil
 		},
 	}
@@ -145,7 +148,7 @@ may use their infrastructure.`,
   Network (NetID 000013) and Senet (NetID 000009):
     $ pbctl policy set --forwarder-net-id 000013 --home-network-net-id 000009 \
       --set-uplink JM --set-downlink JM`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			client := routingpb.NewPolicyManagerClient(cpConn)
 			forwarderTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "forwarder")
 			if forwarderTenantID.IsEmpty() {
@@ -167,7 +170,9 @@ may use their infrastructure.`,
 			} else {
 				homeNetworkTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "home-network")
 				if homeNetworkTenantID.IsEmpty() {
-					return errors.New("pass the Home Network NetID (and tenant ID) via --home-network-net-id (and --home-network-tenant-id)")
+					return errors.New(
+						"pass the Home Network NetID (and tenant ID) via --home-network-net-id (and --home-network-tenant-id)",
+					)
 				}
 				policy.HomeNetworkNetId = uint32(homeNetworkTenantID.NetID)
 				policy.HomeNetworkTenantId = homeNetworkTenantID.ID
@@ -176,9 +181,12 @@ may use their infrastructure.`,
 				})
 			}
 			if err != nil {
-				return err
+				return fmt.Errorf("set policy: %w", err)
 			}
-			return column.WritePolicies(tabout, defaults, policy)
+			if err := column.WritePolicies(tabout, defaults, policy); err != nil {
+				return fmt.Errorf("write policies: %w", err)
+			}
+			return nil
 		},
 	}
 	policyGetCmd = &cobra.Command{
@@ -194,7 +202,7 @@ may use their infrastructure.`,
 
   Get policy between The Things Network (NetID 000013) and Senet (000009):
     $ pbctl policy get --forwarder-net-id 000013 --home-network-net-id 000009`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			var (
 				client = routingpb.NewPolicyManagerClient(cpConn)
 				res    *routingpb.GetPolicyResponse
@@ -213,7 +221,9 @@ may use their infrastructure.`,
 			} else {
 				homeNetworkTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "home-network")
 				if homeNetworkTenantID.IsEmpty() {
-					return errors.New("pass the Home Network NetID (and tenant ID) via --home-network-net-id (and --home-network-tenant-id)")
+					return errors.New(
+						"pass the Home Network NetID (and tenant ID) via --home-network-net-id (and --home-network-tenant-id)",
+					)
 				}
 				res, err = client.GetHomeNetworkPolicy(ctx, &routingpb.GetHomeNetworkPolicyRequest{
 					ForwarderNetId:      uint32(forwarderTenantID.NetID),
@@ -223,9 +233,12 @@ may use their infrastructure.`,
 				})
 			}
 			if err != nil {
-				return err
+				return fmt.Errorf("get policy: %w", err)
 			}
-			return column.WritePolicies(tabout, defaults, res.Policy)
+			if err := column.WritePolicies(tabout, defaults, res.GetPolicy()); err != nil {
+				return fmt.Errorf("write policies: %w", err)
+			}
+			return nil
 		},
 	}
 	policyDeleteCmd = &cobra.Command{
@@ -242,7 +255,7 @@ may use their infrastructure.`,
 
   Delete policy between The Things Network (NetID 000013) and Senet (000009):
     $ pbctl policy delete --forwarder-net-id 000013 --home-network-net-id 000009`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			client := routingpb.NewPolicyManagerClient(cpConn)
 			forwarderTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "forwarder")
 			if forwarderTenantID.IsEmpty() {
@@ -260,7 +273,9 @@ may use their infrastructure.`,
 			} else {
 				homeNetworkTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "home-network")
 				if homeNetworkTenantID.IsEmpty() {
-					return errors.New("pass the Home Network NetID (and tenant ID) via --home-network-net-id (and --home-network-tenant-id)")
+					return errors.New(
+						"pass the Home Network NetID (and tenant ID) via --home-network-net-id (and --home-network-tenant-id)",
+					)
 				}
 				policy.HomeNetworkNetId = uint32(homeNetworkTenantID.NetID)
 				policy.HomeNetworkTenantId = homeNetworkTenantID.ID
@@ -269,7 +284,7 @@ may use their infrastructure.`,
 				})
 			}
 			if err != nil {
-				return err
+				return fmt.Errorf("delete policy: %w", err)
 			}
 			return nil
 		},
@@ -278,7 +293,7 @@ may use their infrastructure.`,
 		Use:     "networks",
 		Aliases: []string{"network", "ns"},
 		Short:   "Show Forwarders and Home Networks with which a policy has been defined",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			var (
 				tenantID, _     = pbflag.GetTenantID(cmd.Flags(), "")
 				offset          = uint32(0)
@@ -288,7 +303,7 @@ may use their infrastructure.`,
 			if tenantID.IsEmpty() {
 				return errors.New("pass the NetID (and tenant ID) via --net-id (and --tenant-id)")
 			}
-			fmt.Fprintln(tabout, "NetID\tTenant ID\tName\tDevAddr Blocks\t")
+			tabout.Println("NetID\tTenant ID\tName\tDevAddr Blocks\t")
 			for {
 				res, err := routingpb.NewPolicyManagerClient(cpConn).ListNetworksWithPolicy(ctx,
 					&routingpb.ListNetworksWithPolicyRequest{
@@ -300,26 +315,26 @@ may use their infrastructure.`,
 					},
 				)
 				if err != nil {
-					return err
+					return fmt.Errorf("list networks: %w", err)
 				}
-				for _, hn := range res.Networks {
+				for _, entry := range res.GetNetworks() {
 					var row homeNetwork
-					if nwk := hn.GetNetwork(); nwk != nil {
+					if nwk := entry.GetNetwork(); nwk != nil {
 						row.network = nwk
 						row.tenantID = "-"
-					} else if tnt := hn.GetTenant(); tnt != nil {
+					} else if tnt := entry.GetTenant(); tnt != nil {
 						row.network = tnt
 						row.tenantID = tnt.GetTenantId()
 					}
-					fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t\n",
+					tabout.Printf("%s\t%s\t%s\t%s\t\n",
 						packetbroker.NetID(row.GetNetId()),
 						row.tenantID,
 						row.GetName(),
 						column.DevAddrBlocks(row.GetDevAddrBlocks()),
 					)
 				}
-				offset += uint32(len(res.Networks))
-				if len(res.Networks) == 0 || offset >= res.Total {
+				offset += uint32(len(res.GetNetworks()))
+				if len(res.GetNetworks()) == 0 || offset >= res.GetTotal() {
 					break
 				}
 			}

@@ -1,5 +1,7 @@
-// Copyright © 2020 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2020 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
+// Package cmd implements the pbpub command.
 package cmd
 
 import (
@@ -83,20 +85,20 @@ var rootCmd = &cobra.Command{
         --forwarder-net-id 000013 \
         --forwarder-tenant-id community \
         --forwarder-cluster-id eu2 < downlink.json`,
-	PreRunE: func(cmd *cobra.Command, args []string) error {
+	PreRunE: func(_ *cobra.Command, _ []string) error {
 		logger = logging.GetLogger(debug)
 		clientConf, err := config.OAuth2Client(ctx, "router", "networks")
 		if err != nil {
-			return err
+			return fmt.Errorf("configure Router client: %w", err)
 		}
 		conn, err = client.DialContext(ctx, logger, clientConf, 443)
 		if err != nil {
-			return err
+			return fmt.Errorf("connect to Router: %w", err)
 		}
 		decoder = json.NewDecoder(os.Stdin)
 		return nil
 	},
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		var (
 			forwarder, forwarderOK     = pbflag.GetEndpoint(cmd.Flags(), "forwarder")
 			homeNetwork, homeNetworkOK = pbflag.GetEndpoint(cmd.Flags(), "home-network")
@@ -109,9 +111,10 @@ var rootCmd = &cobra.Command{
 		}
 		return errors.New("no role specified")
 	},
-	PostRun: func(cmd *cobra.Command, args []string) {
-		logger.Sync()
-		conn.Close()
+	PostRun: func(_ *cobra.Command, _ []string) {
+		// Syncing stderr is not supported on all platforms, and the connection is no longer used.
+		_ = logger.Sync()
+		_ = conn.Close()
 	},
 }
 
@@ -127,7 +130,7 @@ func asForwarder(flags *flag.FlagSet, forwarder packetbroker.Endpoint) error {
 		msg := pbflag.NewForwarderMessage(flags)
 		if err := protojson.Decode(decoder, msg); err != nil {
 			if !errors.Is(err, io.EOF) && status.Code(err) != codes.Canceled {
-				return err
+				return fmt.Errorf("decode message: %w", err)
 			}
 			return nil
 		}
@@ -137,23 +140,23 @@ func asForwarder(flags *flag.FlagSet, forwarder packetbroker.Endpoint) error {
 			res, err := client.Publish(ctx, &routingpb.PublishUplinkMessageRequest{
 				ForwarderNetId:     uint32(forwarder.NetID),
 				ForwarderClusterId: forwarder.ClusterID,
-				ForwarderTenantId:  forwarder.TenantID.ID,
+				ForwarderTenantId:  forwarder.ID,
 				Message:            msg,
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("publish uplink message: %w", err)
 			}
-			logger.Info("Published uplink message", zap.String("id", res.Id))
+			logger.Info("Published uplink message", zap.String("id", res.GetId()))
 
 		case *packetbroker.DownlinkMessageDeliveryStateChange:
 			msg.ForwarderNetId = uint32(forwarder.NetID)
 			msg.ForwarderClusterId = forwarder.ClusterID
-			msg.ForwarderTenantId = forwarder.TenantID.ID
+			msg.ForwarderTenantId = forwarder.ID
 			_, err := client.ReportDownlinkMessageDeliveryState(ctx, &routingpb.DownlinkMessageDeliveryStateChangeRequest{
 				StateChange: msg,
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("report downlink message delivery state: %w", err)
 			}
 			logger.Info("Published uplink message delivery state change")
 		}
@@ -172,7 +175,7 @@ func asHomeNetwork(flags *flag.FlagSet, forwarder, homeNetwork packetbroker.Endp
 		msg := pbflag.NewHomeNetworkMessage(flags)
 		if err := protojson.Decode(decoder, msg); err != nil {
 			if !errors.Is(err, io.EOF) && status.Code(err) != codes.Canceled {
-				return err
+				return fmt.Errorf("decode message: %w", err)
 			}
 			return nil
 		}
@@ -182,36 +185,36 @@ func asHomeNetwork(flags *flag.FlagSet, forwarder, homeNetwork packetbroker.Endp
 			res, err := client.Publish(ctx, &routingpb.PublishDownlinkMessageRequest{
 				HomeNetworkNetId:     uint32(homeNetwork.NetID),
 				HomeNetworkClusterId: homeNetwork.ClusterID,
-				HomeNetworkTenantId:  homeNetwork.TenantID.ID,
+				HomeNetworkTenantId:  homeNetwork.ID,
 				ForwarderNetId:       uint32(forwarder.NetID),
 				ForwarderClusterId:   forwarder.ClusterID,
-				ForwarderTenantId:    forwarder.TenantID.ID,
+				ForwarderTenantId:    forwarder.ID,
 				Message:              msg,
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("publish downlink message: %w", err)
 			}
-			logger.Info("Published downlink message", zap.String("id", res.Id))
+			logger.Info("Published downlink message", zap.String("id", res.GetId()))
 
 		case *packetbroker.UplinkMessageDeliveryStateChange:
 			msg.HomeNetworkNetId = uint32(homeNetwork.NetID)
 			msg.HomeNetworkClusterId = homeNetwork.ClusterID
-			msg.HomeNetworkTenantId = homeNetwork.TenantID.ID
+			msg.HomeNetworkTenantId = homeNetwork.ID
 			msg.ForwarderNetId = uint32(forwarder.NetID)
 			msg.ForwarderClusterId = forwarder.ClusterID
-			msg.ForwarderTenantId = forwarder.TenantID.ID
+			msg.ForwarderTenantId = forwarder.ID
 			_, err := client.ReportUplinkMessageDeliveryState(ctx, &routingpb.UplinkMessageDeliveryStateChangeRequest{
 				StateChange: msg,
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("report uplink message delivery state: %w", err)
 			}
 			logger.Info("Published uplink message delivery state change")
 		}
 	}
 }
 
-// Execute runs pbctl.
+// Execute runs pbpub.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -253,5 +256,7 @@ func initConfig() {
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("pb")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
-	viper.ReadInConfig()
+	if err := config.ReadInConfig(); err != nil {
+		fmt.Fprintln(os.Stderr, "Warning:", err)
+	}
 }

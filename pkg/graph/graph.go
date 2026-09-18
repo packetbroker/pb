@@ -1,5 +1,7 @@
-// Copyright © 2021 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2021 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
+// Package graph writes Packet Broker reports in Graphviz format.
 package graph
 
 import (
@@ -33,28 +35,28 @@ const (
 )
 
 func tenantNode(
-	g *dot.Graph,
-	id packetbroker.TenantID,
+	parent *dot.Graph,
+	tenantID packetbroker.TenantID,
 	networks map[packetbroker.TenantID]*packetbroker.NetworkOrTenant,
 	highlight bool,
 ) dot.Node {
-	g = g.Subgraph(id.NetID.String(), dot.ClusterOption{})
-	g.Attr("fontname", fontName)
-	if host, ok := networks[packetbroker.TenantID{NetID: id.NetID}]; ok {
-		g = g.Label(fmt.Sprintf("%s (%s)", host.GetNetwork().Name, id.NetID))
+	cluster := parent.Subgraph(tenantID.NetID.String(), dot.ClusterOption{})
+	cluster.Attr("fontname", fontName)
+	if host, ok := networks[packetbroker.TenantID{NetID: tenantID.NetID}]; ok {
+		cluster = cluster.Label(fmt.Sprintf("%s (%s)", host.GetNetwork().GetName(), tenantID.NetID))
 	}
-	node, ok := g.FindNodeById(id.String())
+	node, ok := cluster.FindNodeById(tenantID.String())
 	if !ok {
-		node = g.Node(id.String())
-		switch nwk, ok := networks[id]; {
+		node = cluster.Node(tenantID.String())
+		switch nwk, ok := networks[tenantID]; {
 		case ok && nwk.GetNetwork().GetName() != "":
-			node.Label(nwk.GetNetwork().Name).Box()
+			node.Label(nwk.GetNetwork().GetName()).Box()
 		case ok && nwk.GetTenant().GetName() != "":
-			node.Label(nwk.GetTenant().Name)
-		case id.ID == "":
-			node.Label(id.NetID.String()).Box()
+			node.Label(nwk.GetTenant().GetName())
+		case tenantID.ID == "":
+			node.Label(tenantID.NetID.String()).Box()
 		default:
-			node.Label(id.ID)
+			node.Label(tenantID.ID)
 		}
 		if highlight {
 			node.Attrs(
@@ -73,8 +75,8 @@ func tenantNode(
 func itoaShort(v uint64) string {
 	units := []string{"", "K", "M", "B", "T"}
 	p := int(math.Floor(math.Log10(float64(v)))) / 3
-	if max := len(units) - 1; p > max {
-		p = max
+	if maxUnit := len(units) - 1; p > maxUnit {
+		p = maxUnit
 	}
 	if p > 0 {
 		return fmt.Sprintf("%.1f%s", math.Floor(float64(v)/math.Pow10(3*p-1))/10, units[p])
@@ -86,21 +88,21 @@ func itoaShort(v uint64) string {
 // The networks map provides names that are shown instead of NetID and Tenant ID.
 // The optional highlight argument indicates the identifier of the node to highlight.
 func WriteRoutedMessages(
-	w io.Writer,
+	out io.Writer,
 	records []*reportingpb.RoutedMessagesRecord,
 	networks map[packetbroker.TenantID]*packetbroker.NetworkOrTenant,
 	highlight *packetbroker.TenantID,
 ) error {
-	g := dot.NewGraph(dot.Directed)
-	g.Attrs(
+	dotGraph := dot.NewGraph(dot.Directed)
+	dotGraph.Attrs(
 		"rankdir", rankDir,
 		"nodesep", dot.Literal(strconv.FormatFloat(nodeSep, 'f', 1, 32)),
 		"ranksep", dot.Literal(strconv.FormatFloat(rankSep, 'f', 1, 32)),
 	)
-	g.NodeInitializer(func(n dot.Node) {
+	dotGraph.NodeInitializer(func(n dot.Node) {
 		n.Attr("fontname", fontName)
 	})
-	g.EdgeInitializer(func(e dot.Edge) {
+	dotGraph.EdgeInitializer(func(e dot.Edge) {
 		e.Attr("fontname", fontName)
 	})
 
@@ -119,19 +121,21 @@ func WriteRoutedMessages(
 	maxScore := 0.0
 
 	// Add the nodes and edges.
-	for _, r := range records {
+	for _, record := range records {
 		var (
-			forwarderID     = packetbroker.ForwarderTenantID(r)
-			forwarderNode   = tenantNode(g, forwarderID, networks, highlight != nil && forwarderID == *highlight)
-			homeNetworkID   = packetbroker.HomeNetworkTenantID(r)
-			homeNetworkNode = tenantNode(g, homeNetworkID, networks, highlight != nil && homeNetworkID == *highlight)
-			totalUp         = r.Uplink.DataMessagesRoutedCount + r.Uplink.JoinRequestsRoutedCount
-			totalDown       = r.Downlink.DataMessagesRoutedCount + r.Downlink.JoinAcceptsRoutedCount
-			successUp       = r.Uplink.DataMessagesProcessedSuccessCount + r.Uplink.JoinRequestsProcessedSuccessCount
-			successDown     = r.Downlink.DataMessagesProcessedSuccessCount + r.Downlink.JoinAcceptsProcessedSuccessCount
-			label           []string
-			score           float64
-			attrs           []interface{}
+			uplink, downlink = record.GetUplink(), record.GetDownlink()
+			forwarderID      = packetbroker.ForwarderTenantID(record)
+			forwarderNode    = tenantNode(dotGraph, forwarderID, networks, highlight != nil && forwarderID == *highlight)
+			homeNetworkID    = packetbroker.HomeNetworkTenantID(record)
+			homeNetworkNode  = tenantNode(dotGraph, homeNetworkID, networks, highlight != nil && homeNetworkID == *highlight)
+			totalUp          = uplink.GetDataMessagesRoutedCount() + uplink.GetJoinRequestsRoutedCount()
+			totalDown        = downlink.GetDataMessagesRoutedCount() + downlink.GetJoinAcceptsRoutedCount()
+			successUp        = uplink.GetDataMessagesProcessedSuccessCount() + uplink.GetJoinRequestsProcessedSuccessCount()
+			successDown      = downlink.GetDataMessagesProcessedSuccessCount() +
+				downlink.GetJoinAcceptsProcessedSuccessCount()
+			label []string
+			score float64
+			attrs []any
 		)
 		switch {
 		case successUp == 0 && successDown == 0:
@@ -163,7 +167,7 @@ func WriteRoutedMessages(
 				"fontsize", fontSizeSuccessE,
 			)
 		}
-		edge := g.Edge(forwarderNode, homeNetworkNode).
+		edge := dotGraph.Edge(forwarderNode, homeNetworkNode).
 			Label(dot.HTML(strings.Join(label, "<br/>"))).
 			Attr("weight", dot.Literal(strconv.FormatFloat(score, 'f', 0, 32)))
 		edge.Attrs(attrs...)
@@ -175,20 +179,20 @@ func WriteRoutedMessages(
 
 	// Apply the scores to the edge widths.
 	// If there's a node with a zero score, apply the style indicating no successful messages routed.
-	for id, s := range nodeScores {
-		if s.score > 0 {
-			scaledScore := widthScaleE * math.Log2(s.score) / math.Log2(maxScore)
-			s.edge.Attr("penwidth", dot.Literal(strconv.FormatFloat(scaledScore, 'f', 2, 32)))
+	for ids, nodeScore := range nodeScores {
+		if nodeScore.score > 0 {
+			scaledScore := widthScaleE * math.Log2(nodeScore.score) / math.Log2(maxScore)
+			nodeScore.edge.Attr("penwidth", dot.Literal(strconv.FormatFloat(scaledScore, 'f', 2, 32)))
 		} else if highlight != nil {
-			for _, n := range []struct {
+			for _, entry := range []struct {
 				packetbroker.TenantID
 				dot.Node
 			}{
-				{id.forwarderID, s.forwarderNode},
-				{id.homeNetworkID, s.homeNetworkNode},
+				{ids.forwarderID, nodeScore.forwarderNode},
+				{ids.homeNetworkID, nodeScore.homeNetworkNode},
 			} {
-				if n.TenantID != *highlight {
-					n.Node.
+				if entry.TenantID != *highlight {
+					entry.Node.
 						Attr("style", styleNoSuccess).
 						Attr("fontsize", fontSizeNoSuccessN).
 						Attr("color", colorNoSuccess)
@@ -197,13 +201,16 @@ func WriteRoutedMessages(
 		}
 	}
 
-	g.Write(w)
-	_, err := w.Write(nil)
-	return err
+	dotGraph.Write(out)
+	if _, err := out.Write(nil); err != nil {
+		return fmt.Errorf("graph: write: %w", err)
+	}
+	return nil
 }
 
 // RunDot executes the dot executable to convert the Graphviz input to an output format.
 func RunDot(ctx context.Context, input io.Reader, output io.Writer, format string) error {
+	//nolint:gosec // running dot with the given format is the purpose of this function
 	cmd := exec.CommandContext(ctx, "dot", fmt.Sprintf("-T%s", format))
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = input, output, os.Stderr
 	if err := cmd.Run(); err != nil {

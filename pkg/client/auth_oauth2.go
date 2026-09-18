@@ -1,4 +1,5 @@
-// Copyright © 2020 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2020 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
 package client
 
@@ -13,14 +14,14 @@ import (
 )
 
 // DefaultTokenURL is the default Packet Broker IAM token URL.
-const DefaultTokenURL = "https://iam.packetbroker.net/token"
+const DefaultTokenURL = "https://iam.packetbroker.net/token" //nolint:gosec // this is a URL, not a credential
 
 type clientCredentials struct {
 	tokenSource oauth2.TokenSource
 	insecure    bool
 }
 
-func (c *clientCredentials) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+func (c *clientCredentials) GetRequestMetadata(_ context.Context, _ ...string) (map[string]string, error) {
 	token, err := c.tokenSource.Token()
 	if err != nil {
 		return nil, fmt.Errorf("client: get token: %w", err)
@@ -39,7 +40,9 @@ func (c *clientCredentials) RequireTransportSecurity() bool {
 
 // OAuth2 returns per RPC client credentials using the OAuth Client Credentials flow.
 // The token is being refreshed in the background.
-func OAuth2(ctx context.Context, tokenURL, clientID, clientSecret, audience string, scopes []string, insecure bool) credentials.PerRPCCredentials {
+func OAuth2(
+	ctx context.Context, tokenURL, clientID, clientSecret, audience string, scopes []string, insecure bool,
+) credentials.PerRPCCredentials {
 	config := clientcredentials.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,

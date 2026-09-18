@@ -1,4 +1,5 @@
-// Copyright © 2021 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2021 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
 package cmd
 
@@ -10,9 +11,12 @@ import (
 )
 
 func TestMergeDevAddrBlocks(t *testing.T) {
+	t.Parallel()
+
 	equals := func(x, y *packetbroker.DevAddrBlock) bool {
-		return x.Prefix.Value == y.Prefix.Value && x.Prefix.Length == y.Prefix.Length &&
-			x.HomeNetworkClusterId == y.HomeNetworkClusterId
+		return x.GetPrefix().GetValue() == y.GetPrefix().GetValue() &&
+			x.GetPrefix().GetLength() == y.GetPrefix().GetLength() &&
+			x.GetHomeNetworkClusterId() == y.GetHomeNetworkClusterId()
 	}
 
 	for i, set := range []struct {
@@ -64,6 +68,8 @@ func TestMergeDevAddrBlocks(t *testing.T) {
 		},
 	} {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			t.Parallel()
+
 			res := mergeDevAddrBlocks(set.current, set.add, set.remove)
 			if len(res) != 2 {
 				t.Fatalf("unexpected length %d (expected %d)", len(res), 2)
@@ -75,7 +81,7 @@ func TestMergeDevAddrBlocks(t *testing.T) {
 				},
 				HomeNetworkClusterId: "test-2-updated",
 			}) {
-				t.Fatalf("unexpected block at position 0: %s at %s", res[0].Prefix, res[0].HomeNetworkClusterId)
+				t.Fatalf("unexpected block at position 0: %s at %s", res[0].GetPrefix(), res[0].GetHomeNetworkClusterId())
 			}
 			if !equals(res[1], &packetbroker.DevAddrBlock{
 				Prefix: &packetbroker.DevAddrPrefix{
@@ -84,7 +90,7 @@ func TestMergeDevAddrBlocks(t *testing.T) {
 				},
 				HomeNetworkClusterId: "test-3",
 			}) {
-				t.Fatalf("unexpected block at position 1: %s at %s", res[1].Prefix, res[1].HomeNetworkClusterId)
+				t.Fatalf("unexpected block at position 1: %s at %s", res[1].GetPrefix(), res[1].GetHomeNetworkClusterId())
 			}
 		})
 	}

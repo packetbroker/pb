@@ -1,4 +1,5 @@
-// Copyright © 2021 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2021 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
 package cmd
 
@@ -31,7 +32,7 @@ var (
 
   List API keys of a named cluster:
     $ pbadmin cluster apikey list --cluster-id eu1`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			req := &iampbv2.ListClusterAPIKeysRequest{}
 			cmd.Flags().Visit(func(f *pflag.Flag) {
 				if f.Name == "cluster-id" {
@@ -40,11 +41,11 @@ var (
 			})
 			res, err := iampbv2.NewClusterAPIKeyVaultClient(conn).ListAPIKeys(ctx, req)
 			if err != nil {
-				return err
+				return fmt.Errorf("list API keys: %w", err)
 			}
-			fmt.Fprintln(tabout, "Key ID\tClusterID\tRights\tState\tLast Used\t")
-			for _, t := range res.Keys {
-				fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t%s\t\n",
+			tabout.Println("Key ID\tClusterID\tRights\tState\tLast Used\t")
+			for _, t := range res.GetKeys() {
+				tabout.Printf("%s\t%s\t%s\t%s\t%s\t\n",
 					t.GetKeyId(),
 					t.GetClusterId(),
 					column.Rights(t.GetRights()),
@@ -75,32 +76,35 @@ Rights:
   READ_ROUTE_TABLE          Read route table
   READ_ROUTING_POLICY       Read routing policies
   READ_TARGET_AUTH          Read target authentication information`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			clusterID, _ := cmd.Flags().GetString("cluster-id")
 			req := &iampbv2.CreateClusterAPIKeyRequest{
 				ClusterId: clusterID,
 				Rights:    pbflag.GetAPIKeyRights(cmd.Flags()),
 			}
 			if promptKey, _ := cmd.Flags().GetBool("prompt-key"); promptKey {
-				fmt.Fprint(os.Stdout, "Secret key: ")
+				fmt.Print("Secret key: ")
 				keyBuf, err := term.ReadPassword(int(os.Stdin.Fd()))
 				if err != nil {
-					return err
+					return fmt.Errorf("read secret key: %w", err)
 				}
 				req.Key = string(keyBuf)
 			}
 			res, err := iampbv2.NewClusterAPIKeyVaultClient(conn).CreateAPIKey(ctx, req)
 			if err != nil {
-				return err
+				return fmt.Errorf("create API key: %w", err)
 			}
 			fmt.Fprintln(os.Stderr, "Store the API key now in a secure place, as it cannot be retrieved later.")
-			return column.WriteKV(tabout,
-				"Key ID", res.Key.GetKeyId(),
-				"Secret Key", res.Key.GetKey(),
-				"Cluster ID", res.Key.GetClusterId(),
-				"Rights", column.Rights(res.Key.GetRights()).String(),
-				"State", res.Key.GetState().String(),
-			)
+			if err := column.WriteKV(tabout,
+				"Key ID", res.GetKey().GetKeyId(),
+				"Secret Key", res.GetKey().GetKey(),
+				"Cluster ID", res.GetKey().GetClusterId(),
+				"Rights", column.Rights(res.GetKey().GetRights()).String(),
+				"State", res.GetKey().GetState().String(),
+			); err != nil {
+				return fmt.Errorf("write API key: %w", err)
+			}
+			return nil
 		},
 	}
 	clusterAPIKeyUpdateStateCmd = &cobra.Command{
@@ -109,14 +113,17 @@ Rights:
 		Example: `
   Update the API key state to APPROVED:
     $ pbadmin cluster apikey update-state --key-id C5232IFFX4UKEELB --state APPROVED`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			keyID, _ := cmd.Flags().GetString("key-id")
 			state := pbflag.GetAPIKeyState(cmd.Flags(), "state")
 			_, err := iampbv2.NewClusterAPIKeyVaultClient(conn).UpdateAPIKeyState(ctx, &iampbv2.UpdateAPIKeyStateRequest{
 				KeyId: keyID,
 				State: state,
 			})
-			return err
+			if err != nil {
+				return fmt.Errorf("update API key state: %w", err)
+			}
+			return nil
 		},
 	}
 	clusterAPIKeyDeleteCmd = &cobra.Command{
@@ -126,12 +133,15 @@ Rights:
 		Example: `
   Delete an API key:
     $ pbadmin cluster apikey delete --key-id C5232IFFX4UKEELB`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			keyID, _ := cmd.Flags().GetString("key-id")
 			_, err := iampbv2.NewClusterAPIKeyVaultClient(conn).DeleteAPIKey(ctx, &iampbv2.APIKeyRequest{
 				KeyId: keyID,
 			})
-			return err
+			if err != nil {
+				return fmt.Errorf("delete API key: %w", err)
+			}
+			return nil
 		},
 	}
 )

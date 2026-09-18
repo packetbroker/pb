@@ -1,4 +1,5 @@
-// Copyright © 2021 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2021 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
 package cmd
 
@@ -25,14 +26,14 @@ func (f reportFormat) String() string {
 	return string(f)
 }
 
-func (f *reportFormat) Set(s string) error {
-	for _, sf := range reportFormats {
-		if sf == s {
-			*f = reportFormat(s)
+func (f *reportFormat) Set(value string) error {
+	for _, format := range reportFormats {
+		if format == value {
+			*f = reportFormat(value)
 			return nil
 		}
 	}
-	return fmt.Errorf("unrecognized format %q", s)
+	return fmt.Errorf("unrecognized format %q", value)
 }
 
 func (f reportFormat) Type() string {

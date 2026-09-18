@@ -1,9 +1,11 @@
-// Copyright © 2021 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2021 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
 package gen
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -19,7 +21,7 @@ func commandTree(cmd *cobra.Command) (res command) {
 	res.Path = cmd.CommandPath()
 	res.Short = cmd.Short
 	if len(cmd.Commands()) == 0 {
-		return
+		return res
 	}
 	res.SubCommands = make(map[string]command, len(cmd.Commands()))
 	for _, cmd := range cmd.Commands() {
@@ -28,26 +30,32 @@ func commandTree(cmd *cobra.Command) (res command) {
 		}
 		res.SubCommands[cmd.Name()] = commandTree(cmd)
 	}
-	return
+	return res
 }
 
 var treeCmd = &cobra.Command{
 	Use:   "tree",
 	Short: "Generate command tree",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		out, _ := cmd.Flags().GetString("out")
 
-		f, err := os.Create(out)
+		file, err := os.Create(out) //nolint:gosec // the output file path is provided by the user of this CLI
 		if err != nil {
-			return err
+			return fmt.Errorf("create output file %q: %w", out, err)
 		}
-		defer f.Close()
 
-		enc := json.NewEncoder(f)
+		enc := json.NewEncoder(file)
 		enc.SetIndent("", "  ")
-		return enc.Encode(map[string]command{
+		if err := enc.Encode(map[string]command{
 			cmd.Root().Name(): commandTree(cmd.Root()),
-		})
+		}); err != nil {
+			_ = file.Close()
+			return fmt.Errorf("write command tree: %w", err)
+		}
+		if err := file.Close(); err != nil {
+			return fmt.Errorf("close output file %q: %w", out, err)
+		}
+		return nil
 	},
 }
 

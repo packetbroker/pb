@@ -1,4 +1,5 @@
-// Copyright © 2020 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2020 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
 package client
 
@@ -15,7 +16,7 @@ type basicAuth struct {
 	insecure           bool
 }
 
-func (b *basicAuth) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+func (b *basicAuth) GetRequestMetadata(_ context.Context, _ ...string) (map[string]string, error) {
 	authValue := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", b.username, b.password)))
 	return map[string]string{
 		"authorization": fmt.Sprintf("Basic %s", authValue),

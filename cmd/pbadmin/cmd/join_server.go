@@ -1,4 +1,5 @@
-// Copyright © 2021 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2021 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
 package cmd
 
@@ -26,28 +27,28 @@ var (
 		Use:     "list",
 		Aliases: []string{"ls"},
 		Short:   "List Join Servers",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			var (
 				offset          = uint32(0)
 				nameContains, _ = cmd.Flags().GetString("name-contains")
 			)
-			fmt.Fprintln(tabout, "  ID\tName\tJoinEUI Prefixes\tListed\tResolver\t")
+			tabout.Println("  ID\tName\tJoinEUI Prefixes\tListed\tResolver\t")
 			for {
 				res, err := iampb.NewJoinServerRegistryClient(conn).ListJoinServers(ctx, &iampb.ListJoinServersRequest{
 					Offset:       offset,
 					NameContains: nameContains,
 				})
 				if err != nil {
-					return err
+					return fmt.Errorf("list Join Servers: %w", err)
 				}
-				for _, t := range res.JoinServers {
+				for _, t := range res.GetJoinServers() {
 					var resolver string
 					if lookup := t.GetLookup(); lookup != nil {
 						resolver = (*column.Target)(lookup).String()
 					} else if fixed := t.GetFixed(); fixed != nil {
 						resolver = (*column.JoinServerFixedEndpoint)(fixed).String()
 					}
-					fmt.Fprintf(tabout, "%4d\t%s\t%s\t%s\t%s\t\n",
+					tabout.Printf("%4d\t%s\t%s\t%s\t%s\t\n",
 						t.GetId(),
 						t.GetName(),
 						column.JoinEUIPrefixes(t.GetJoinEuiPrefixes()),
@@ -55,15 +56,15 @@ var (
 						resolver,
 					)
 				}
-				offset += uint32(len(res.JoinServers))
-				if len(res.JoinServers) == 0 || offset >= res.Total {
+				offset += uint32(len(res.GetJoinServers()))
+				if len(res.GetJoinServers()) == 0 || offset >= res.GetTotal() {
 					break
 				}
 			}
 			return nil
 		},
 	}
-	joinServerCreateCmd = &cobra.Command{
+	joinServerCreateCmd = &cobra.Command{ //nolint:gosec // the example URL contains a placeholder password
 		Use:   "create",
 		Short: "Create a Join Server",
 		Example: `
@@ -81,13 +82,13 @@ var (
 
   See for more target configuration options:
     $ pbadmin join-server update target --help`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			name, _ := cmd.Flags().GetString("name")
 			joinEUIPrefixes := pbflag.GetJoinEUIPrefixes(cmd.Flags())
 			adminContact := pbflag.GetContactInfo(cmd.Flags(), "admin")
 			techContact := pbflag.GetContactInfo(cmd.Flags(), "tech")
 			listed, _ := cmd.Flags().GetBool("listed")
-			js := &packetbroker.JoinServer{
+			joinServer := &packetbroker.JoinServer{
 				Name:                  name,
 				JoinEuiPrefixes:       joinEUIPrefixes,
 				AdministrativeContact: adminContact,
@@ -97,14 +98,14 @@ var (
 			if pbflag.TargetFlagsChanged(cmd.Flags(), "lookup") {
 				var target *packetbroker.Target
 				if err := pbflag.ApplyToTarget(cmd.Flags(), "lookup", &target); err != nil {
-					return err
+					return fmt.Errorf("configure target: %w", err)
 				}
-				js.Resolver = &packetbroker.JoinServer_Lookup{
+				joinServer.Resolver = &packetbroker.JoinServer_Lookup{
 					Lookup: target,
 				}
 			} else if pbflag.EndpointFlagsChanged(cmd.Flags(), "fixed") {
 				endpoint, _ := pbflag.GetEndpoint(cmd.Flags(), "fixed")
-				js.Resolver = &packetbroker.JoinServer_Fixed{
+				joinServer.Resolver = &packetbroker.JoinServer_Fixed{
 					Fixed: &packetbroker.JoinServerFixedEndpoint{
 						NetId:     uint32(endpoint.NetID),
 						TenantId:  endpoint.ID,
@@ -113,12 +114,15 @@ var (
 				}
 			}
 			res, err := iampb.NewJoinServerRegistryClient(conn).CreateJoinServer(ctx, &iampb.CreateJoinServerRequest{
-				JoinServer: js,
+				JoinServer: joinServer,
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("create Join Server: %w", err)
 			}
-			return column.WriteJoinServer(tabout, res.JoinServer, false)
+			if err := column.WriteJoinServer(tabout, res.GetJoinServer(), false); err != nil {
+				return fmt.Errorf("write Join Server: %w", err)
+			}
+			return nil
 		},
 	}
 	joinServerGetCmd = &cobra.Command{
@@ -127,16 +131,19 @@ var (
 		Example: `
   Get:
     $ pbadmin join-server get --id 1`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			id, _ := cmd.Flags().GetUint32("id")
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			joinServerID, _ := cmd.Flags().GetUint32("id")
 			res, err := iampb.NewJoinServerRegistryClient(conn).GetJoinServer(ctx, &iampb.JoinServerRequest{
-				Id: id,
+				Id: joinServerID,
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("get Join Server: %w", err)
 			}
 			verbose, _ := cmd.Flags().GetBool("verbose")
-			return column.WriteJoinServer(tabout, res.JoinServer, verbose)
+			if err := column.WriteJoinServer(tabout, res.GetJoinServer(), verbose); err != nil {
+				return fmt.Errorf("write Join Server: %w", err)
+			}
+			return nil
 		},
 	}
 	joinServerUpdateCmd = &cobra.Command{
@@ -146,10 +153,10 @@ var (
 		Example: `
   Update name:
     $ pbadmin join-server update --id 1 --name "The Things Join Server"`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			id, _ := cmd.Flags().GetUint32("id")
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			joinServerID, _ := cmd.Flags().GetUint32("id")
 			req := &iampb.UpdateJoinServerRequest{
-				Id: id,
+				Id: joinServerID,
 			}
 			if cmd.Flags().Changed("name") {
 				name, _ := cmd.Flags().GetString("name")
@@ -176,10 +183,13 @@ var (
 				req.Listed = wrapperspb.Bool(listed)
 			}
 			_, err := iampb.NewJoinServerRegistryClient(conn).UpdateJoinServer(ctx, req)
-			return err
+			if err != nil {
+				return fmt.Errorf("update Join Server: %w", err)
+			}
+			return nil
 		},
 	}
-	joinServerUpdateTargetCmd = &cobra.Command{
+	joinServerUpdateTargetCmd = &cobra.Command{ //nolint:gosec // the example URL contains a placeholder password
 		Use:   "target",
 		Short: "Update a Join Server target",
 		Example: `
@@ -201,22 +211,22 @@ var (
   originating NetID:
     $ pbadmin join-server update target --id 1 --origin-net-id 000013 \
       --root-cas-file ca.pem --tls-cert-file key.pem --tls-key-file key.pem`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			id, _ := cmd.Flags().GetUint32("id")
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			joinServerID, _ := cmd.Flags().GetUint32("id")
 			client := iampb.NewJoinServerRegistryClient(conn)
-			js, err := client.GetJoinServer(ctx, &iampb.JoinServerRequest{
-				Id: id,
+			joinServer, err := client.GetJoinServer(ctx, &iampb.JoinServerRequest{
+				Id: joinServerID,
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("get Join Server: %w", err)
 			}
 			req := &iampb.UpdateJoinServerRequest{
-				Id: id,
+				Id: joinServerID,
 			}
 			if pbflag.TargetFlagsChanged(cmd.Flags(), "lookup") {
-				target := js.JoinServer.GetLookup()
+				target := joinServer.GetJoinServer().GetLookup()
 				if err := pbflag.ApplyToTarget(cmd.Flags(), "lookup", &target); err != nil {
-					return err
+					return fmt.Errorf("configure target: %w", err)
 				}
 				req.Resolver = &iampb.UpdateJoinServerRequest_Lookup{
 					Lookup: target,
@@ -232,7 +242,10 @@ var (
 				}
 			}
 			_, err = client.UpdateJoinServer(ctx, req)
-			return err
+			if err != nil {
+				return fmt.Errorf("update Join Server: %w", err)
+			}
+			return nil
 		},
 	}
 	joinServerDeleteCmd = &cobra.Command{
@@ -242,12 +255,15 @@ var (
 		Example: `
   Delete:
     $ pbadmin join-server delete --id 1`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			id, _ := cmd.Flags().GetUint32("id")
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			joinServerID, _ := cmd.Flags().GetUint32("id")
 			_, err := iampb.NewJoinServerRegistryClient(conn).DeleteJoinServer(ctx, &iampb.JoinServerRequest{
-				Id: id,
+				Id: joinServerID,
 			})
-			return err
+			if err != nil {
+				return fmt.Errorf("delete Join Server: %w", err)
+			}
+			return nil
 		},
 	}
 )

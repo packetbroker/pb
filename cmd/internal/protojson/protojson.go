@@ -1,9 +1,12 @@
-// Copyright © 2020 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2020 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
+// Package protojson provides JSON encoding and decoding of proto messages with the default options for Packet Broker.
 package protojson
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 
 	"google.golang.org/protobuf/encoding/protojson"
@@ -21,7 +24,11 @@ var marshalOptions = protojson.MarshalOptions{
 
 // Marshal marshals the proto message using the default options for Packet Broker.
 func Marshal(m proto.Message) ([]byte, error) {
-	return marshalOptions.Marshal(m)
+	res, err := marshalOptions.Marshal(m)
+	if err != nil {
+		return nil, fmt.Errorf("marshal JSON: %w", err)
+	}
+	return res, nil
 }
 
 // Write marshals the proto message (see Marshal) and writes it to the given writer.
@@ -30,8 +37,10 @@ func Write(w io.Writer, m proto.Message) error {
 	if err != nil {
 		return err
 	}
-	_, err = w.Write(rawMsg)
-	return err
+	if _, err := w.Write(rawMsg); err != nil {
+		return fmt.Errorf("write JSON: %w", err)
+	}
+	return nil
 }
 
 var unmarshalOptions = protojson.UnmarshalOptions{
@@ -40,14 +49,17 @@ var unmarshalOptions = protojson.UnmarshalOptions{
 
 // Unmarshal unmarshals the proto message using the default options for Packet Broker.
 func Unmarshal(b []byte, m proto.Message) error {
-	return unmarshalOptions.Unmarshal(b, m)
+	if err := unmarshalOptions.Unmarshal(b, m); err != nil {
+		return fmt.Errorf("unmarshal JSON: %w", err)
+	}
+	return nil
 }
 
 // Decode reads a JSON message from the JSON decoder and unmarshals it (see Unmarshal).
 func Decode(d *json.Decoder, m proto.Message) error {
 	var rawMsg json.RawMessage
 	if err := d.Decode(&rawMsg); err != nil {
-		return err
+		return fmt.Errorf("decode JSON: %w", err)
 	}
 	return Unmarshal(rawMsg, m)
 }
