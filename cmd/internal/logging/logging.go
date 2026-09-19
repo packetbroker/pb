@@ -1,4 +1,5 @@
-// Copyright © 2020 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2020 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
 // Package logging implements common logging functionality used by commands.
 package logging

@@ -1,5 +1,7 @@
-// Copyright © 2020 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2020 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
+// Package cmd implements the pbctl commands.
 package cmd
 
 import (
@@ -7,11 +9,11 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"text/tabwriter"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.packetbroker.org/pb/cmd/internal/column"
 	"go.packetbroker.org/pb/cmd/internal/config"
 	"go.packetbroker.org/pb/cmd/internal/gen"
 	"go.packetbroker.org/pb/cmd/internal/logging"
@@ -29,44 +31,45 @@ var (
 	iamConn,
 	cpConn,
 	reportsConn *grpc.ClientConn
-	tabout = tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+	tabout = column.NewWriter(os.Stdout)
 )
 
-func prerunConnect(cmd *cobra.Command, args []string) error {
+func prerunConnect(_ *cobra.Command, _ []string) error {
 	iamClientConf, err := config.OAuth2Client(ctx, "iam", "networks")
 	if err != nil {
-		return err
+		return fmt.Errorf("configure IAM client: %w", err)
 	}
 	iamConn, err = client.DialContext(ctx, logger, iamClientConf, 443)
 	if err != nil {
-		return err
+		return fmt.Errorf("connect to IAM: %w", err)
 	}
 
 	cpClientConf, err := config.OAuth2Client(ctx, "controlplane", "networks")
 	if err != nil {
-		return err
+		return fmt.Errorf("configure Control Plane client: %w", err)
 	}
 	cpConn, err = client.DialContext(ctx, logger, cpClientConf, 443)
 	if err != nil {
-		return err
+		return fmt.Errorf("connect to Control Plane: %w", err)
 	}
 
 	reportsClientConf, err := config.OAuth2Client(ctx, "reports", "networks")
 	if err != nil {
-		return err
+		return fmt.Errorf("configure Reporter client: %w", err)
 	}
 	reportsConn, err = client.DialContext(ctx, logger, reportsClientConf, 443)
 	if err != nil {
-		return err
+		return fmt.Errorf("connect to Reporter: %w", err)
 	}
 
 	return nil
 }
 
-func postrunConnect(cmd *cobra.Command, args []string) {
-	iamConn.Close()
-	cpConn.Close()
-	reportsConn.Close()
+func postrunConnect(_ *cobra.Command, _ []string) {
+	// The connections are no longer used; close errors are not actionable.
+	_ = iamConn.Close()
+	_ = cpConn.Close()
+	_ = reportsConn.Close()
 }
 
 var rootCmd = &cobra.Command{
@@ -78,12 +81,16 @@ var rootCmd = &cobra.Command{
 // Execute runs pbctl.
 func Execute() {
 	logger = logging.GetLogger(debug)
-	defer logger.Sync()
-	defer tabout.Flush()
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+	if err := tabout.Flush(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	// Syncing stderr is not supported on all platforms; the error is not actionable.
+	_ = logger.Sync()
 }
 
 func init() {
@@ -118,5 +125,7 @@ func initConfig() {
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("pb")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
-	viper.ReadInConfig()
+	if err := config.ReadInConfig(); err != nil {
+		fmt.Fprintln(os.Stderr, "Warning:", err)
+	}
 }

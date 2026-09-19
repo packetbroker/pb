@@ -1,4 +1,5 @@
-// Copyright © 2021 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2021 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
 package cmd
 
@@ -36,7 +37,7 @@ var (
 		Use:     "networks",
 		Aliases: []string{"network", "ns"},
 		Short:   "Show Forwarders and Home Networks",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			var (
 				tenantID, _       = pbflag.GetTenantID(cmd.Flags(), "")
 				offset            = uint32(0)
@@ -54,7 +55,7 @@ var (
 					TenantId: policyTenantID.ID,
 				}
 			}
-			fmt.Fprintln(tabout, "NetID\tTenant ID\tName\tDevAddr Blocks\t")
+			tabout.Println("NetID\tTenant ID\tName\tDevAddr Blocks\t")
 			for {
 				res, err := iampb.NewCatalogClient(iamConn).ListNetworks(ctx, &iampb.ListNetworksRequest{
 					NetId:            uint32(tenantID.NetID),
@@ -65,26 +66,26 @@ var (
 					PolicyReference:  policyRef,
 				})
 				if err != nil {
-					return err
+					return fmt.Errorf("list networks: %w", err)
 				}
-				for _, hn := range res.Networks {
+				for _, entry := range res.GetNetworks() {
 					var row homeNetwork
-					if nwk := hn.GetNetwork(); nwk != nil {
+					if nwk := entry.GetNetwork(); nwk != nil {
 						row.network = nwk
 						row.tenantID = "-"
-					} else if tnt := hn.GetTenant(); tnt != nil {
+					} else if tnt := entry.GetTenant(); tnt != nil {
 						row.network = tnt
 						row.tenantID = tnt.GetTenantId()
 					}
-					fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t\n",
+					tabout.Printf("%s\t%s\t%s\t%s\t\n",
 						packetbroker.NetID(row.GetNetId()),
 						row.tenantID,
 						row.GetName(),
 						column.DevAddrBlocks(row.GetDevAddrBlocks()),
 					)
 				}
-				offset += uint32(len(res.Networks))
-				if len(res.Networks) == 0 || offset >= res.Total {
+				offset += uint32(len(res.GetNetworks()))
+				if len(res.GetNetworks()) == 0 || offset >= res.GetTotal() {
 					break
 				}
 			}
@@ -95,7 +96,7 @@ var (
 		Use:     "home-networks",
 		Aliases: []string{"home-network", "hns"},
 		Short:   "Show Home Networks",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			var (
 				tenantID, _       = pbflag.GetTenantID(cmd.Flags(), "")
 				offset            = uint32(0)
@@ -113,7 +114,7 @@ var (
 					TenantId: policyTenantID.ID,
 				}
 			}
-			fmt.Fprintln(tabout, "NetID\tTenant ID\tName\tDevAddr Blocks\t")
+			tabout.Println("NetID\tTenant ID\tName\tDevAddr Blocks\t")
 			for {
 				res, err := iampb.NewCatalogClient(iamConn).ListHomeNetworks(ctx, &iampb.ListNetworksRequest{
 					NetId:            uint32(tenantID.NetID),
@@ -124,26 +125,26 @@ var (
 					PolicyReference:  policyRef,
 				})
 				if err != nil {
-					return err
+					return fmt.Errorf("list Home Networks: %w", err)
 				}
-				for _, hn := range res.Networks {
+				for _, entry := range res.GetNetworks() {
 					var row homeNetwork
-					if nwk := hn.GetNetwork(); nwk != nil {
+					if nwk := entry.GetNetwork(); nwk != nil {
 						row.network = nwk
 						row.tenantID = "-"
-					} else if tnt := hn.GetTenant(); tnt != nil {
+					} else if tnt := entry.GetTenant(); tnt != nil {
 						row.network = tnt
 						row.tenantID = tnt.GetTenantId()
 					}
-					fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t\n",
+					tabout.Printf("%s\t%s\t%s\t%s\t\n",
 						packetbroker.NetID(row.GetNetId()),
 						row.tenantID,
 						row.GetName(),
 						column.DevAddrBlocks(row.GetDevAddrBlocks()),
 					)
 				}
-				offset += uint32(len(res.Networks))
-				if len(res.Networks) == 0 || offset >= res.Total {
+				offset += uint32(len(res.GetNetworks()))
+				if len(res.GetNetworks()) == 0 || offset >= res.GetTotal() {
 					break
 				}
 			}
@@ -154,29 +155,29 @@ var (
 		Use:     "join-servers",
 		Aliases: []string{"join-server", "js"},
 		Short:   "Show Join Servers",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			var (
 				offset          = uint32(0)
 				nameContains, _ = cmd.Flags().GetString("name-contains")
 			)
-			fmt.Fprintln(tabout, "  ID\tName\tJoinEUI Prefixes\t")
+			tabout.Println("  ID\tName\tJoinEUI Prefixes\t")
 			for {
 				res, err := iampb.NewCatalogClient(iamConn).ListJoinServers(ctx, &iampb.ListJoinServersRequest{
 					Offset:       offset,
 					NameContains: nameContains,
 				})
 				if err != nil {
-					return err
+					return fmt.Errorf("list Join Servers: %w", err)
 				}
-				for _, js := range res.JoinServers {
-					fmt.Fprintf(tabout, "%4d\t%s\t%s\t\n",
-						js.GetId(),
-						js.GetName(),
-						column.JoinEUIPrefixes(js.GetJoinEuiPrefixes()),
+				for _, joinServer := range res.GetJoinServers() {
+					tabout.Printf("%4d\t%s\t%s\t\n",
+						joinServer.GetId(),
+						joinServer.GetName(),
+						column.JoinEUIPrefixes(joinServer.GetJoinEuiPrefixes()),
 					)
 				}
-				offset += uint32(len(res.JoinServers))
-				if len(res.JoinServers) == 0 || offset >= res.Total {
+				offset += uint32(len(res.GetJoinServers()))
+				if len(res.GetJoinServers()) == 0 || offset >= res.GetTotal() {
 					break
 				}
 			}

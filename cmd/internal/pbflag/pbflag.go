@@ -1,12 +1,14 @@
-// Copyright © 2020 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2020 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
+// Package pbflag provides command-line flags for Packet Broker types.
 package pbflag
 
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/url"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -25,13 +27,13 @@ func (f *netIDValue) String() string {
 	if f.NetID == nil {
 		return ""
 	}
-	return packetbroker.NetID(*f.NetID).String()
+	return f.NetID.String()
 }
 
-func (f *netIDValue) Set(s string) error {
+func (f *netIDValue) Set(value string) error {
 	var netID packetbroker.NetID
-	if err := netID.UnmarshalText([]byte(s)); err != nil {
-		return err
+	if err := netID.UnmarshalText([]byte(value)); err != nil {
+		return fmt.Errorf("pbflag: invalid NetID: %w", err)
 	}
 	*f = netIDValue{
 		NetID: &netID,
@@ -63,7 +65,7 @@ func GetNetID(flags *flag.FlagSet, actor string) (packetbroker.NetID, bool) {
 	if netID == nil {
 		return 0, false
 	}
-	return packetbroker.NetID(*netID), true
+	return *netID, true
 }
 
 // TenantID returns flags for a TenantID.
@@ -90,16 +92,18 @@ func GetTenantID(flags *flag.FlagSet, actor string) (packetbroker.TenantID, bool
 
 // GetTenantIDWrappers returns the TenantID as protobuf wrappers.
 // The returned values are nil when they are not set.
-func GetTenantIDWrappers(flags *flag.FlagSet, actor string) (netID *wrapperspb.UInt32Value, id *wrapperspb.StringValue) {
+func GetTenantIDWrappers(
+	flags *flag.FlagSet, actor string,
+) (netID *wrapperspb.UInt32Value, id *wrapperspb.StringValue) {
 	tntID, ok := GetTenantID(flags, actor)
 	if !ok {
-		return
+		return netID, id
 	}
 	netID = wrapperspb.UInt32(uint32(tntID.NetID))
 	if TenantIDChanged(flags, actor) {
 		id = wrapperspb.String(tntID.ID)
 	}
-	return
+	return netID, id
 }
 
 // TenantIDChanged returns whether the tenant ID flag has been changed explicitly.
@@ -140,7 +144,7 @@ func HasEndpoint(flags *flag.FlagSet, actor string) (hasNetID, hasTenantID, hasC
 			hasClusterID = true
 		}
 	})
-	return
+	return hasNetID, hasTenantID, hasClusterID
 }
 
 // EndpointFlagsChanged returns whether any of the endpoint flags are changed.
@@ -177,24 +181,24 @@ func GetContactInfo(flags *flag.FlagSet, actor string) *packetbroker.ContactInfo
 type devAddrBlocksValue []*packetbroker.DevAddrBlock
 
 func (f *devAddrBlocksValue) String() string {
-	ss := make([]string, len(*f))
+	res := make([]string, len(*f))
 	for i, b := range *f {
-		prefix, _ := b.Prefix.MarshalText()
-		if b.HomeNetworkClusterId != "" {
-			ss[i] = fmt.Sprintf("%s=%s", string(prefix), b.HomeNetworkClusterId)
+		prefix, _ := b.GetPrefix().MarshalText()
+		if b.GetHomeNetworkClusterId() != "" {
+			res[i] = fmt.Sprintf("%s=%s", string(prefix), b.GetHomeNetworkClusterId())
 		} else {
-			ss[i] = string(prefix)
+			res[i] = string(prefix)
 		}
 	}
-	return strings.Join(ss, ",")
+	return strings.Join(res, ",")
 }
 
-func (f *devAddrBlocksValue) Set(s string) error {
-	if s == "" {
+func (f *devAddrBlocksValue) Set(value string) error {
+	if value == "" {
 		*f = []*packetbroker.DevAddrBlock{}
 		return nil
 	}
-	blocks := strings.Split(s, ",")
+	blocks := strings.Split(value, ",")
 	res := make([]*packetbroker.DevAddrBlock, len(blocks))
 	for i, b := range blocks {
 		parts := strings.SplitN(b, "=", 2)
@@ -204,8 +208,8 @@ func (f *devAddrBlocksValue) Set(s string) error {
 		if len(parts) == 2 {
 			res[i].HomeNetworkClusterId = parts[1]
 		}
-		if err := res[i].Prefix.UnmarshalText([]byte(parts[0])); err != nil {
-			return err
+		if err := res[i].GetPrefix().UnmarshalText([]byte(parts[0])); err != nil {
+			return fmt.Errorf("pbflag: invalid DevAddr block %q: %w", parts[0], err)
 		}
 	}
 	*f = res
@@ -236,31 +240,31 @@ func GetDevAddrBlocks(flags *flag.FlagSet) (all, add, remove []*packetbroker.Dev
 	if f := flags.Lookup("dev-addr-blocks-remove"); f != nil {
 		remove = []*packetbroker.DevAddrBlock(*f.Value.(*devAddrBlocksValue))
 	}
-	return
+	return all, add, remove
 }
 
 type joinEUIPrefixesValue []*packetbroker.JoinEUIPrefix
 
 func (f *joinEUIPrefixesValue) String() string {
-	ss := make([]string, len(*f))
+	res := make([]string, len(*f))
 	for i, b := range *f {
 		prefix, _ := b.MarshalText()
-		ss[i] = string(prefix)
+		res[i] = string(prefix)
 	}
-	return strings.Join(ss, ",")
+	return strings.Join(res, ",")
 }
 
-func (f *joinEUIPrefixesValue) Set(s string) error {
-	if s == "" {
+func (f *joinEUIPrefixesValue) Set(value string) error {
+	if value == "" {
 		*f = []*packetbroker.JoinEUIPrefix{}
 		return nil
 	}
-	blocks := strings.Split(s, ",")
+	blocks := strings.Split(value, ",")
 	res := make([]*packetbroker.JoinEUIPrefix, len(blocks))
 	for i, b := range blocks {
 		res[i] = new(packetbroker.JoinEUIPrefix)
 		if err := res[i].UnmarshalText([]byte(b)); err != nil {
-			return err
+			return fmt.Errorf("pbflag: invalid JoinEUI prefix %q: %w", b, err)
 		}
 	}
 	*f = res
@@ -293,8 +297,8 @@ func (f *monthYear) String() string {
 	return fmt.Sprintf("%04d-%02d", f.year, f.month)
 }
 
-func (f *monthYear) Set(s string) error {
-	parts := strings.SplitN(s, "-", 2)
+func (f *monthYear) Set(value string) error {
+	parts := strings.SplitN(value, "-", 2)
 	if len(parts) != 2 {
 		return errors.New("pbflag: invalid month year: expect YYYY-MM")
 	}
@@ -355,14 +359,14 @@ func (c messageType) String() string {
 	}
 }
 
-func (c *messageType) Set(s string) error {
-	switch s {
+func (c *messageType) Set(value string) error {
+	switch value {
 	case "message":
 		*c = message
 	case "message-delivery-state":
 		*c = messageDeliveryState
 	default:
-		return fmt.Errorf("pbflag: invalid message type: %s", s)
+		return fmt.Errorf("pbflag: invalid message type: %s", value)
 	}
 	return nil
 }
@@ -374,7 +378,7 @@ func (c *messageType) Type() string {
 // MessageType returns flags for the message type.
 func MessageType() *flag.FlagSet {
 	flags := new(flag.FlagSet)
-	v := messageType(message)
+	v := message
 	flags.Var(&v, "message-type", "message type (message, message-delivery-state)")
 	return flags
 }
@@ -414,14 +418,14 @@ func (p protocol) String() string {
 	return packetbroker.Protocol_name[int32(*p.Protocol)]
 }
 
-func (p *protocol) Set(s string) error {
-	if s == "" {
+func (p *protocol) Set(value string) error {
+	if value == "" {
 		*p = protocol{}
 		return nil
 	}
-	i, ok := packetbroker.Protocol_value[s]
+	i, ok := packetbroker.Protocol_value[value]
 	if !ok {
-		return fmt.Errorf("pbflag: invalid protocol: %s", s)
+		return fmt.Errorf("pbflag: invalid protocol: %s", value)
 	}
 	*p = protocol{
 		Protocol: (*packetbroker.Protocol)(&i),
@@ -465,12 +469,12 @@ func (p apiKeyRightsValue) String() string {
 	return strings.Join(rights, ",")
 }
 
-func (p *apiKeyRightsValue) Set(s string) error {
-	if s == "" {
+func (p *apiKeyRightsValue) Set(value string) error {
+	if value == "" {
 		*p = []packetbroker.Right{}
 		return nil
 	}
-	rights := strings.Split(s, ",")
+	rights := strings.Split(value, ",")
 	res := make([]packetbroker.Right, len(rights))
 	for i, r := range rights {
 		v, ok := packetbroker.Right_value[r]
@@ -528,13 +532,13 @@ func (p *uplinkPolicyValue) String() string {
 	return res
 }
 
-func (p *uplinkPolicyValue) Set(s string) error {
+func (p *uplinkPolicyValue) Set(value string) error {
 	*p = uplinkPolicyValue(packetbroker.RoutingPolicy_Uplink{
-		JoinRequest:     strings.ContainsRune(s, 'J'),
-		MacData:         strings.ContainsRune(s, 'M'),
-		ApplicationData: strings.ContainsRune(s, 'A'),
-		SignalQuality:   strings.ContainsRune(s, 'S'),
-		Localization:    strings.ContainsRune(s, 'L'),
+		JoinRequest:     strings.ContainsRune(value, 'J'),
+		MacData:         strings.ContainsRune(value, 'M'),
+		ApplicationData: strings.ContainsRune(value, 'A'),
+		SignalQuality:   strings.ContainsRune(value, 'S'),
+		Localization:    strings.ContainsRune(value, 'L'),
 	})
 	return nil
 }
@@ -559,11 +563,11 @@ func (p *downlinkPolicyValue) String() string {
 	return res
 }
 
-func (p *downlinkPolicyValue) Set(s string) error {
+func (p *downlinkPolicyValue) Set(value string) error {
 	*p = downlinkPolicyValue(packetbroker.RoutingPolicy_Downlink{
-		JoinAccept:      strings.ContainsRune(s, 'J'),
-		MacData:         strings.ContainsRune(s, 'M'),
-		ApplicationData: strings.ContainsRune(s, 'A'),
+		JoinAccept:      strings.ContainsRune(value, 'J'),
+		MacData:         strings.ContainsRune(value, 'M'),
+		ApplicationData: strings.ContainsRune(value, 'A'),
 	})
 	return nil
 }
@@ -617,16 +621,16 @@ func (v *gatewayVisibilityValue) String() string {
 	return res
 }
 
-func (v *gatewayVisibilityValue) Set(s string) error {
+func (v *gatewayVisibilityValue) Set(value string) error {
 	*v = gatewayVisibilityValue(packetbroker.GatewayVisibility{
-		Location:         strings.Contains(s, "Lo"),
-		AntennaPlacement: strings.Contains(s, "Ap"),
-		AntennaCount:     strings.Contains(s, "Ac"),
-		FineTimestamps:   strings.Contains(s, "Ft"),
-		ContactInfo:      strings.Contains(s, "Ci"),
-		Status:           strings.Contains(s, "St"),
-		FrequencyPlan:    strings.Contains(s, "Fp"),
-		PacketRates:      strings.Contains(s, "Pr"),
+		Location:         strings.Contains(value, "Lo"),
+		AntennaPlacement: strings.Contains(value, "Ap"),
+		AntennaCount:     strings.Contains(value, "Ac"),
+		FineTimestamps:   strings.Contains(value, "Ft"),
+		ContactInfo:      strings.Contains(value, "Ci"),
+		Status:           strings.Contains(value, "St"),
+		FrequencyPlan:    strings.Contains(value, "Fp"),
+		PacketRates:      strings.Contains(value, "Pr"),
 	})
 	return nil
 }
@@ -653,10 +657,10 @@ func (p apiKeyState) String() string {
 	return packetbroker.APIKeyState_name[int32(p)]
 }
 
-func (p *apiKeyState) Set(s string) error {
-	i, ok := packetbroker.APIKeyState_value[s]
+func (p *apiKeyState) Set(value string) error {
+	i, ok := packetbroker.APIKeyState_value[value]
 	if !ok {
-		return fmt.Errorf("pbflag: invalid API key state: %s", s)
+		return fmt.Errorf("pbflag: invalid API key state: %s", value)
 	}
 	*p = apiKeyState(i)
 	return nil
@@ -728,13 +732,13 @@ func ApplyToTarget(flags *flag.FlagSet, actor string, target **packetbroker.Targ
 		(*target).Protocol = *protocol
 	}
 
-	switch (*target).Protocol {
+	switch (*target).GetProtocol() {
 	case packetbroker.Protocol_TS002_V1_0, packetbroker.Protocol_TS002_V1_1:
-		var url *url.URL
+		var addressURL *url.URL
 		if address, err := flags.GetString(actorf(actor, "address")); err == nil && address != "" {
-			url, err = url.Parse(address)
+			addressURL, err = url.Parse(address)
 			if err != nil {
-				return err
+				return fmt.Errorf("pbflag: invalid address %q: %w", address, err)
 			}
 		}
 
@@ -753,17 +757,17 @@ func ApplyToTarget(flags *flag.FlagSet, actor string, target **packetbroker.Targ
 				},
 			}
 		// HTTP basic authentication.
-		case url != nil && url.User != nil:
-			password, _ := url.User.Password()
+		case addressURL != nil && addressURL.User != nil:
+			password, _ := addressURL.User.Password()
 			authentication = &packetbroker.Target_Authentication{
 				Value: &packetbroker.Target_Authentication_BasicAuth{
 					BasicAuth: &packetbroker.Target_BasicAuth{
-						Username: url.User.Username(),
+						Username: addressURL.User.Username(),
 						Password: password,
 					},
 				},
 			}
-			url.User = nil
+			addressURL.User = nil
 		// Custom HTTP authorization value.
 		case authorization != "":
 			authentication = &packetbroker.Target_Authentication{
@@ -775,13 +779,13 @@ func ApplyToTarget(flags *flag.FlagSet, actor string, target **packetbroker.Targ
 			}
 		// TLS client authentication.
 		case tlsCertFile != "" || tlsKeyFile != "":
-			tlsCert, err := ioutil.ReadFile(tlsCertFile)
+			tlsCert, err := os.ReadFile(tlsCertFile) //nolint:gosec // the file path is provided by the user of this CLI
 			if err != nil {
-				return err
+				return fmt.Errorf("read TLS client certificate file %q: %w", tlsCertFile, err)
 			}
-			tlsKey, err := ioutil.ReadFile(tlsKeyFile)
+			tlsKey, err := os.ReadFile(tlsKeyFile) //nolint:gosec // the file path is provided by the user of this CLI
 			if err != nil {
-				return err
+				return fmt.Errorf("read TLS client key file %q: %w", tlsKeyFile, err)
 			}
 			authentication = &packetbroker.Target_Authentication{
 				Value: &packetbroker.Target_Authentication_TlsClientAuth{
@@ -798,7 +802,7 @@ func ApplyToTarget(flags *flag.FlagSet, actor string, target **packetbroker.Targ
 				(*target).OriginNetIdAuthentication = make(map[uint32]*packetbroker.Target_Authentication)
 			}
 			if authentication == nil {
-				delete((*target).OriginNetIdAuthentication, uint32(netID))
+				delete((*target).GetOriginNetIdAuthentication(), uint32(netID))
 			} else {
 				(*target).OriginNetIdAuthentication[uint32(netID)] = authentication
 			}
@@ -823,10 +827,10 @@ func ApplyToTarget(flags *flag.FlagSet, actor string, target **packetbroker.Targ
 			}
 		}
 
-		if url != nil {
-			(*target).Address = url.String()
+		if addressURL != nil {
+			(*target).Address = addressURL.String()
 		}
-		for _, p := range []struct {
+		for _, pathFlag := range []struct {
 			target *string
 			flag   string
 		}{
@@ -834,8 +838,8 @@ func ApplyToTarget(flags *flag.FlagSet, actor string, target **packetbroker.Targ
 			{&(*target).SNsPath, actorf(actor, "sns-path")},
 			{&(*target).HNsPath, actorf(actor, "hns-path")},
 		} {
-			if flags.Changed(p.flag) {
-				*p.target, _ = flags.GetString(p.flag)
+			if flags.Changed(pathFlag.flag) {
+				*pathFlag.target, _ = flags.GetString(pathFlag.flag)
 			}
 		}
 
@@ -846,11 +850,11 @@ func ApplyToTarget(flags *flag.FlagSet, actor string, target **packetbroker.Targ
 	if flags.Changed(actorf(actor, "root-cas-file")) {
 		rootCAsFile, _ := flags.GetString(actorf(actor, "root-cas-file"))
 		if rootCAsFile != "" {
-			var err error
-			(*target).RootCas, err = ioutil.ReadFile(rootCAsFile)
+			rootCAs, err := os.ReadFile(rootCAsFile) //nolint:gosec // the file path is provided by the user of this CLI
 			if err != nil {
 				return fmt.Errorf("read root CAs file %q: %w", rootCAsFile, err)
 			}
+			(*target).RootCas = rootCAs
 		} else {
 			(*target).RootCas = nil
 		}

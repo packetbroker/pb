@@ -1,5 +1,7 @@
-// Copyright © 2020 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2020 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
+// Package cmd implements the pbsub command.
 package cmd
 
 import (
@@ -70,19 +72,19 @@ var rootCmd = &cobra.Command{
     Subscribe as named cluster in tenant:
       $ pbsub --home-network-net-id 000013 --home-network-tenant-id community \
         --home-network-cluster-id eu1`,
-	PreRunE: func(cmd *cobra.Command, args []string) error {
+	PreRunE: func(_ *cobra.Command, _ []string) error {
 		logger = logging.GetLogger(debug)
 		clientConf, err := config.OAuth2Client(ctx, "router", "networks")
 		if err != nil {
-			return err
+			return fmt.Errorf("configure Router client: %w", err)
 		}
 		conn, err = client.DialContext(ctx, logger, clientConf, 443)
 		if err != nil {
-			return err
+			return fmt.Errorf("connect to Router: %w", err)
 		}
 		return nil
 	},
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		var (
 			forwarder, forwarderOK     = pbflag.GetEndpoint(cmd.Flags(), "forwarder")
 			homeNetwork, homeNetworkOK = pbflag.GetEndpoint(cmd.Flags(), "home-network")
@@ -96,9 +98,10 @@ var rootCmd = &cobra.Command{
 		}
 		return errors.New("no role specified")
 	},
-	PostRun: func(cmd *cobra.Command, args []string) {
-		logger.Sync()
-		conn.Close()
+	PostRun: func(_ *cobra.Command, _ []string) {
+		// Syncing stderr is not supported on all platforms, and the connection is no longer used.
+		_ = logger.Sync()
+		_ = conn.Close()
 	},
 }
 
@@ -107,22 +110,22 @@ func asForwarder(forwarder packetbroker.Endpoint, group string) error {
 	stream, err := client.Subscribe(ctx, &routingpb.SubscribeForwarderRequest{
 		ForwarderNetId:     uint32(forwarder.NetID),
 		ForwarderClusterId: forwarder.ClusterID,
-		ForwarderTenantId:  forwarder.TenantID.ID,
+		ForwarderTenantId:  forwarder.ID,
 		Group:              group,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("subscribe as Forwarder: %w", err)
 	}
 	for {
 		msg, err := stream.Recv()
 		if err != nil {
 			if !errors.Is(err, io.EOF) && status.Code(err) != codes.Canceled {
-				return err
+				return fmt.Errorf("receive message: %w", err)
 			}
 			return nil
 		}
 		if err := protojson.Write(os.Stdout, msg); err != nil {
-			return err
+			return fmt.Errorf("write message: %w", err)
 		}
 	}
 }
@@ -148,28 +151,28 @@ func asHomeNetwork(homeNetwork packetbroker.Endpoint, group string) error {
 	stream, err := client.Subscribe(ctx, &routingpb.SubscribeHomeNetworkRequest{
 		HomeNetworkNetId:     uint32(homeNetwork.NetID),
 		HomeNetworkClusterId: homeNetwork.ClusterID,
-		HomeNetworkTenantId:  homeNetwork.TenantID.ID,
+		HomeNetworkTenantId:  homeNetwork.ID,
 		Group:                group,
 		Filters:              filters,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("subscribe as Home Network: %w", err)
 	}
 	for {
 		msg, err := stream.Recv()
 		if err != nil {
 			if !errors.Is(err, io.EOF) && status.Code(err) != codes.Canceled {
-				return err
+				return fmt.Errorf("receive message: %w", err)
 			}
 			return nil
 		}
 		if err := protojson.Write(os.Stdout, msg); err != nil {
-			return err
+			return fmt.Errorf("write message: %w", err)
 		}
 	}
 }
 
-// Execute runs pbctl.
+// Execute runs pbsub.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -211,5 +214,7 @@ func initConfig() {
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("pb")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
-	viper.ReadInConfig()
+	if err := config.ReadInConfig(); err != nil {
+		fmt.Fprintln(os.Stderr, "Warning:", err)
+	}
 }

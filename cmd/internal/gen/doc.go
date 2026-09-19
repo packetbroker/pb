@@ -1,5 +1,7 @@
-// Copyright © 2021 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2021 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
+// Package gen provides commands to generate documentation and command trees.
 package gen
 
 import (
@@ -21,7 +23,7 @@ slug: %s
 var hugoDocCmd = &cobra.Command{
 	Use:   "hugodoc",
 	Short: "Generate documentation for Hugo",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		cmd.VisitParents(func(c *cobra.Command) {
 			c.DisableAutoGenTag = true
 		})
@@ -31,7 +33,7 @@ var hugoDocCmd = &cobra.Command{
 		prepender := func(filename string) string {
 			name := filepath.Base(filename)
 			base := strings.TrimSuffix(name, path.Ext(name))
-			title := strings.Replace(base, "_", " ", -1)
+			title := strings.ReplaceAll(base, "_", " ")
 			fmt.Printf(`Write "%s" to %s`+"\n", title, filename)
 			return fmt.Sprintf(hugoDocFrontmatterTemplate, title, base)
 		}

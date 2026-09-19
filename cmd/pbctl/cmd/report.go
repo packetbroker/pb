@@ -1,4 +1,5 @@
-// Copyright © 2021 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2021 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
 package cmd
 
@@ -32,7 +33,7 @@ var (
 		Use:     "routed-messages",
 		Aliases: []string{"routedmsgs"},
 		Short:   "Report routed messages",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			// Query the routed messages for the selected period.
 			// If a generic tenant ID is provided, request the routed messages both as Forwarder and Home Network.
 			// Otherwise, the routed messages are either requested for the Forwarder or Home Network, or between the given
@@ -44,42 +45,37 @@ var (
 				last30Days, _               = cmd.Flags().GetBool("last-30d")
 				fromMonth, fromYear, fromOK = pbflag.GetMonthYear(cmd.Flags(), "from")
 				toMonth, toYear, toOK       = pbflag.GetMonthYear(cmd.Flags(), "to")
-				any                         bool
+				anyRole                     bool
 				highlight                   *packetbroker.TenantID
 			)
 			for _, actor := range []string{"forwarder", "home-network", ""} {
-				if id, ok := pbflag.GetTenantID(cmd.Flags(), actor); ok {
-					if actor == "" && any {
+				if tenantID, ok := pbflag.GetTenantID(cmd.Flags(), actor); ok {
+					if actor == "" && anyRole {
 						return errors.New("specify either any role or (a) specific role(s)")
 					}
-					any = true
+					anyRole = true
 					if highlight == nil {
-						highlight = &id
+						highlight = &tenantID
 					} else {
 						highlight = nil
 					}
 				}
 			}
-			for _, fillFn := range []func(req *reportingpb.GetRoutedMessagesRequest) error{
-				func(req *reportingpb.GetRoutedMessagesRequest) error {
+			for _, fillFn := range []func(req *reportingpb.GetRoutedMessagesRequest){
+				func(req *reportingpb.GetRoutedMessagesRequest) {
 					req.ForwarderNetId, req.ForwarderTenantId = pbflag.GetTenantIDWrappers(cmd.Flags(), "forwarder")
 					req.HomeNetworkNetId, req.HomeNetworkTenantId = pbflag.GetTenantIDWrappers(cmd.Flags(), "home-network")
-					return nil
 				},
-				func(req *reportingpb.GetRoutedMessagesRequest) error {
+				func(req *reportingpb.GetRoutedMessagesRequest) {
 					req.ForwarderNetId, req.ForwarderTenantId = pbflag.GetTenantIDWrappers(cmd.Flags(), "")
-					return nil
 				},
-				func(req *reportingpb.GetRoutedMessagesRequest) error {
+				func(req *reportingpb.GetRoutedMessagesRequest) {
 					req.HomeNetworkNetId, req.HomeNetworkTenantId = pbflag.GetTenantIDWrappers(cmd.Flags(), "")
-					return nil
 				},
 			} {
 				req := new(reportingpb.GetRoutedMessagesRequest)
-				if err := fillFn(req); err != nil {
-					return err
-				}
-				if req.ForwarderNetId == nil && req.HomeNetworkNetId == nil {
+				fillFn(req)
+				if req.GetForwarderNetId() == nil && req.GetHomeNetworkNetId() == nil {
 					continue
 				}
 				switch {
@@ -112,18 +108,18 @@ var (
 				}
 				res, err := reportingpb.NewReporterClient(reportsConn).GetRoutedMessages(ctx, req)
 				if err != nil {
-					return err
+					return fmt.Errorf("get routed messages: %w", err)
 				}
 			nextRecord:
-				for _, nr := range res.Records {
-					fID, hnID := packetbroker.ForwarderTenantID(nr), packetbroker.HomeNetworkTenantID(nr)
-					for _, er := range records {
+				for _, record := range res.GetRecords() {
+					fID, hnID := packetbroker.ForwarderTenantID(record), packetbroker.HomeNetworkTenantID(record)
+					for _, existing := range records {
 						// Skip duplicate records.
-						if packetbroker.ForwarderTenantID(er) == fID && packetbroker.HomeNetworkTenantID(er) == hnID {
+						if packetbroker.ForwarderTenantID(existing) == fID && packetbroker.HomeNetworkTenantID(existing) == hnID {
 							continue nextRecord
 						}
 					}
-					records = append(records, nr)
+					records = append(records, record)
 				}
 			}
 			sort.Sort(byToForwarderHomeNetwork(records))
@@ -141,75 +137,102 @@ var (
 				if err != nil {
 					return fmt.Errorf("list networks: %w", err)
 				}
-				networks = append(networks, res.Networks...)
-				if len(networks) >= int(res.Total) {
+				networks = append(networks, res.GetNetworks()...)
+				if len(networks) >= int(res.GetTotal()) {
 					break
 				}
-				offset += uint32(len(res.Networks))
+				offset += uint32(len(res.GetNetworks()))
 			}
 			networkMap := make(map[packetbroker.TenantID]*packetbroker.NetworkOrTenant, len(networks))
 			for _, n := range networks {
-				switch nt := n.Value.(type) {
+				switch nt := n.GetValue().(type) {
 				case *packetbroker.NetworkOrTenant_Network:
-					networkMap[packetbroker.TenantID{NetID: packetbroker.NetID(nt.Network.NetId)}] = n
+					networkMap[packetbroker.TenantID{NetID: packetbroker.NetID(nt.Network.GetNetId())}] = n
 				case *packetbroker.NetworkOrTenant_Tenant:
 					networkMap[packetbroker.RequestTenantID(nt.Tenant)] = n
 				}
 			}
 
 			// Determine the output: a (temporary) file or stdout.
-			var output io.WriteCloser
+			var (
+				output    io.Writer = os.Stdout
+				closeFunc func() error
+			)
 			if outputFile, _ := cmd.Flags().GetString("output-file"); outputFile != "" {
-				var err error
-				output, err = os.Create(outputFile)
+				file, err := os.Create(outputFile) //nolint:gosec // the output file path is provided by the user of this CLI
 				if err != nil {
 					return fmt.Errorf("create file: %w", err)
 				}
-				defer output.Close()
+				output, closeFunc = file, file.Close
 			} else if format.isImage() {
-				wd, _ := os.Getwd()
-				f, err := os.CreateTemp(wd, fmt.Sprintf("pbreport-*%s", format.ext()))
+				workDir, _ := os.Getwd()
+				file, err := os.CreateTemp(workDir, fmt.Sprintf("pbreport-*%s", format.ext()))
 				if err != nil {
 					return fmt.Errorf("create temporary file: %w", err)
 				}
-				defer f.Close()
-				fmt.Fprintf(os.Stderr, "Writing to %s\n", f.Name())
-				output = f
-			} else {
-				output = os.Stdout
+				fmt.Fprintf(os.Stderr, "Writing to %s\n", file.Name())
+				output, closeFunc = file, file.Close
 			}
 
 			// Write to the output.
-			switch format {
-			case "json":
-				for _, rec := range records {
-					if err := protojson.Write(output, rec); err != nil {
-						return err
-					}
+			if err := writeRoutedMessages(output, format, records, networkMap, highlight); err != nil {
+				if closeFunc != nil {
+					_ = closeFunc()
 				}
-				return nil
-			case "csv":
-				return csv.WriteRoutedMessages(output, records, networkMap)
-			case "dot":
-				return graph.WriteRoutedMessages(output, records, networkMap, highlight)
-			case "svg", "png", "pdf", "ps":
-				rd, w := io.Pipe()
-				go func() {
-					defer w.Close()
-					graph.WriteRoutedMessages(w, records, networkMap, highlight)
-				}()
-				if err := graph.RunDot(ctx, rd, output, string(format)); err != nil {
-					fmt.Fprintln(os.Stderr, "Running a Graphviz command failed. Is Graphviz installed?")
-					fmt.Fprintln(os.Stderr, "Download and install from https://graphviz.org/download/")
-					return err
-				}
-				return nil
-			default:
-				return errors.New("unsupported format")
+				return err
 			}
+			if closeFunc != nil {
+				if err := closeFunc(); err != nil {
+					return fmt.Errorf("close output file: %w", err)
+				}
+			}
+			return nil
 		},
 	}
 )
+
+// writeRoutedMessages writes the records of routed messages to the output in the given format.
+func writeRoutedMessages(
+	output io.Writer,
+	format reportFormat,
+	records []*reportingpb.RoutedMessagesRecord,
+	networks map[packetbroker.TenantID]*packetbroker.NetworkOrTenant,
+	highlight *packetbroker.TenantID,
+) error {
+	switch format {
+	case "json":
+		for _, record := range records {
+			if err := protojson.Write(output, record); err != nil {
+				return fmt.Errorf("write record: %w", err)
+			}
+		}
+		return nil
+	case "csv":
+		if err := csv.WriteRoutedMessages(output, records, networks); err != nil {
+			return fmt.Errorf("write CSV: %w", err)
+		}
+		return nil
+	case "dot":
+		if err := graph.WriteRoutedMessages(output, records, networks, highlight); err != nil {
+			return fmt.Errorf("write graph: %w", err)
+		}
+		return nil
+	case "svg", "png", "pdf", "ps":
+		reader, writer := io.Pipe()
+		go func() {
+			// A write error is propagated to the reader.
+			_ = writer.CloseWithError(graph.WriteRoutedMessages(writer, records, networks, highlight))
+		}()
+		if err := graph.RunDot(ctx, reader, output, string(format)); err != nil {
+			fmt.Fprintln(os.Stderr, "Running a Graphviz command failed. Is Graphviz installed?")
+			fmt.Fprintln(os.Stderr, "Download and install from https://graphviz.org/download/")
+			return fmt.Errorf("convert graph: %w", err)
+		}
+		return nil
+	default:
+		return errors.New("unsupported format")
+	}
+}
 
 func init() {
 	rootCmd.AddCommand(reportCmd)

@@ -1,4 +1,5 @@
-// Copyright © 2021 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2021 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
 package cmd
 
@@ -17,7 +18,7 @@ var targetsCmd = &cobra.Command{
 	SilenceUsage:      true,
 	PersistentPreRunE: prerunConnect,
 	PersistentPostRun: postrunConnect,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		var (
 			client  = routingpb.NewRoutesClient(cpConn)
 			offset  = uint32(0)
@@ -28,21 +29,20 @@ var targetsCmd = &cobra.Command{
 				Offset: offset,
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("list network targets: %w", err)
 			}
-			targets = append(targets, res.Targets...)
-			offset += uint32(len(res.Targets))
-			if len(res.Targets) == 0 || offset >= res.Total {
+			targets = append(targets, res.GetTargets()...)
+			offset += uint32(len(res.GetTargets()))
+			if len(res.GetTargets()) == 0 || offset >= res.GetTotal() {
 				break
 			}
 		}
-		fmt.Fprintln(tabout, "NetID\tTenant ID\tTarget\t")
+		tabout.Println("NetID\tTenant ID\tTarget\t")
 		for _, t := range targets {
-			fmt.Fprintf(tabout,
-				"%s\t%s\t%s\t\n",
+			tabout.Printf("%s\t%s\t%s\t\n",
 				packetbroker.NetID(t.GetNetId()),
 				t.GetTenantId(),
-				(*column.Target)(t.Target),
+				(*column.Target)(t.GetTarget()),
 			)
 		}
 		return nil

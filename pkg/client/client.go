@@ -1,5 +1,7 @@
-// Copyright © 2020 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2020 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
+// Package client provides gRPC clients for Packet Broker services.
 package client
 
 import (
@@ -16,6 +18,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 )
 
@@ -62,14 +65,16 @@ func DialContext(ctx context.Context, logger *zap.Logger, config *Config, defaul
 		return nil, err
 	}
 
+	// The connection is established while dialing, so that connection errors are reported before the first RPC.
+	// grpc.NewClient does not support blocking dials; grpc.DialContext is supported throughout gRPC 1.x.
 	dialOpts := []grpc.DialOption{
-		grpc.WithBlock(),
+		grpc.WithBlock(), //nolint:staticcheck // blocking dial is not supported by grpc.NewClient, see above
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
 			Time:                5 * time.Minute,
 			Timeout:             20 * time.Second,
 			PermitWithoutStream: false,
 		}),
-		grpc.FailOnNonTempDialError(true),
+		grpc.FailOnNonTempDialError(true), //nolint:staticcheck // fail fast is not supported by grpc.NewClient, see above
 		grpc.WithUserAgent(fmt.Sprintf("%s go/%s %s/%s",
 			filepath.Base(os.Args[0]),
 			strings.TrimPrefix(runtime.Version(), "go"),
@@ -84,7 +89,7 @@ func DialContext(ctx context.Context, logger *zap.Logger, config *Config, defaul
 	}
 
 	if config.Insecure {
-		dialOpts = append(dialOpts, grpc.WithInsecure())
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	} else {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(nil, "")))
 	}
@@ -93,5 +98,9 @@ func DialContext(ctx context.Context, logger *zap.Logger, config *Config, defaul
 		dialOpts = append(dialOpts, grpc.WithPerRPCCredentials(config.Credentials))
 	}
 
-	return grpc.DialContext(ctx, address, dialOpts...)
+	conn, err := grpc.DialContext(ctx, address, dialOpts...) //nolint:staticcheck // blocking dial, see above
+	if err != nil {
+		return nil, fmt.Errorf("client: dial %s: %w", address, err)
+	}
+	return conn, nil
 }

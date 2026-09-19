@@ -1,9 +1,11 @@
-// Copyright © 2021 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2021 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
 package cmd
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
@@ -52,7 +54,7 @@ who may see their infrastructure.`,
   (NetID 000013) and Senet (NetID 000009):
     $ pbctl gateway-visibility set --forwarder-net-id 000013 \
       --home-network-net-id 000009 --set LoFp`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			client := mappingpb.NewGatewayVisibilityManagerClient(cpConn)
 			forwarderTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "forwarder")
 			if forwarderTenantID.IsEmpty() {
@@ -70,7 +72,9 @@ who may see their infrastructure.`,
 			} else {
 				homeNetworkTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "home-network")
 				if homeNetworkTenantID.IsEmpty() {
-					return errors.New("pass the Home Network NetID (and tenant ID) via --home-network-net-id (and --home-network-tenant-id)")
+					return errors.New(
+						"pass the Home Network NetID (and tenant ID) via --home-network-net-id (and --home-network-tenant-id)",
+					)
 				}
 				visibility.HomeNetworkNetId = uint32(homeNetworkTenantID.NetID)
 				visibility.HomeNetworkTenantId = homeNetworkTenantID.ID
@@ -79,9 +83,12 @@ who may see their infrastructure.`,
 				})
 			}
 			if err != nil {
-				return err
+				return fmt.Errorf("set gateway visibility: %w", err)
 			}
-			return column.WriteVisibilities(tabout, defaults, visibility)
+			if err := column.WriteVisibilities(tabout, defaults, visibility); err != nil {
+				return fmt.Errorf("write gateway visibility: %w", err)
+			}
+			return nil
 		},
 	}
 	gatewayVisibilityGetCmd = &cobra.Command{
@@ -98,7 +105,7 @@ who may see their infrastructure.`,
   Get visibility between The Things Network (NetID 000013) and Senet (000009):
     $ pbctl gateway-visibility get --forwarder-net-id 000013 \
       --home-network-net-id 000009`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			var (
 				client = mappingpb.NewGatewayVisibilityManagerClient(cpConn)
 				res    *mappingpb.GetGatewayVisibilityResponse
@@ -117,7 +124,9 @@ who may see their infrastructure.`,
 			} else {
 				homeNetworkTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "home-network")
 				if homeNetworkTenantID.IsEmpty() {
-					return errors.New("pass the Home Network NetID (and tenant ID) via --home-network-net-id (and --home-network-tenant-id)")
+					return errors.New(
+						"pass the Home Network NetID (and tenant ID) via --home-network-net-id (and --home-network-tenant-id)",
+					)
 				}
 				res, err = client.GetHomeNetworkVisibility(ctx, &mappingpb.GetHomeNetworkGatewayVisibilityRequest{
 					ForwarderNetId:      uint32(forwarderTenantID.NetID),
@@ -127,9 +136,12 @@ who may see their infrastructure.`,
 				})
 			}
 			if err != nil {
-				return err
+				return fmt.Errorf("get gateway visibility: %w", err)
 			}
-			return column.WriteVisibilities(tabout, defaults, res.Visibility)
+			if err := column.WriteVisibilities(tabout, defaults, res.GetVisibility()); err != nil {
+				return fmt.Errorf("write gateway visibility: %w", err)
+			}
+			return nil
 		},
 	}
 	gatewayVisibilityDeleteCmd = &cobra.Command{
@@ -147,7 +159,7 @@ who may see their infrastructure.`,
   Delete visibility between The Things Network (NetID 000013) and Senet (000009):
     $ pbctl gateway-visibility delete --forwarder-net-id 000013 \
       --home-network-net-id 000009`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			client := mappingpb.NewGatewayVisibilityManagerClient(cpConn)
 			forwarderTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "forwarder")
 			if forwarderTenantID.IsEmpty() {
@@ -165,7 +177,9 @@ who may see their infrastructure.`,
 			} else {
 				homeNetworkTenantID, _ := pbflag.GetTenantID(cmd.Flags(), "home-network")
 				if homeNetworkTenantID.IsEmpty() {
-					return errors.New("pass the Home Network NetID (and tenant ID) via --home-network-net-id (and --home-network-tenant-id)")
+					return errors.New(
+						"pass the Home Network NetID (and tenant ID) via --home-network-net-id (and --home-network-tenant-id)",
+					)
 				}
 				visibility.HomeNetworkNetId = uint32(homeNetworkTenantID.NetID)
 				visibility.HomeNetworkTenantId = homeNetworkTenantID.ID
@@ -174,7 +188,7 @@ who may see their infrastructure.`,
 				})
 			}
 			if err != nil {
-				return err
+				return fmt.Errorf("delete gateway visibility: %w", err)
 			}
 			return nil
 		},

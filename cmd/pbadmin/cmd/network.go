@@ -1,4 +1,5 @@
-// Copyright © 2020 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2020 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
 package cmd
 
@@ -29,28 +30,28 @@ var (
 		Use:     "list",
 		Aliases: []string{"ls"},
 		Short:   "List networks",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			var (
 				offset          = uint32(0)
 				nameContains, _ = cmd.Flags().GetString("name-contains")
 			)
-			fmt.Fprintln(tabout, "NetID\tAuthority\tName\tDevAddr Blocks\tListed\tTarget\tDelegated NetID\t")
+			tabout.Println("NetID\tAuthority\tName\tDevAddr Blocks\tListed\tTarget\tDelegated NetID\t")
 			for {
 				res, err := iampb.NewNetworkRegistryClient(conn).ListNetworks(ctx, &iampb.ListNetworksRequest{
 					Offset:       offset,
 					NameContains: nameContains,
 				})
 				if err != nil {
-					return err
+					return fmt.Errorf("list networks: %w", err)
 				}
-				for _, t := range res.Networks {
+				for _, t := range res.GetNetworks() {
 					var delegatedNetID *uint32
 					if val := t.GetDelegatedNetId(); val != nil {
 						delegatedNetID = &val.Value
 					}
-					fmt.Fprintf(tabout, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n",
+					tabout.Printf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n",
 						packetbroker.NetID(t.GetNetId()),
-						t.Authority,
+						t.GetAuthority(),
 						t.GetName(),
 						column.DevAddrBlocks(t.GetDevAddrBlocks()),
 						column.YesNo(t.GetListed()),
@@ -58,15 +59,15 @@ var (
 						(*packetbroker.NetID)(delegatedNetID),
 					)
 				}
-				offset += uint32(len(res.Networks))
-				if len(res.Networks) == 0 || offset >= res.Total {
+				offset += uint32(len(res.GetNetworks()))
+				if len(res.GetNetworks()) == 0 || offset >= res.GetTotal() {
 					break
 				}
 			}
 			return nil
 		},
 	}
-	networkCreateCmd = &cobra.Command{
+	networkCreateCmd = &cobra.Command{ //nolint:gosec // the example URL contains a placeholder password
 		Use:   "create",
 		Short: "Create a network",
 		Example: `
@@ -87,7 +88,7 @@ var (
 
   See for more target configuration options:
     $ pbadmin network update target --help`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			netID, _ := pbflag.GetNetID(cmd.Flags(), "")
 			name, _ := cmd.Flags().GetString("name")
 			devAddrBlocks, _, _ := pbflag.GetDevAddrBlocks(cmd.Flags())
@@ -96,7 +97,7 @@ var (
 			listed, _ := cmd.Flags().GetBool("listed")
 			var target *packetbroker.Target
 			if err := pbflag.ApplyToTarget(cmd.Flags(), "target", &target); err != nil {
-				return err
+				return fmt.Errorf("configure target: %w", err)
 			}
 			var delegatedNetID *wrapperspb.UInt32Value
 			if netID, ok := pbflag.GetNetID(cmd.Flags(), "delegated"); ok {
@@ -115,9 +116,12 @@ var (
 				},
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("create network: %w", err)
 			}
-			return column.WriteNetwork(tabout, res.Network, false)
+			if err := column.WriteNetwork(tabout, res.GetNetwork(), false); err != nil {
+				return fmt.Errorf("write network: %w", err)
+			}
+			return nil
 		},
 	}
 	networkGetCmd = &cobra.Command{
@@ -126,16 +130,19 @@ var (
 		Example: `
   Get:
     $ pbadmin network get --net-id 000013`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			netID, _ := pbflag.GetNetID(cmd.Flags(), "")
 			res, err := iampb.NewNetworkRegistryClient(conn).GetNetwork(ctx, &iampb.NetworkRequest{
 				NetId: uint32(netID),
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("get network: %w", err)
 			}
 			verbose, _ := cmd.Flags().GetBool("verbose")
-			return column.WriteNetwork(tabout, res.Network, verbose)
+			if err := column.WriteNetwork(tabout, res.GetNetwork(), verbose); err != nil {
+				return fmt.Errorf("write network: %w", err)
+			}
+			return nil
 		},
 	}
 	networkUpdateCmd = &cobra.Command{
@@ -149,14 +156,14 @@ var (
   Define DevAddr blocks to named clusters:
     $ pbadmin network update --net-id 000013 \
       --dev-addr-blocks 26011000/20=eu1,26012000=eu2`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			netID, _ := pbflag.GetNetID(cmd.Flags(), "")
 			client := iampb.NewNetworkRegistryClient(conn)
 			nwk, err := client.GetNetwork(ctx, &iampb.NetworkRequest{
 				NetId: uint32(netID),
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("get network: %w", err)
 			}
 			if cmd.Flags().Changed("listed") {
 				listed, _ := cmd.Flags().GetBool("listed")
@@ -165,59 +172,60 @@ var (
 					Listed: listed,
 				})
 				if err != nil {
-					return err
+					return fmt.Errorf("update network listed: %w", err)
 				}
 			}
-			var any bool
+			var changed bool
 			req := &iampb.UpdateNetworkRequest{
 				NetId: uint32(netID),
 			}
 			if cmd.Flags().Changed("name") {
 				name, _ := cmd.Flags().GetString("name")
 				req.Name = wrapperspb.String(name)
-				any = true
+				changed = true
 			}
 			devAddrBlocksAll, devAddrBlocksAllAdd, devAddrBlocksAllRemove := pbflag.GetDevAddrBlocks(cmd.Flags())
 			if cmd.Flags().Changed("dev-addr-blocks") {
 				req.DevAddrBlocks = &iampb.DevAddrBlocksValue{
 					Value: devAddrBlocksAll,
 				}
-				any = true
+				changed = true
 			} else if len(devAddrBlocksAllAdd) > 0 || len(devAddrBlocksAllRemove) > 0 {
 				req.DevAddrBlocks = &iampb.DevAddrBlocksValue{
-					Value: mergeDevAddrBlocks(nwk.Network.DevAddrBlocks, devAddrBlocksAllAdd, devAddrBlocksAllRemove),
+					Value: mergeDevAddrBlocks(nwk.GetNetwork().GetDevAddrBlocks(), devAddrBlocksAllAdd, devAddrBlocksAllRemove),
 				}
-				any = true
+				changed = true
 			}
 			if adminContact := pbflag.GetContactInfo(cmd.Flags(), "admin"); adminContact != nil {
 				req.AdministrativeContact = &packetbroker.ContactInfoValue{
 					Value: adminContact,
 				}
-				any = true
+				changed = true
 			}
 			if techContact := pbflag.GetContactInfo(cmd.Flags(), "tech"); techContact != nil {
 				req.TechnicalContact = &packetbroker.ContactInfoValue{
 					Value: techContact,
 				}
-				any = true
+				changed = true
 			}
 			if delegatedNetID, ok := pbflag.GetNetID(cmd.Flags(), "delegated"); ok {
 				req.DelegatedNetId = &iampb.UpdateNetworkRequest_DelegatedNetID{
 					Value: wrapperspb.UInt32(uint32(delegatedNetID)),
 				}
-				any = true
-			} else if unset, _ := cmd.Flags().GetBool("unset-delegated-net-id"); cmd.Flags().Changed("unset-delegated-net-id") && unset {
+				changed = true
+			} else if unset, _ := cmd.Flags().GetBool("unset-delegated-net-id"); unset {
 				req.DelegatedNetId = new(iampb.UpdateNetworkRequest_DelegatedNetID)
-				any = true
+				changed = true
 			}
-			if any {
-				_, err = client.UpdateNetwork(ctx, req)
-				return err
+			if changed {
+				if _, err := client.UpdateNetwork(ctx, req); err != nil {
+					return fmt.Errorf("update network: %w", err)
+				}
 			}
 			return nil
 		},
 	}
-	networkUpdateTargetCmd = &cobra.Command{
+	networkUpdateTargetCmd = &cobra.Command{ //nolint:gosec // the example URL contains a placeholder password
 		Use:   "target",
 		Short: "Update a network target",
 		Example: `
@@ -239,18 +247,18 @@ var (
   originating NetID:
     $ pbadmin network update target --net-id 000013 --origin-net-id 000013 \
       --root-cas-file ca.pem --tls-cert-file key.pem --tls-key-file key.pem`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			netID, _ := pbflag.GetNetID(cmd.Flags(), "")
 			client := iampb.NewNetworkRegistryClient(conn)
 			nwk, err := client.GetNetwork(ctx, &iampb.NetworkRequest{
 				NetId: uint32(netID),
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("get network: %w", err)
 			}
-			target := nwk.Network.Target
+			target := nwk.GetNetwork().GetTarget()
 			if err := pbflag.ApplyToTarget(cmd.Flags(), "", &target); err != nil {
-				return err
+				return fmt.Errorf("configure target: %w", err)
 			}
 			req := &iampb.UpdateNetworkRequest{
 				NetId: uint32(netID),
@@ -259,7 +267,10 @@ var (
 				},
 			}
 			_, err = client.UpdateNetwork(ctx, req)
-			return err
+			if err != nil {
+				return fmt.Errorf("update network: %w", err)
+			}
+			return nil
 		},
 	}
 	networkDeleteCmd = &cobra.Command{
@@ -269,12 +280,15 @@ var (
 		Example: `
   Delete:
     $ pbadmin network delete --net-id 000013`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			netID, _ := pbflag.GetNetID(cmd.Flags(), "")
 			_, err := iampb.NewNetworkRegistryClient(conn).DeleteNetwork(ctx, &iampb.NetworkRequest{
 				NetId: uint32(netID),
 			})
-			return err
+			if err != nil {
+				return fmt.Errorf("delete network: %w", err)
+			}
+			return nil
 		},
 	}
 	networkDeleteTargetCmd = &cobra.Command{
@@ -283,7 +297,7 @@ var (
 		Example: `
   Delete a network target:
     $ pbadmin network delete target --net-id 000013`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			netID, _ := pbflag.GetNetID(cmd.Flags(), "")
 			client := iampb.NewNetworkRegistryClient(conn)
 			req := &iampb.UpdateNetworkRequest{
@@ -293,7 +307,10 @@ var (
 				},
 			}
 			_, err := client.UpdateNetwork(ctx, req)
-			return err
+			if err != nil {
+				return fmt.Errorf("delete network target: %w", err)
+			}
+			return nil
 		},
 	}
 	networkInitCmd = &cobra.Command{
@@ -336,17 +353,17 @@ Router addresses:
   apac.packetbroker.io  Asia Pacific
   eu.packetbroker.io    Europe, Middle East and Africa
   nam.packetbroker.io   Americas`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			endpoint, _ := pbflag.GetEndpoint(cmd.Flags(), "")
 			req := &iampbv2.CreateNetworkAPIKeyRequest{
 				NetId:     uint32(endpoint.NetID),
-				TenantId:  endpoint.TenantID.ID,
+				TenantId:  endpoint.ID,
 				ClusterId: endpoint.ClusterID,
 				Rights:    pbflag.GetAPIKeyRights(cmd.Flags()),
 			}
 			res, err := iampbv2.NewNetworkAPIKeyVaultClient(conn).CreateAPIKey(ctx, req)
 			if err != nil {
-				return err
+				return fmt.Errorf("create API key: %w", err)
 			}
 			iamAddress, _ := cmd.Flags().GetString("iam-address")
 			controlPlaneAddress, _ := cmd.Flags().GetString("controlplane-address")
@@ -355,24 +372,27 @@ Router addresses:
 			viper.Set("controlplane-address", controlPlaneAddress)
 			viper.Set("reports-address", reportsAddress)
 			viper.Set("router-address", routerAddress)
-			viper.Set("client-id", res.Key.GetKeyId())
-			viper.Set("client-secret", res.Key.GetKey())
+			viper.Set("client-id", res.GetKey().GetKeyId())
+			viper.Set("client-secret", res.GetKey().GetKey())
 			if err := viper.WriteConfigAs(".pb.yaml"); err != nil {
-				return err
+				return fmt.Errorf("write config file .pb.yaml: %w", err)
 			}
 			fmt.Fprintln(os.Stderr, "Saved configuration to .pb.yaml")
-			return column.WriteKV(tabout,
+			if err := column.WriteKV(tabout,
 				"NetID", endpoint.NetID.String(),
 				"Tenant ID", endpoint.ID,
 				"Cluster ID", endpoint.ClusterID,
 				"IAM Address", iamAddress,
 				"Control Plane Address", controlPlaneAddress,
 				"Router Address", routerAddress,
-				"API Key ID", res.Key.GetKeyId(),
-				"API Secret Key", res.Key.GetKey(),
-				"API Key Rights", column.Rights(res.Key.GetRights()).String(),
-				"API Key State", res.Key.GetState().String(),
-			)
+				"API Key ID", res.GetKey().GetKeyId(),
+				"API Secret Key", res.GetKey().GetKey(),
+				"API Key Rights", column.Rights(res.GetKey().GetRights()).String(),
+				"API Key State", res.GetKey().GetState().String(),
+			); err != nil {
+				return fmt.Errorf("write configuration: %w", err)
+			}
+			return nil
 		},
 	}
 )
@@ -431,8 +451,10 @@ func init() {
 		packetbroker.Right_WRITE_TRAFFIC,
 		packetbroker.Right_READ_REPORT,
 	))
-	networkInitCmd.Flags().String("controlplane-address", "cp.packetbroker.net:443", `Packet Broker Control Plane address "host[:port]"`)
-	networkInitCmd.Flags().String("reports-address", "reports.packetbroker.net:443", `Packet Broker Reporter address "host[:port]"`)
+	networkInitCmd.Flags().String("controlplane-address", "cp.packetbroker.net:443",
+		`Packet Broker Control Plane address "host[:port]"`)
+	networkInitCmd.Flags().String("reports-address", "reports.packetbroker.net:443",
+		`Packet Broker Reporter address "host[:port]"`)
 	networkInitCmd.Flags().String("router-address", "", `Packet Broker Router address "host[:port]"`)
 	networkCmd.AddCommand(networkInitCmd)
 }

@@ -1,4 +1,5 @@
-// Copyright © 2021 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2021 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
 package cmd
 
@@ -19,13 +20,13 @@ func (r sortRoutesByEndpoint) Len() int {
 }
 
 func (r sortRoutesByEndpoint) Less(i, j int) bool {
-	if r[i].NetId < r[j].NetId {
+	if r[i].GetNetId() < r[j].GetNetId() {
 		return true
-	} else if r[i].NetId == r[j].NetId {
-		if r[i].TenantId < r[j].TenantId {
+	} else if r[i].GetNetId() == r[j].GetNetId() {
+		if r[i].GetTenantId() < r[j].GetTenantId() {
 			return true
-		} else if r[i].TenantId == r[j].TenantId {
-			return r[i].HomeNetworkClusterId < r[j].HomeNetworkClusterId
+		} else if r[i].GetTenantId() == r[j].GetTenantId() {
+			return r[i].GetHomeNetworkClusterId() < r[j].GetHomeNetworkClusterId()
 		}
 	}
 	return false
@@ -71,7 +72,7 @@ func (r sortJoinEUIPrefixRoutesByPrefix) Less(i, j int) bool {
 		if r[i].GetPrefix().GetLength() < r[j].GetPrefix().GetLength() {
 			return true
 		} else if r[i].GetPrefix().GetLength() == r[j].GetPrefix().GetLength() {
-			return r[i].Id < r[j].Id
+			return r[i].GetId() < r[j].GetId()
 		}
 	}
 	return false
@@ -88,7 +89,7 @@ var routeCmd = &cobra.Command{
 	SilenceUsage:      true,
 	PersistentPreRunE: prerunConnect,
 	PersistentPostRun: postrunConnect,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		var (
 			client        = routingpb.NewRoutesClient(cpConn)
 			offset        = uint32(0)
@@ -99,28 +100,27 @@ var routeCmd = &cobra.Command{
 				Offset: offset,
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("list uplink routes: %w", err)
 			}
-			devAddrRoutes = append(devAddrRoutes, res.Routes...)
-			offset += uint32(len(res.Routes))
-			if len(res.Routes) == 0 || offset >= res.Total {
+			devAddrRoutes = append(devAddrRoutes, res.GetRoutes()...)
+			offset += uint32(len(res.GetRoutes()))
+			if len(res.GetRoutes()) == 0 || offset >= res.GetTotal() {
 				break
 			}
 		}
 		sort.Sort(sortDevAddrRoutesByPrefix(devAddrRoutes))
-		fmt.Fprintln(tabout, "DevAddr Prefix\tNetID\tTenant ID\tCluster ID\tTarget\t")
-		for _, p := range devAddrRoutes {
-			fmt.Fprintf(tabout,
-				"%08X/%d\t%s\t%s\t%s\t%s\t\n",
-				p.GetPrefix().GetValue(),
-				p.GetPrefix().GetLength(),
-				packetbroker.NetID(p.GetNetId()),
-				p.GetTenantId(),
-				p.GetHomeNetworkClusterId(),
-				(*column.Target)(p.Target),
+		tabout.Println("DevAddr Prefix\tNetID\tTenant ID\tCluster ID\tTarget\t")
+		for _, route := range devAddrRoutes {
+			tabout.Printf("%08X/%d\t%s\t%s\t%s\t%s\t\n",
+				route.GetPrefix().GetValue(),
+				route.GetPrefix().GetLength(),
+				packetbroker.NetID(route.GetNetId()),
+				route.GetTenantId(),
+				route.GetHomeNetworkClusterId(),
+				(*column.Target)(route.GetTarget()),
 			)
 		}
-		fmt.Fprintln(tabout)
+		tabout.Println("")
 
 		offset = uint32(0)
 		var joinEUIPrefixRoutes []*packetbroker.JoinEUIPrefixRoute
@@ -129,28 +129,27 @@ var routeCmd = &cobra.Command{
 				Offset: offset,
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("list join-request routes: %w", err)
 			}
-			joinEUIPrefixRoutes = append(joinEUIPrefixRoutes, res.Routes...)
-			offset += uint32(len(res.Routes))
-			if len(res.Routes) == 0 || offset >= res.Total {
+			joinEUIPrefixRoutes = append(joinEUIPrefixRoutes, res.GetRoutes()...)
+			offset += uint32(len(res.GetRoutes()))
+			if len(res.GetRoutes()) == 0 || offset >= res.GetTotal() {
 				break
 			}
 		}
 		sort.Sort(sortJoinEUIPrefixRoutesByPrefix(joinEUIPrefixRoutes))
-		fmt.Fprintln(tabout, "JoinEUI Prefix\tJoin Server ID\tResolver\t")
-		for _, p := range joinEUIPrefixRoutes {
+		tabout.Println("JoinEUI Prefix\tJoin Server ID\tResolver\t")
+		for _, route := range joinEUIPrefixRoutes {
 			var resolver string
-			if lookup := p.GetLookup(); lookup != nil {
+			if lookup := route.GetLookup(); lookup != nil {
 				resolver = (*column.Target)(lookup).String()
-			} else if fixed := p.GetFixed(); fixed != nil {
+			} else if fixed := route.GetFixed(); fixed != nil {
 				resolver = (*column.JoinServerFixedEndpoint)(fixed).String()
 			}
-			fmt.Fprintf(tabout,
-				"%016X/%d\t%14d\t%s\t\n",
-				p.GetPrefix().GetValue(),
-				p.GetPrefix().GetLength(),
-				p.GetId(),
+			tabout.Printf("%016X/%d\t%14d\t%s\t\n",
+				route.GetPrefix().GetValue(),
+				route.GetPrefix().GetLength(),
+				route.GetId(),
 				resolver,
 			)
 		}

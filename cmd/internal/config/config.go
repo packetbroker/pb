@@ -1,4 +1,5 @@
-// Copyright © 2020 The Things Industries B.V.
+// SPDX-FileCopyrightText: Copyright 2020 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
 
 // Package config provides configuration used by commands.
 package config
@@ -38,7 +39,7 @@ var basicAuthRealms = map[BasicAuthRealm]BasicAuthRealmConfig{
 func mustRealmConfig(realm BasicAuthRealm) BasicAuthRealmConfig {
 	conf, ok := basicAuthRealms[realm]
 	if !ok {
-		panic(fmt.Sprintf("realm %q not registered", realm))
+		panic(fmt.Sprintf("realm %q not registered", rune(realm)))
 	}
 	return conf
 }
@@ -48,8 +49,15 @@ func ClientFlags(service, defaultAddress string) *flag.FlagSet {
 	flags := new(flag.FlagSet)
 	flags.String(fmt.Sprintf("%s-address", service), defaultAddress, `address of the server "host[:port]"`)
 	flags.Bool("insecure", false, "insecure")
-	viper.BindPFlags(flags)
+	mustBindPFlags(flags)
 	return flags
+}
+
+// mustBindPFlags binds the flags to viper. It panics if binding fails, which indicates a programming error.
+func mustBindPFlags(flags *flag.FlagSet) {
+	if err := viper.BindPFlags(flags); err != nil {
+		panic(fmt.Sprintf("bind flags: %v", err))
+	}
 }
 
 // BasicAuthClientFlags defines flags used for Basic authentication.
@@ -58,7 +66,7 @@ func BasicAuthClientFlags(realm BasicAuthRealm) *flag.FlagSet {
 	conf := mustRealmConfig(realm)
 	flags.String(fmt.Sprintf("%s-username", conf.ConfigKey), "", fmt.Sprintf("%s username", conf.Name))
 	flags.String(fmt.Sprintf("%s-password", conf.ConfigKey), "", fmt.Sprintf("%s password", conf.Name))
-	viper.BindPFlags(flags)
+	mustBindPFlags(flags)
 	return flags
 }
 
@@ -68,7 +76,7 @@ func OAuth2ClientFlags() *flag.FlagSet {
 	flags.String("client-id", "", "OAuth 2.0 client ID")
 	flags.String("client-secret", "", "OAuth 2.0 client secret")
 	flags.String("token-url", client.DefaultTokenURL, "OAuth 2.0 token URL")
-	viper.BindPFlags(flags)
+	mustBindPFlags(flags)
 	return flags
 }
 
@@ -124,10 +132,25 @@ func OAuth2Client(ctx context.Context, service string, scopes ...string) (*clien
 	return res, nil
 }
 
+// ReadInConfig reads the configuration file with viper.
+// A configuration file that cannot be found in the configured paths is not an error.
+func ReadInConfig() error {
+	if err := viper.ReadInConfig(); err != nil {
+		var notFound viper.ConfigFileNotFoundError
+		if errors.As(err, &notFound) {
+			return nil
+		}
+		return fmt.Errorf("read config file: %w", err)
+	}
+	return nil
+}
+
 // AutomaticClient returns a client configured based on available settings.
 // Basic authentication is preferred with the given realm.
 // If Basic authentication is not configured, OAuth 2.0 Client Credentials are used.
-func AutomaticClient(ctx context.Context, service string, basicAuthRealm BasicAuthRealm, oauthScopes ...string) (*client.Config, error) {
+func AutomaticClient(
+	ctx context.Context, service string, basicAuthRealm BasicAuthRealm, oauthScopes ...string,
+) (*client.Config, error) {
 	for _, initFn := range []func() (*client.Config, error){
 		func() (*client.Config, error) {
 			return BasicAuthClient(service, basicAuthRealm)

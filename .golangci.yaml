@@ -14,8 +14,9 @@ linters:
     - gocritic
     - godot
     - goheader
-    - gomodguard
+    - gomodguard_v2
     - gosec
+    - govet
     - intrange
     - lll
     - loggercheck
@@ -25,6 +26,7 @@ linters:
     - paralleltest
     - prealloc
     - predeclared
+    - protogetter
     - revive
     - rowserrcheck
     - sloglint
@@ -36,6 +38,7 @@ linters:
     - unconvert
     - unparam
     - unused
+    - varnamelen
     - whitespace
     - wrapcheck
 
@@ -51,7 +54,8 @@ linters:
         regexp:
           YEAR: 20\d\d
       template: |-
-        Copyright {YEAR} The Things Industries B.V.
+        SPDX-FileCopyrightText: Copyright {YEAR} The Things Industries B.V.
+        SPDX-License-Identifier: Apache-2.0
     gosec:
       excludes:
         - G115 # Potential integer overflow when converting between integer types
@@ -62,6 +66,62 @@ linters:
       ignore-names:
         - a
         - b
+        - db
+        - i
+        - j
+        - k
+        - ok
+        - t
+        - tc
+        - st
+        - to
+        - tt
+        - tx
+        - v
+      ignore-decls:
+        - w http.ResponseWriter
+        - r *http.Request
     wrapcheck:
       extra-ignore-sigs:
         - "func (context.Context).Err() error"
+        # gRPC status errors are the terminal error form of a gRPC handler.
+        - "google.golang.org/grpc/status.Error("
+        - "go.packetbroker.org/pkg/host/status.Error("
+        - "go.packetbroker.org/pkg/host/status.WrapError("
+        - "go.packetbroker.org/pkg/host/status.WrapErrorf("
+        # The auth helpers return gRPC status errors that handlers pass through unchanged.
+        - "go.packetbroker.org/pkg/host/basicauth.Require"
+        - "go.packetbroker.org/pkg/host/clusterauth.Require"
+        - "go.packetbroker.org/pkg/host/networkauth.Require"
+    revive:
+      # The default rule set of revive, with dot imports allowed for goconvey.
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: dot-imports
+          arguments:
+            - allowed-packages:
+                - github.com/smartystreets/goconvey/convey
+        - name: empty-block
+        - name: error-naming
+        - name: error-return
+        - name: error-strings
+        - name: errorf
+        - name: exported
+        - name: increment-decrement
+        - name: indent-error-flow
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
+        - name: redefines-builtin-id
+        - name: superfluous-else
+        - name: time-naming
+        - name: unexported-return
+        - name: unreachable-code
+        - name: unused-parameter
+        - name: var-declaration
+        - name: var-naming
+    govet:
+      disable:
+        - stdversion
