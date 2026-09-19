@@ -17,11 +17,15 @@ import (
 
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/keepalive"
+	"google.golang.org/grpc/status"
 )
 
 // Config configures Client.
@@ -86,10 +90,10 @@ func DialContext(ctx context.Context, logger *zap.Logger, config *Config, defaul
 			runtime.GOOS, runtime.GOARCH,
 		)),
 		grpc.WithChainStreamInterceptor(
-			grpc_zap.StreamClientInterceptor(logger),
+			grpc_zap.StreamClientInterceptor(logger, grpc_zap.WithMessageProducer(logRPC)),
 		),
 		grpc.WithChainUnaryInterceptor(
-			grpc_zap.UnaryClientInterceptor(logger),
+			grpc_zap.UnaryClientInterceptor(logger, grpc_zap.WithMessageProducer(logRPC)),
 		),
 	}
 
@@ -121,7 +125,7 @@ func DialContext(ctx context.Context, logger *zap.Logger, config *Config, defaul
 //
 // It fails fast when the connection enters transient failure, i.e. when all resolved addresses failed to connect,
 // for example because the connection is refused or the TLS handshake fails. Otherwise, gRPC would keep retrying
-// with backoff until ctx is done. The cause of the failure is not exposed by *grpc.ClientConn.
+// with backoff until ctx is done.
 func waitForReady(ctx context.Context, conn *grpc.ClientConn) error {
 	for {
 		state := conn.GetState()
@@ -133,7 +137,7 @@ func waitForReady(ctx context.Context, conn *grpc.ClientConn) error {
 		case connectivity.Ready:
 			return nil
 		case connectivity.TransientFailure:
-			return errConnectionFailed
+			return connectionFailure(ctx, conn)
 		case connectivity.Shutdown:
 			return errConnectionShutdown
 		}
@@ -141,4 +145,34 @@ func waitForReady(ctx context.Context, conn *grpc.ClientConn) error {
 			return ctx.Err()
 		}
 	}
+}
+
+// probeContextKey marks the context of the RPC that probes the cause of a connection failure.
+type probeContextKey struct{}
+
+// connectionFailure returns the cause of conn being in transient failure.
+//
+// *grpc.ClientConn does not expose the last transport error. However, a fail-fast RPC on a connection in transient
+// failure fails immediately with codes.Unavailable and the last transport error as status message, e.g. the refused
+// connection or the failed TLS handshake. The health check RPC only serves this purpose: it never reaches a server and
+// it is not logged.
+func connectionFailure(ctx context.Context, conn *grpc.ClientConn) error {
+	ctx = context.WithValue(ctx, probeContextKey{}, struct{}{})
+	err := conn.Invoke(ctx, healthpb.Health_Check_FullMethodName,
+		&healthpb.HealthCheckRequest{}, &healthpb.HealthCheckResponse{},
+	)
+	if st, ok := status.FromError(err); ok && st.Code() == codes.Unavailable {
+		return fmt.Errorf("%w: %s", errConnectionFailed, st.Message())
+	}
+	return errConnectionFailed
+}
+
+// logRPC logs finished RPCs, except the RPC that probes the cause of a connection failure.
+func logRPC(
+	ctx context.Context, msg string, level zapcore.Level, code codes.Code, err error, duration zapcore.Field,
+) {
+	if ctx.Value(probeContextKey{}) != nil {
+		return
+	}
+	grpc_zap.DefaultMessageProducer(ctx, msg, level, code, err, duration)
 }
