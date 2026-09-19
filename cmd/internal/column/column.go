@@ -15,7 +15,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	packetbroker "go.packetbroker.org/api/v3"
+	packetbroker "github.com/packetbroker/go-api/v3"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

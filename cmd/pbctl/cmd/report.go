@@ -11,14 +11,14 @@ import (
 	"sort"
 	"strings"
 
+	iampb "github.com/packetbroker/go-api/iam/v2"
+	reportingpb "github.com/packetbroker/go-api/reporting"
+	packetbroker "github.com/packetbroker/go-api/v3"
+	"github.com/packetbroker/pb/cmd/internal/pbflag"
+	"github.com/packetbroker/pb/cmd/internal/protojson"
+	"github.com/packetbroker/pb/pkg/csv"
+	"github.com/packetbroker/pb/pkg/graph"
 	"github.com/spf13/cobra"
-	iampb "go.packetbroker.org/api/iam/v2"
-	reportingpb "go.packetbroker.org/api/reporting"
-	packetbroker "go.packetbroker.org/api/v3"
-	"go.packetbroker.org/pb/cmd/internal/pbflag"
-	"go.packetbroker.org/pb/cmd/internal/protojson"
-	"go.packetbroker.org/pb/pkg/csv"
-	"go.packetbroker.org/pb/pkg/graph"
 )
 
 var (

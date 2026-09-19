@@ -18,4 +18,4 @@ updates:
           - "*"
     ignore:
       # Packet Broker modules are required by commit and bumped by hand in dependency order.
-      - dependency-name: "go.packetbroker.org/*"
+      - dependency-name: "github.com/packetbroker/*"

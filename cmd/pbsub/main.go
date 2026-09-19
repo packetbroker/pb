@@ -4,7 +4,7 @@
 // Package main is the entry point of the pbsub command-line interface.
 package main
 
-import "go.packetbroker.org/pb/cmd/pbsub/cmd"
+import "github.com/packetbroker/pb/cmd/pbsub/cmd"
 
 func main() {
 	cmd.Execute()

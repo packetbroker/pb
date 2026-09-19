@@ -10,9 +10,9 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/packetbroker/pb/pkg/client"
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"go.packetbroker.org/pb/pkg/client"
 )
 
 // BasicAuthRealm refers to a Basic authentication realm.

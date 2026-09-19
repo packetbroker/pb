@@ -86,13 +86,13 @@ linters:
         - "func (context.Context).Err() error"
         # gRPC status errors are the terminal error form of a gRPC handler.
         - "google.golang.org/grpc/status.Error("
-        - "go.packetbroker.org/pkg/host/status.Error("
-        - "go.packetbroker.org/pkg/host/status.WrapError("
-        - "go.packetbroker.org/pkg/host/status.WrapErrorf("
+        - "github.com/packetbroker/packetbroker/pkg/host/status.Error("
+        - "github.com/packetbroker/packetbroker/pkg/host/status.WrapError("
+        - "github.com/packetbroker/packetbroker/pkg/host/status.WrapErrorf("
         # The auth helpers return gRPC status errors that handlers pass through unchanged.
-        - "go.packetbroker.org/pkg/host/basicauth.Require"
-        - "go.packetbroker.org/pkg/host/clusterauth.Require"
-        - "go.packetbroker.org/pkg/host/networkauth.Require"
+        - "github.com/packetbroker/packetbroker/pkg/host/basicauth.Require"
+        - "github.com/packetbroker/packetbroker/pkg/host/clusterauth.Require"
+        - "github.com/packetbroker/packetbroker/pkg/host/networkauth.Require"
     revive:
       # The default rule set of revive, with dot imports allowed for goconvey.
       rules:

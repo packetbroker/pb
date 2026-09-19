@@ -3,7 +3,7 @@
 
 package cmd
 
-import packetbroker "go.packetbroker.org/api/v3"
+import packetbroker "github.com/packetbroker/go-api/v3"
 
 func mergeDevAddrBlocks(current, add, remove []*packetbroker.DevAddrBlock) []*packetbroker.DevAddrBlock {
 	equals := func(x, y *packetbroker.DevAddrBlock) bool {

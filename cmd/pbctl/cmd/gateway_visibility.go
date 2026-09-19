@@ -7,12 +7,12 @@ import (
 	"errors"
 	"fmt"
 
+	mappingpb "github.com/packetbroker/go-api/mapping/v2"
+	packetbroker "github.com/packetbroker/go-api/v3"
+	"github.com/packetbroker/pb/cmd/internal/column"
+	pbflag "github.com/packetbroker/pb/cmd/internal/pbflag"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
-	mappingpb "go.packetbroker.org/api/mapping/v2"
-	packetbroker "go.packetbroker.org/api/v3"
-	"go.packetbroker.org/pb/cmd/internal/column"
-	pbflag "go.packetbroker.org/pb/cmd/internal/pbflag"
 )
 
 var (

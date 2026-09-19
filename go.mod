@@ -1,4 +1,4 @@
-module go.packetbroker.org/pb
+module github.com/packetbroker/pb
 
 go 1.27.0
 
@@ -6,16 +6,16 @@ require (
 	github.com/emicklei/dot v1.11.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/mitchellh/go-homedir v1.1.0
+	github.com/packetbroker/go-api/iam v0.0.0-20260919120122-c56c5f2fd254
+	github.com/packetbroker/go-api/iam/v2 v2.0.0-20260919120122-c56c5f2fd254
+	github.com/packetbroker/go-api/mapping/v2 v2.0.0-20260919120122-c56c5f2fd254
+	github.com/packetbroker/go-api/reporting v0.0.0-20260919120122-c56c5f2fd254
+	github.com/packetbroker/go-api/routing v0.0.0-20260919120122-c56c5f2fd254
+	github.com/packetbroker/go-api/routing/v2 v2.0.0-20260919120122-c56c5f2fd254
+	github.com/packetbroker/go-api/v3 v3.0.0-20260919120122-c56c5f2fd254
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
-	go.packetbroker.org/api/iam v0.0.0-20260918132607-2ef005ece679
-	go.packetbroker.org/api/iam/v2 v2.0.0-20260918132607-2ef005ece679
-	go.packetbroker.org/api/mapping/v2 v2.0.0-20260918132607-2ef005ece679
-	go.packetbroker.org/api/reporting v0.0.0-20260918132607-2ef005ece679
-	go.packetbroker.org/api/routing v0.0.0-20260918132607-2ef005ece679
-	go.packetbroker.org/api/routing/v2 v2.0.0-20260918132607-2ef005ece679
-	go.packetbroker.org/api/v3 v3.0.0-20260918132607-2ef005ece679
 	go.uber.org/zap v1.28.0
 	golang.org/x/oauth2 v0.37.0
 	golang.org/x/term v0.46.0

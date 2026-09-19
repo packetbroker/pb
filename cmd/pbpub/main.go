@@ -4,7 +4,7 @@
 // Package main is the entry point of the pbpub command-line interface.
 package main
 
-import "go.packetbroker.org/pb/cmd/pbpub/cmd"
+import "github.com/packetbroker/pb/cmd/pbpub/cmd"
 
 func main() {
 	cmd.Execute()

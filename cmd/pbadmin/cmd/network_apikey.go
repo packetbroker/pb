@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"os"
 
+	iampbv2 "github.com/packetbroker/go-api/iam/v2"
+	packetbroker "github.com/packetbroker/go-api/v3"
+	"github.com/packetbroker/pb/cmd/internal/column"
+	pbflag "github.com/packetbroker/pb/cmd/internal/pbflag"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	iampbv2 "go.packetbroker.org/api/iam/v2"
-	packetbroker "go.packetbroker.org/api/v3"
-	"go.packetbroker.org/pb/cmd/internal/column"
-	pbflag "go.packetbroker.org/pb/cmd/internal/pbflag"
 	"golang.org/x/term"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
