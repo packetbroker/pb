@@ -6,13 +6,7 @@ require (
 	github.com/emicklei/dot v1.11.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/packetbroker/go-api/iam v0.0.0-20260919120122-c56c5f2fd254
-	github.com/packetbroker/go-api/iam/v2 v2.0.0-20260919120122-c56c5f2fd254
-	github.com/packetbroker/go-api/mapping/v2 v2.0.0-20260919120122-c56c5f2fd254
-	github.com/packetbroker/go-api/reporting v0.0.0-20260919120122-c56c5f2fd254
-	github.com/packetbroker/go-api/routing v0.0.0-20260919120122-c56c5f2fd254
-	github.com/packetbroker/go-api/routing/v2 v2.0.0-20260919120122-c56c5f2fd254
-	github.com/packetbroker/go-api/v3 v3.0.0-20260919120122-c56c5f2fd254
+	github.com/packetbroker/go-api v1.0.3-0.20260919134512-276fa5f9b610
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
