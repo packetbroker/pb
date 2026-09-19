@@ -6,6 +6,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -17,6 +18,7 @@ import (
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
@@ -29,6 +31,11 @@ type Config struct {
 	Insecure    bool
 	Credentials credentials.PerRPCCredentials
 }
+
+var (
+	errConnectionFailed   = errors.New("connection failed")
+	errConnectionShutdown = errors.New("connection shut down")
+)
 
 func appendDefaultPort(target string, port int) (string, error) {
 	i := strings.LastIndexByte(target, ':')
@@ -52,6 +59,8 @@ func appendDefaultPort(target string, port int) (string, error) {
 }
 
 // DialContext dials a Packet Broker service using the given configuration.
+//
+// The connection is established before returning, so that connection errors are reported before the first RPC.
 func DialContext(ctx context.Context, logger *zap.Logger, config *Config, defaultPort int) (*grpc.ClientConn, error) {
 	timeout := config.DialTimeout
 	if timeout == 0 {
@@ -65,16 +74,12 @@ func DialContext(ctx context.Context, logger *zap.Logger, config *Config, defaul
 		return nil, err
 	}
 
-	// The connection is established while dialing, so that connection errors are reported before the first RPC.
-	// grpc.NewClient does not support blocking dials; grpc.DialContext is supported throughout gRPC 1.x.
 	dialOpts := []grpc.DialOption{
-		grpc.WithBlock(), //nolint:staticcheck // blocking dial is not supported by grpc.NewClient, see above
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
 			Time:                5 * time.Minute,
 			Timeout:             20 * time.Second,
 			PermitWithoutStream: false,
 		}),
-		grpc.FailOnNonTempDialError(true), //nolint:staticcheck // fail fast is not supported by grpc.NewClient, see above
 		grpc.WithUserAgent(fmt.Sprintf("%s go/%s %s/%s",
 			filepath.Base(os.Args[0]),
 			strings.TrimPrefix(runtime.Version(), "go"),
@@ -98,9 +103,42 @@ func DialContext(ctx context.Context, logger *zap.Logger, config *Config, defaul
 		dialOpts = append(dialOpts, grpc.WithPerRPCCredentials(config.Credentials))
 	}
 
-	conn, err := grpc.DialContext(ctx, address, dialOpts...) //nolint:staticcheck // blocking dial, see above
+	conn, err := grpc.NewClient(address, dialOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("client: dial %s: %w", address, err)
 	}
+	// grpc.NewClient connects lazily on the first RPC. Connect explicitly so that a CLI command fails before doing
+	// any work if the service is unreachable.
+	if err := waitForReady(ctx, conn); err != nil {
+		// The connection is not usable; a close error is not actionable.
+		_ = conn.Close()
+		return nil, fmt.Errorf("client: dial %s: %w", address, err)
+	}
 	return conn, nil
+}
+
+// waitForReady connects conn and waits until the connection is ready or ctx is done.
+//
+// It fails fast when the connection enters transient failure, i.e. when all resolved addresses failed to connect,
+// for example because the connection is refused or the TLS handshake fails. Otherwise, gRPC would keep retrying
+// with backoff until ctx is done. The cause of the failure is not exposed by *grpc.ClientConn.
+func waitForReady(ctx context.Context, conn *grpc.ClientConn) error {
+	for {
+		state := conn.GetState()
+		switch state {
+		case connectivity.Idle:
+			conn.Connect()
+		case connectivity.Connecting:
+			// Wait for the connection attempt to complete.
+		case connectivity.Ready:
+			return nil
+		case connectivity.TransientFailure:
+			return errConnectionFailed
+		case connectivity.Shutdown:
+			return errConnectionShutdown
+		}
+		if !conn.WaitForStateChange(ctx, state) {
+			return ctx.Err()
+		}
+	}
 }
