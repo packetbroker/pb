@@ -6,12 +6,12 @@ package cmd
 import (
 	"fmt"
 
+	iampb "github.com/packetbroker/go-api/iam/v2"
+	packetbroker "github.com/packetbroker/go-api/v3"
+	"github.com/packetbroker/pb/cmd/internal/column"
+	"github.com/packetbroker/pb/cmd/internal/pbflag"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
-	iampb "go.packetbroker.org/api/iam/v2"
-	packetbroker "go.packetbroker.org/api/v3"
-	"go.packetbroker.org/pb/cmd/internal/column"
-	"go.packetbroker.org/pb/cmd/internal/pbflag"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 

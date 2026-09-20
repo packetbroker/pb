@@ -3,7 +3,7 @@
 
 package cmd
 
-import reportingpb "go.packetbroker.org/api/reporting"
+import reportingpb "github.com/packetbroker/go-api/reporting"
 
 type byToForwarderHomeNetwork []*reportingpb.RoutedMessagesRecord
 

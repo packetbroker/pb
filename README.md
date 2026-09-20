@@ -32,10 +32,10 @@ Asia Pacific | `apac.packetbroker.io`
 Make sure you have [Go](https://golang.org/doc/install) installed in your environment.
 
 ```bash
-$ go get go.packetbroker.org/pb/cmd/pbadmin
-$ go get go.packetbroker.org/pb/cmd/pbctl
-$ go get go.packetbroker.org/pb/cmd/pbpub
-$ go get go.packetbroker.org/pb/cmd/pbsub
+$ go install github.com/packetbroker/pb/cmd/pbadmin@latest
+$ go install github.com/packetbroker/pb/cmd/pbctl@latest
+$ go install github.com/packetbroker/pb/cmd/pbpub@latest
+$ go install github.com/packetbroker/pb/cmd/pbsub@latest
 ```
 
 ### Configuration

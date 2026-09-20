@@ -4,7 +4,7 @@
 // Package main is the entry point of the pbctl command-line interface.
 package main
 
-import "go.packetbroker.org/pb/cmd/pbctl/cmd"
+import "github.com/packetbroker/pb/cmd/pbctl/cmd"
 
 func main() {
 	cmd.Execute()

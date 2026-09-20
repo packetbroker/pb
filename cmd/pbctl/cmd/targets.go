@@ -6,10 +6,10 @@ package cmd
 import (
 	"fmt"
 
+	routingpb "github.com/packetbroker/go-api/routing/v2"
+	packetbroker "github.com/packetbroker/go-api/v3"
+	"github.com/packetbroker/pb/cmd/internal/column"
 	"github.com/spf13/cobra"
-	routingpb "go.packetbroker.org/api/routing/v2"
-	packetbroker "go.packetbroker.org/api/v3"
-	"go.packetbroker.org/pb/cmd/internal/column"
 )
 
 var targetsCmd = &cobra.Command{

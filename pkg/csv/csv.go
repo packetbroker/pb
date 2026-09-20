@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"strings"
 
-	reportingpb "go.packetbroker.org/api/reporting"
-	packetbroker "go.packetbroker.org/api/v3"
+	reportingpb "github.com/packetbroker/go-api/reporting"
+	packetbroker "github.com/packetbroker/go-api/v3"
 )
 
 type uplinkMessageProcessingError struct {

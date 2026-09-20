@@ -13,8 +13,8 @@ import (
 	"strconv"
 	"strings"
 
+	packetbroker "github.com/packetbroker/go-api/v3"
 	flag "github.com/spf13/pflag"
-	packetbroker "go.packetbroker.org/api/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )

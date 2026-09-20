@@ -11,13 +11,13 @@ import (
 	"strings"
 
 	homedir "github.com/mitchellh/go-homedir"
+	"github.com/packetbroker/pb/cmd/internal/column"
+	"github.com/packetbroker/pb/cmd/internal/config"
+	"github.com/packetbroker/pb/cmd/internal/gen"
+	"github.com/packetbroker/pb/cmd/internal/logging"
+	"github.com/packetbroker/pb/pkg/client"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"go.packetbroker.org/pb/cmd/internal/column"
-	"go.packetbroker.org/pb/cmd/internal/config"
-	"go.packetbroker.org/pb/cmd/internal/gen"
-	"go.packetbroker.org/pb/cmd/internal/logging"
-	"go.packetbroker.org/pb/pkg/client"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )

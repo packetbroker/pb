@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"testing"
 
-	packetbroker "go.packetbroker.org/api/v3"
+	packetbroker "github.com/packetbroker/go-api/v3"
 )
 
 func TestMergeDevAddrBlocks(t *testing.T) {

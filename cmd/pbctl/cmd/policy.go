@@ -7,12 +7,12 @@ import (
 	"errors"
 	"fmt"
 
+	routingpb "github.com/packetbroker/go-api/routing"
+	packetbroker "github.com/packetbroker/go-api/v3"
+	"github.com/packetbroker/pb/cmd/internal/column"
+	pbflag "github.com/packetbroker/pb/cmd/internal/pbflag"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
-	routingpb "go.packetbroker.org/api/routing"
-	packetbroker "go.packetbroker.org/api/v3"
-	"go.packetbroker.org/pb/cmd/internal/column"
-	pbflag "go.packetbroker.org/pb/cmd/internal/pbflag"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
